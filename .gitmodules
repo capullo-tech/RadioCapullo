@@ -1,0 +1,3 @@
+[submodule "lib-snapcast-android/src/main/cpp/snapcast"]
+	path = lib-snapcast-android/src/main/cpp/snapcast
+	url = https://github.com/badaix/snapcast.git

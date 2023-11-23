@@ -61,7 +61,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    implementation(project(mapOf("path" to ":librespot-android")))
+    implementation("com.github.gsalinaslopez:lib-librespot-android:0.0.4")
+    implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
+        exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
+        exclude(group = "com.lmax", module = "disruptor")
+        exclude(group = "org.apache.logging.log4j")
+    }
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

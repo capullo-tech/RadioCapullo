@@ -10,6 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://www.jitpack.io")
     }
 }
 
@@ -20,4 +21,3 @@ include(":librespot-android")
 include(":librespot-android:librespot-android-decoder")
 include(":librespot-android:librespot-android-sink")
 include(":librespot-android:librespot-android-zeroconf-server")
-include(":librespot-android:mylibrary")

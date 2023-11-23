@@ -37,9 +37,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
-    api(project(mapOf("path" to ":librespot-android-sink")))
-    api(project(mapOf("path" to ":librespot-android-zeroconf-server")))
-    api(project(mapOf("path" to ":librespot-android-decoder")))
+    api(project(mapOf("path" to ":librespot-android:librespot-android-sink")))
+    api(project(mapOf("path" to ":librespot-android:librespot-android-zeroconf-server")))
+    api(project(mapOf("path" to ":librespot-android:librespot-android-decoder")))
     api("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")

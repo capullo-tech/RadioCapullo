@@ -61,7 +61,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    implementation("com.github.gsalinaslopez:lib-librespot-android:0.0.4")
+    implementation("com.github.gsalinaslopez:lib-librespot-android:0.1.0-rc01")
     implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")

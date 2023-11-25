@@ -13,10 +13,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/lib-snapcast-android" />
-            <option value="$PROJECT_DIR$/librespot-android" />
-            <option value="$PROJECT_DIR$/librespot-android/librespot-android-decoder" />
-            <option value="$PROJECT_DIR$/librespot-android/librespot-android-sink" />
-            <option value="$PROJECT_DIR$/librespot-android/librespot-android-zeroconf-server" />
           </set>
         </option>
       </GradleProjectSettings>

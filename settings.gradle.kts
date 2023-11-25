@@ -17,7 +17,3 @@ dependencyResolutionManagement {
 rootProject.name = "Radio"
 include(":app")
 include(":lib-snapcast-android")
-include(":librespot-android")
-include(":librespot-android:librespot-android-decoder")
-include(":librespot-android:librespot-android-sink")
-include(":librespot-android:librespot-android-zeroconf-server")

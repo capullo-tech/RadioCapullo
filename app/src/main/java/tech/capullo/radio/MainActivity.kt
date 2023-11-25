@@ -16,11 +16,13 @@ import xyz.gianlu.librespot.android.sink.AndroidSinkOutput
 import xyz.gianlu.librespot.audio.decoders.Decoders
 import xyz.gianlu.librespot.audio.format.SuperAudioFormat
 import xyz.gianlu.librespot.player.decoders.AndroidNativeDecoder
+import xyz.gianlu.librespot.player.decoders.TremoloVorbisDecoder
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Decoders.registerDecoder(SuperAudioFormat.VORBIS, AndroidNativeDecoder::class.java)
+        Decoders.registerDecoder(SuperAudioFormat.VORBIS, TremoloVorbisDecoder::class.java)
         AndroidSinkOutput()
         AndroidZeroconfServer.Builder(baseContext)
 

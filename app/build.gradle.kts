@@ -47,6 +47,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "log4j2.xml"
         }
+        packaging {
+            jniLibs {
+                useLegacyPackaging = true
+            }
+        }
     }
 }
 
@@ -60,8 +65,14 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.startup:startup-runtime:1.1.1")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation("androidx.work:work-multiprocess:2.8.1")
+
+
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    implementation("com.github.gsalinaslopez:lib-librespot-android:0.1.0-rc01")
+    //implementation("com.github.gsalinaslopez:lib-librespot-android:0.1.0-rc01")
+    implementation("tech.capullo:lib-librespot-android:0.1.3")
     implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")

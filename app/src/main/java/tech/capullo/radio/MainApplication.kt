@@ -2,12 +2,11 @@ package tech.capullo.radio
 
 import android.app.Application
 import android.util.Log
-import xyz.gianlu.librespot.audio.decoders.Decoders
-import xyz.gianlu.librespot.audio.format.SuperAudioFormat
-import xyz.gianlu.librespot.player.decoders.AndroidNativeDecoder
+import dagger.hilt.android.HiltAndroidApp
 
-class RadioCapulloApp : Application() {
-    private val TAG = RadioCapulloApp::class.java.simpleName
+@HiltAndroidApp
+class MainApplication : Application() {
+    private val TAG = MainApplication::class.java.simpleName
 
     init {
         Log.d(TAG, "Application subclass INIT")

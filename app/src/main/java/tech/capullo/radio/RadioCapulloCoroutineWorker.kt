@@ -8,30 +8,18 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
-import com.spotify.connectstate.Connect
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import xyz.gianlu.librespot.core.Session
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
-import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 class RadioCapulloCoroutineWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
-
 
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
@@ -49,17 +37,25 @@ class RadioCapulloCoroutineWorker(
             audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
         fpb =
             audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
-        val sampleformat= "$rate:16:*"
-
+        val sampleformat = "$rate:16:*"
 
         val deferred = async {
-            snapcastRunnable(cacheDir, fili, nativeLibraryDir, true, getUniqueId(applicationContext), androidPlayer, sampleformat, rate, fpb) {
-                //Log.i("SERVICE", "SnapcastRunnable")
+            snapcastRunnable(
+                cacheDir,
+                fili,
+                nativeLibraryDir,
+                true,
+                getUniqueId(applicationContext), androidPlayer, sampleformat, rate, fpb
+            ) {
+                // Log.i("SERVICE", "SnapcastRunnable")
                 Log.i("SNAPCAST", "Snapserver ")
             }
         }
         val deferred2 = async {
-            snapcastRunnable(cacheDir, fili, nativeLibraryDir, false, getUniqueId(applicationContext), androidPlayer, sampleformat, rate, fpb) {
+            snapcastRunnable(
+                cacheDir, fili, nativeLibraryDir, false, getUniqueId(applicationContext),
+                androidPlayer, sampleformat, rate, fpb
+            ) {
                 Log.i("SNAPCAST", "Snapclient ")
             }
         }
@@ -80,23 +76,21 @@ class RadioCapulloCoroutineWorker(
         Result.success()
     }
 
-
     private fun snapcastRunnable(
-         cacheDir: String,
-         filifoFile: String,
-         nativeLibDir: String,
-         isSnapserver: Boolean,
-         uniqueId: String,
-         player: String,
-         sampleFormat: String,
-         rate: String?,
-         fpb: String?,
-         callback: () -> Unit
+        cacheDir: String,
+        filifoFile: String,
+        nativeLibDir: String,
+        isSnapserver: Boolean,
+        uniqueId: String,
+        player: String,
+        sampleFormat: String,
+        rate: String?,
+        fpb: String?,
+        callback: () -> Unit
     ) {
 
         val pb = if (isSnapserver) {
-            ProcessBuilder() //.command(this.getApplicationInfo().nativeLibraryDir + "/libsnapclient.so", "-h", host, "-p", Integer.toString(port), "--hostID", getUniqueId(this.getApplicationContext()), "--player", player, "--sampleformat", sampleformat, "--logfilter", "*:info,Stats:debug")
-                //.command(this.getApplicationInfo().nativeLibraryDir + "/libsnapserver.so", "--server.datadir="+cacheDir, "--stream.source", "tcp://127.0.0.1?name=android")
+            ProcessBuilder()
                 .command(
                     "$nativeLibDir/libsnapserver.so",
                     "--server.datadir=$cacheDir", "--stream.source",
@@ -104,8 +98,11 @@ class RadioCapulloCoroutineWorker(
                 )
                 .redirectErrorStream(true)
         } else {
-            ProcessBuilder().command("$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p",
-                1704.toString(), "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat, "--logfilter", "*:info,Stats:debug")
+            ProcessBuilder().command(
+                "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p",
+                1704.toString(), "--hostID", uniqueId, "--player", player, "--sampleformat",
+                sampleFormat, "--logfilter", "*:info,Stats:debug"
+            )
         }
         try {
             val env = pb.environment()
@@ -118,12 +115,12 @@ class RadioCapulloCoroutineWorker(
             )
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {
-                Log.d("SNAPCAST${if (isSnapserver)  "SERVER" else "CLIENT"}", line!!)
+                Log.d("SNAPCAST${if (isSnapserver) "SERVER" else "CLIENT"}", line!!)
             }
         } catch (e: IOException) {
             throw RuntimeException(e)
         }
-        //handler.post { callback() }
+        // handler.post { callback() }
     }
 
     @Synchronized

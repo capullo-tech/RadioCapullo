@@ -26,7 +26,6 @@ import control.json.Volume
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -47,7 +46,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RadioViewModel @Inject internal constructor(
     @ApplicationContext private val applicationContext: Context
-): ViewModel() {
+) : ViewModel() {
     private val _hostAddresses = getInetAddresses().toMutableStateList()
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
@@ -70,17 +69,28 @@ class RadioViewModel @Inject internal constructor(
         viewModelScope.launch {
             val executorService = Executors.newCachedThreadPool()
 
-            val sessionListener: AndroidZeroconfServer.SessionListener = object : AndroidZeroconfServer.SessionListener {
-                override fun sessionClosing(p0: Session) {
-                }
+            val sessionListener: AndroidZeroconfServer.SessionListener =
+                object : AndroidZeroconfServer.SessionListener {
+                    override fun sessionClosing(p0: Session) {
+                    }
 
-                override fun sessionChanged(session: Session) {
-                    Log.d("SESSION", "onSessionChanged! ${Thread.currentThread().name}")
-                    startSnapcast(applicationContext.cacheDir.toString(), applicationContext.applicationInfo.nativeLibraryDir, applicationContext.getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager, session)
+                    override fun sessionChanged(session: Session) {
+                        Log.d("SESSION", "onSessionChanged! ${Thread.currentThread().name}")
+                        startSnapcast(
+                            applicationContext.cacheDir.toString(),
+                            applicationContext.applicationInfo.nativeLibraryDir,
+                            applicationContext
+                                .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager,
+                            session
+                        )
+                    }
                 }
-            }
-            Log.i("SESSION", "about to start listener: ${getDeviceName(applicationContext)} ${Thread.currentThread().name}")
-            executorService.execute(SetupRunnable(applicationContext, getDeviceName(applicationContext),sessionListener))
+            executorService.execute(
+                SetupRunnable(
+                    applicationContext,
+                    getDeviceName(applicationContext), sessionListener
+                )
+            )
         }
     }
 
@@ -91,7 +101,10 @@ class RadioViewModel @Inject internal constructor(
         session: Session
     ) {
         viewModelScope.launch {
-            startListener(cacheDir, nativelibraryDir, audioManager, getUniqueId(applicationContext), session)
+            startListener(
+                cacheDir, nativelibraryDir, audioManager, getUniqueId(applicationContext),
+                session
+            )
         }
     }
     @Synchronized
@@ -111,7 +124,10 @@ class RadioViewModel @Inject internal constructor(
 
     private fun getDeviceName(appContext: Context): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            val deviceName = Settings.Global.getString(appContext.contentResolver, Settings.Global.DEVICE_NAME)
+            val deviceName = Settings.Global.getString(
+                appContext.contentResolver,
+                Settings.Global.DEVICE_NAME
+            )
             if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
         } else {
             Build.MODEL
@@ -145,7 +161,8 @@ class RadioViewModel @Inject internal constructor(
                 fpb
             ) {
                 Log.i("SERVICE", "SnapcastRunnable")
-            })
+            }
+        )
 
         val filifofile = File(fili)
         executorService.execute(
@@ -167,21 +184,23 @@ class RadioViewModel @Inject internal constructor(
                                 fpb
                             ) {
                                 Log.i("SERVICE", "SnapcastRunnable")
-                            })
+                            }
+                        )
                     }
 
                     override fun failedGettingReady(ex: Exception) {
                         Log.i("SESSION", "playerFailedGettingReady!")
                     }
-
-                })
+                }
+            )
         )
         val remoteControl =
             RemoteControl(object : RemoteControl.RemoteControlListener {
                 override fun onUpdate(server: ServerStatus?) {
-                    Log.d("SESSION", "onUpdate: server:${server}")
+                    Log.d("SESSION", "onUpdate: server:$server")
                     server?.let {
                         _snapserverServerStatus.add(it)
+                        _something.value = it
                     }
                 }
 
@@ -223,10 +242,14 @@ class RadioViewModel @Inject internal constructor(
                     clientId: String?,
                     volume: Volume?
                 ) {
-                    val serverStatusss = ServerStatus(_snapserverServerStatus.first().toJson())//.toJson()
-                    Log.d("SESSION", "${Thread.currentThread().name} onVolumeChanged: $volume clientID: $clientId serverStatus: ${serverStatusss.toJson()}")
+                    val serverStatusss = ServerStatus(_snapserverServerStatus.first().toJson())
+                    Log.d(
+                        "SESSION",
+                        "${Thread.currentThread().name} onVolumeChanged: $volume clientID:" +
+                            " $clientId serverStatus: ${serverStatusss.toJson()}"
+                    )
 
-                    val serverStatusJson  = serverStatusss.toJson()
+                    val serverStatusJson = serverStatusss.toJson()
                     if (serverStatusJson.has("groups")) {
                         val groups = serverStatusJson.getJSONArray("groups")
                         (0 until groups.length()).forEach { i ->
@@ -238,17 +261,39 @@ class RadioViewModel @Inject internal constructor(
                                     val client = clients.getJSONObject(j)
                                     if (client.getString("id").equals(clientId)) {
                                         val volumee =
-                                            client.getJSONObject("config").getJSONObject("volume")
+                                            client
+                                                .getJSONObject("config")
+                                                .getJSONObject("volume")
                                                 .get("percent")
-                                        Log.d("SESSION", "${Thread.currentThread().name} updating volume status before: ${serverStatusJson.toString()}")
-                                        val jjj  = JSONObject(serverStatusJson.toString().replaceFirst(oldValue = volumee.toString(), newValue = volume?.percent.toString()))
-                                        Log.d("SESSION", "${Thread.currentThread().name} updating volume status after: ${ServerStatus(jjj).toString()}")
+                                        Log.d(
+                                            "SESSION",
+                                            "${Thread.currentThread().name} " +
+                                                "updating volume status before: $serverStatusJson"
+                                        )
+                                        val jjj =
+                                            JSONObject(
+                                                serverStatusJson.toString().replaceFirst(
+                                                    oldValue = volumee.toString(),
+                                                    newValue = volume?.percent.toString()
+                                                )
+                                            )
+                                        Log.d(
+                                            "SESSION",
+                                            "${Thread.currentThread().name} " +
+                                                "updating volume status after: " +
+                                                "${ServerStatus(jjj)}"
+                                        )
                                         _snapserverServerStatus.clear()
                                         _snapserverServerStatus.add(ServerStatus(jjj))
+                                        _something.value = ServerStatus(jjj)
                                     }
-                                    Log.i("SESSION", "each :${client::class.java} -- $client")
+                                    Log.i(
+                                        "SESSION",
+                                        "each :${client::class.java} -- " +
+                                            "$client"
+                                    )
 
-                                    //client.getJSONObject("config").getJSONObject("volume").
+                                    // client.getJSONObject("config").getJSONObject("volume").
                                 }
                             }
                         }
@@ -274,7 +319,7 @@ class RadioViewModel @Inject internal constructor(
                 }
 
                 override fun onConnected(remoteControl: RemoteControl?) {
-                    Log.d("SESSION", "onConnected: ${remoteControl}")
+                    Log.d("SESSION", "onConnected: $remoteControl")
                     remoteControl?.getServerStatus()
                 }
 
@@ -301,7 +346,7 @@ class RadioViewModel @Inject internal constructor(
         remoteControl.getServerStatus()
     }
 }
-private fun getInetAddresses() : List<String> =
+private fun getInetAddresses(): List<String> =
     Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
         Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
             inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
@@ -328,7 +373,8 @@ private class SnapcastRunnable(
         Log.d("SERVICE", "$nativeLibDir -- $cacheDir")
         val pb = if (isSnapserver) {
             ProcessBuilder()
-                .command( "$nativeLibDir/libsnapserver.so",
+                .command(
+                    "$nativeLibDir/libsnapserver.so",
                     "--server.datadir=$cacheDir", "--stream.source",
                     "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
                 )
@@ -363,7 +409,6 @@ private class SnapcastRunnable(
         handler.post { callback() }
     }
 }
-
 
 private interface SessionChangedCallback {
     fun playerReady(player: Player, username: String)
@@ -423,21 +468,23 @@ private class SetupRunnable(
                 .setDeviceType(Connect.DeviceType.SPEAKER)
                 .setDeviceId(null)
                 .setDeviceName( // Set name as set in preferences
-                    //"Radio Capullo"
+                    // "Radio Capullo"
                     deviceName
                 )
             val server = builder.create()
             server.addSessionListener(sessionListener)
-            //LibrespotHolder.set(server);
+            // LibrespotHolder.set(server);
             Log.i("SESSION", "SetupRunnable created and added listener")
-            Runtime.getRuntime().addShutdownHook(Thread {
-                try {
-                    server.closeSession()
-                    server.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
+            Runtime.getRuntime().addShutdownHook(
+                Thread {
+                    try {
+                        server.closeSession()
+                        server.close()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
                 }
-            })
+            )
         } catch (e: IOException) {
             e.printStackTrace()
         }

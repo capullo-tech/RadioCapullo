@@ -1,4 +1,3 @@
 package tech.capullo.radio
 
-class SnapcastProcessRunnable {
-}
+class SnapcastProcessRunnable

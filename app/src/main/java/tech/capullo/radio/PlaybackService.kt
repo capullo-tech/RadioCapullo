@@ -1,7 +1,6 @@
 package tech.capullo.radio
 
-
-class PlaybackService {}/*: MediaSessionService() {
+class PlaybackService/*: MediaSessionService() {
     private var mediaSession: MediaSession? = null
 
     // Create your player and media session in the onCreate lifecycle event

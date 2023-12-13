@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "tech.capullo.radio"
-    compileSdk = 34
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "tech.capullo.radio"
-        minSdk = 23
-        targetSdk = 34
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,17 +32,16 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-        //kotlinCompilerExtensionVersion = "1.5.3"
         kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
     packaging {
@@ -58,8 +57,15 @@ android {
     }
 }
 
-dependencies {
+androidComponents {
+    onVariants(selector().withBuildType("release")) {
+        // Only exclude *.version files in release mode as debug mode requires
+        // these files for layout inspector to work.
+        it.packaging.resources.excludes.add("META-INF/*.version")
+    }
+}
 
+dependencies {
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)

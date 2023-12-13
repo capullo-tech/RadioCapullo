@@ -10,7 +10,7 @@ class MainApplication : Application() {
 
     init {
         Log.d(TAG, "Application subclass INIT")
-        //Decoders.registerDecoder(SuperAudioFormat.VORBIS, AndroidNativeDecoder::class.java)
-        //Decoders.registerDecoder(SuperAudioFormat.MP3, AndroidNativeDecoder::class.java)
+        // Decoders.registerDecoder(SuperAudioFormat.VORBIS, AndroidNativeDecoder::class.java)
+        // Decoders.registerDecoder(SuperAudioFormat.MP3, AndroidNativeDecoder::class.java)
     }
 }

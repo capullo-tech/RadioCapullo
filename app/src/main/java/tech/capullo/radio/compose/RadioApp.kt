@@ -3,6 +3,7 @@ package tech.capullo.radio.compose
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,17 +76,17 @@ fun RadioApp(
                 snapclientsList = radioViewModel.snapClientsList
             )
         }
-        }
+    }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RadioPermission(multiplePermissionsState: MultiplePermissionsState) {
     val textToShow =
-    getTextToShowGivenPermissions(
-        multiplePermissionsState.revokedPermissions,
-        multiplePermissionsState.shouldShowRationale
-    )
+        getTextToShowGivenPermissions(
+            multiplePermissionsState.revokedPermissions,
+            multiplePermissionsState.shouldShowRationale
+        )
     RadioPermissionScreen(textToShow = textToShow) {
         multiplePermissionsState.launchMultiplePermissionRequest()
     }
@@ -98,7 +103,6 @@ fun RadioPermissionScreen(textToShow: String, onPermissionRequest: () -> Unit) {
             Text("Request permissions")
         }
     }
-
 }
 @OptIn(ExperimentalPermissionsApi::class)
 @Preview
@@ -106,7 +110,9 @@ fun RadioPermissionScreen(textToShow: String, onPermissionRequest: () -> Unit) {
 fun RadioPermissionScreenPreview() {
     RadioTheme {
         RadioPermissionScreen(
-            textToShow = "The INTERNET, ACCESS_NETWORK_STATE, and ACCESS_WIFI_STATE permissions are important. Please grant all of them for the app to function properly."
+            textToShow = """The INTERNET, ACCESS_NETWORK_STATE, and ACCESS_WIFI_STATE 
+                permissions are important. Please grant all of them for the app to function 
+                properly."""
         ) { }
     }
 }
@@ -116,6 +122,8 @@ fun RadioMainScreen(
     hostAddresses: List<String>,
     snapclientsList: List<ServerStatus>
 ) {
+    var text by remember { mutableStateOf("") }
+
     Column {
         Text("Radio Capullo")
         Text("Discoverable as: $deviceName")
@@ -125,8 +133,11 @@ fun RadioMainScreen(
             }
         }
         SnapclientList(snapclientList = snapclientsList)
+        Row {
+        }
     }
 }
+
 @OptIn(ExperimentalPermissionsApi::class)
 private fun getTextToShowGivenPermissions(
     permissions: List<PermissionState>,

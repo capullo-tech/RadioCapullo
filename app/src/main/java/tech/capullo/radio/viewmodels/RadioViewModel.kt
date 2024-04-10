@@ -9,8 +9,6 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
@@ -44,7 +42,7 @@ import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @HiltViewModel
-class RadioViewModel @Inject internal constructor(
+class RadioViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context
 ) : ViewModel() {
     private val _hostAddresses = getInetAddresses().toMutableStateList()
@@ -54,8 +52,6 @@ class RadioViewModel @Inject internal constructor(
     @SuppressLint("MutableCollectionMutableState")
     private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
 
-    private val _something = mutableStateOf(ServerStatus(JSONObject()))
-    val something: MutableState<ServerStatus> get() = _something
     val hostAddresses: List<String>
         get() = _hostAddresses
 
@@ -88,7 +84,7 @@ class RadioViewModel @Inject internal constructor(
             executorService.execute(
                 SetupRunnable(
                     applicationContext,
-                    getDeviceName(applicationContext), sessionListener
+                    getDeviceName(), sessionListener
                 )
             )
         }
@@ -122,17 +118,17 @@ class RadioViewModel @Inject internal constructor(
         return uniqueID
     }
 
-    private fun getDeviceName(appContext: Context): String {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+    fun getDeviceName(): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
             val deviceName = Settings.Global.getString(
-                appContext.contentResolver,
+                applicationContext.contentResolver,
                 Settings.Global.DEVICE_NAME
             )
             if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
         } else {
             Build.MODEL
         }
-    }
+
     private suspend fun startListener(
         cacheDir: String,
         nativeLibraryDir: String,
@@ -200,7 +196,6 @@ class RadioViewModel @Inject internal constructor(
                     Log.d("SESSION", "onUpdate: server:$server")
                     server?.let {
                         _snapserverServerStatus.add(it)
-                        _something.value = it
                     }
                 }
 
@@ -285,7 +280,6 @@ class RadioViewModel @Inject internal constructor(
                                         )
                                         _snapserverServerStatus.clear()
                                         _snapserverServerStatus.add(ServerStatus(jjj))
-                                        _something.value = ServerStatus(jjj)
                                     }
                                     Log.i(
                                         "SESSION",

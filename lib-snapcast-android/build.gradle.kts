@@ -56,7 +56,7 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation(libs.androidx.core.ktx)
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation(files("libs/boost-1.81.0.aar"))
@@ -67,7 +67,7 @@ dependencies {
     implementation(files("libs/tremor-1.0.0.aar"))
     implementation(files("libs/vorbis-1.3.7.aar"))
     implementation(files("libs/oboe-1.7.0.aar"))
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

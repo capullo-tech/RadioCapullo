@@ -18,72 +18,92 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import control.json.ServerStatus
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.viewmodels.RadioViewModel
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RadioApp(
     modifier: Modifier = Modifier,
     radioViewModel: RadioViewModel = viewModel()
 ) {
+    val permissionList = mutableListOf(
+        android.Manifest.permission.INTERNET,
+        android.Manifest.permission.ACCESS_NETWORK_STATE,
+        android.Manifest.permission.ACCESS_WIFI_STATE,
+    )
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        permissionList.addAll(
+            listOf(
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.BLUETOOTH_ADVERTISE,
+                android.Manifest.permission.BLUETOOTH_CONNECT
+            )
+        )
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissionList.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
+    }
+
     Surface(
         modifier, color = MaterialTheme.colorScheme.background
     ) {
-        RadioMainScreen(
-            deviceName = radioViewModel.getDeviceName(),
-            hostAddresses = radioViewModel.hostAddresses,
-            snapclientsList = radioViewModel.snapClientsList
-        )
-    }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val multiplePermissionsState =
+                rememberMultiplePermissionsState(permissions = permissionList)
+            if (multiplePermissionsState.allPermissionsGranted) {
+                Text("Nearby permission Granted!")
+                RadioMainScreen(
+                    deviceName = radioViewModel.getDeviceName(),
+                    hostAddresses = radioViewModel.hostAddresses,
+                    snapclientsList = radioViewModel.snapClientsList
+                )
+            } else {
+                RadioPermissionScreen(multiplePermissionsState = multiplePermissionsState)
+            }
+        } else {
+            RadioMainScreen(
+                deviceName = radioViewModel.getDeviceName(),
+                hostAddresses = radioViewModel.hostAddresses,
+                snapclientsList = radioViewModel.snapClientsList
+            )
+        }
+        }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun RadioPermissionScreen(multiplePermissionsState: MultiplePermissionsState) {
+    Text(
+        getTextToShowGivenPermissions(
+            multiplePermissionsState.revokedPermissions,
+            multiplePermissionsState.shouldShowRationale
+        )
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Button(onClick = { multiplePermissionsState.launchMultiplePermissionRequest() }) {
+        Text("Request permissions")
+    }
+}
 @Composable
 fun RadioMainScreen(
     deviceName: String,
     hostAddresses: List<String>,
     snapclientsList: List<ServerStatus>
 ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val multiplePermissionsState =
-            rememberMultiplePermissionsState(
-                listOf(
-                    android.Manifest.permission.INTERNET,
-                    android.Manifest.permission.ACCESS_NETWORK_STATE,
-                    android.Manifest.permission.ACCESS_WIFI_STATE,
-                    android.Manifest.permission.NEARBY_WIFI_DEVICES,
-                    android.Manifest.permission.BLUETOOTH_SCAN,
-                    android.Manifest.permission.BLUETOOTH_ADVERTISE,
-                    android.Manifest.permission.BLUETOOTH_CONNECT
-                )
-            )
-        if (multiplePermissionsState.allPermissionsGranted) {
-            Text("Nearby permission Granted!")
-        } else {
-            Text(
-                getTextToShowGivenPermissions(
-                    multiplePermissionsState.revokedPermissions,
-                    multiplePermissionsState.shouldShowRationale
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { multiplePermissionsState.launchMultiplePermissionRequest() }) {
-                Text("Request permissions")
-            }
-            Column {
-                Text("Radio Capullo")
-                Text("Discoverable as: $deviceName")
-                LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-                    items(items = hostAddresses) { name ->
-                        Text(name)
-                    }
-                }
-                SnapclientList(snapclientList = snapclientsList)
+    Column {
+        Text("Radio Capullo")
+        Text("Discoverable as: $deviceName")
+        LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
+            items(items = hostAddresses) { name ->
+                Text(name)
             }
         }
+        SnapclientList(snapclientList = snapclientsList)
     }
 }
 @OptIn(ExperimentalPermissionsApi::class)

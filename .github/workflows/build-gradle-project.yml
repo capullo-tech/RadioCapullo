@@ -2,6 +2,8 @@ name: Build Gradle project
 
 on:
   push:
+    tags:
+      - '*'
 
 jobs:
   build-gradle-project:
@@ -20,8 +22,26 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Build APK
         run: ./gradlew :app:assembleDebug
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Update Artifact
         uses: actions/upload-artifact@v3
         with:
           path: ./app/build/outputs/apk/debug/app-debug.apk
           name: app-debug.apk
+      - name: Update release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          asset_path: ./app/build/outputs/apk/debug/app-debug.apk
+          asset_name: app-debug.apk

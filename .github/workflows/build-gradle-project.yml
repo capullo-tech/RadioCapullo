@@ -31,7 +31,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           tag_name: ${{ github.ref }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.token }}
       - name: Update Artifact
         uses: actions/upload-artifact@v3
         with:

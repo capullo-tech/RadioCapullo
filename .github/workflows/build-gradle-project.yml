@@ -26,15 +26,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Build APK
         run: ./gradlew :app:assembleDebug
-      - name: Create Release
-        run: |
-          tag=$(git describe --tags --abbrev=0)
-          gh release create "$tag" \
-              --repo="$GITHUB_REPOSITORY" \
-              --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
-              --generate-notes
-      - name: Update Artifact
-        uses: actions/upload-artifact@v3
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          path: ./app/build/outputs/apk/debug/app-debug.apk
-          name: app-debug.apk
+          files: ./app/build/outputs/apk/debug/app-debug.apk
+      #- name: Create Release
+      # env:
+      #  GH_TOKEN: ${{ github.token }}
+      #  run: |
+      #    tag=$(git describe --tags --abbrev=0)
+      #    gh release create "$tag" \
+      #        --repo="$GITHUB_REPOSITORY" \
+      #        --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
+      #        --generate-notes
+      #- name: Update Artifact
+      #  uses: actions/upload-artifact@v3
+      #  with:
+      #    path: ./app/build/outputs/apk/debug/app-debug.apk
+      #    name: app-debug.apk

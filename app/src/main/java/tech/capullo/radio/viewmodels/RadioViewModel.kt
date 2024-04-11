@@ -13,6 +13,9 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
 import com.spotify.connectstate.Connect
 import control.RemoteControl
@@ -89,6 +92,19 @@ class RadioViewModel @Inject constructor(
             )
         }
     }
+
+        fun initiateWorker(ip: String) {
+            val inputData = workDataOf(
+    "ip" to ip,
+                "libDir" to applicationContext.applicationInfo.nativeLibraryDir,
+)
+            viewModelScope.launch {
+                Log.d("WORKER", "initiateWorker: $inputData")
+                val myWorkRequest = OneTimeWorkRequestBuilder<SnapcastCoroutineWorker>()
+                    .setInputData(inputData).build()
+                WorkManager.getInstance(applicationContext).enqueue(myWorkRequest)
+            }
+        }
 
     fun startSnapcast(
         cacheDir: String,

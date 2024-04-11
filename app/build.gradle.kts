@@ -80,6 +80,12 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.startup.runtime)
+        implementation(libs.androidx.work.runtime.ktx)
+    // optional - Test helpers
+    androidTestImplementation(libs.androidx.work.testing)
+
+    // optional - Multiprocess support
+    implementation(libs.androidx.work.multiprocess)
 
     implementation(libs.accompanist.permissions)
 

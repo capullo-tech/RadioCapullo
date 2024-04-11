@@ -9,16 +9,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,15 +44,6 @@ fun RadioApp(
         android.Manifest.permission.ACCESS_NETWORK_STATE,
         android.Manifest.permission.ACCESS_WIFI_STATE,
     )
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        permissionList.addAll(
-            listOf(
-                android.Manifest.permission.BLUETOOTH_SCAN,
-                android.Manifest.permission.BLUETOOTH_ADVERTISE,
-                android.Manifest.permission.BLUETOOTH_CONNECT
-            )
-        )
-    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         permissionList.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
     }
@@ -64,7 +58,8 @@ fun RadioApp(
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
-                    snapclientsList = radioViewModel.snapClientsList
+                    snapclientsList = radioViewModel.snapClientsList,
+                    startWorker = { ip -> radioViewModel.initiateWorker(ip) }
                 )
             } else {
                 RadioPermission(multiplePermissionsState = multiplePermissionsState)
@@ -73,7 +68,8 @@ fun RadioApp(
             RadioMainScreen(
                 deviceName = radioViewModel.getDeviceName(),
                 hostAddresses = radioViewModel.hostAddresses,
-                snapclientsList = radioViewModel.snapClientsList
+                snapclientsList = radioViewModel.snapClientsList,
+                        startWorker = { ip -> radioViewModel.initiateWorker(ip) }
             )
         }
     }
@@ -104,7 +100,6 @@ fun RadioPermissionScreen(textToShow: String, onPermissionRequest: () -> Unit) {
         }
     }
 }
-@OptIn(ExperimentalPermissionsApi::class)
 @Preview
 @Composable
 fun RadioPermissionScreenPreview() {
@@ -120,7 +115,8 @@ fun RadioPermissionScreenPreview() {
 fun RadioMainScreen(
     deviceName: String,
     hostAddresses: List<String>,
-    snapclientsList: List<ServerStatus>
+    snapclientsList: List<ServerStatus>,
+    startWorker: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
 
@@ -133,7 +129,22 @@ fun RadioMainScreen(
             }
         }
         SnapclientList(snapclientList = snapclientsList)
-        Row {
+        Row(
+
+        ) {
+            TextField(
+                value = text,
+                onValueChange = { newText-> text = newText },
+                label = { Text("Host Address") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = {
+                            startWorker(text)
+                        }) {
+
+                            Text("Go")
+                        }
         }
     }
 }
@@ -188,7 +199,8 @@ fun RadioAppPreview() {
         RadioMainScreen(
             deviceName = "Pixel 3a API 28",
             hostAddresses = listOf("192.168.0.109", "100.17.17.4"),
-            snapclientsList = listOf()
+            snapclientsList = listOf(),
+            startWorker = { ip -> println(ip) }
         )
     }
 }

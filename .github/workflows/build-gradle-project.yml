@@ -5,6 +5,10 @@ on:
     #tags:
       #- '*'
 
+permissions:
+  contents: write
+
+
 jobs:
   build-gradle-project:
     runs-on: ubuntu-latest
@@ -23,15 +27,12 @@ jobs:
       - name: Build APK
         run: ./gradlew :app:assembleDebug
       - name: Create Release
-        uses: actions/create-release@v1
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          release_name: Release ${{ github.ref }}
-          tag_name: ${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+        run: |
+          tag=$(git describe --tags --abbrev=0)
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
+              --generate-notes
       - name: Update Artifact
         uses: actions/upload-artifact@v3
         with:

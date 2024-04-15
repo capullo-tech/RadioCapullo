@@ -56,14 +56,13 @@ fun RadioApp(
             val multiplePermissionsState =
                 rememberMultiplePermissionsState(permissions = permissionList)
             if (multiplePermissionsState.allPermissionsGranted) {
-                Text("Nearby permission Granted!")
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
                     snapclientsList = radioViewModel.snapClientsList
                 )
             } else {
-                RadioPermissionScreen(multiplePermissionsState = multiplePermissionsState)
+                RadioPermissionHandler(multiplePermissionsState = multiplePermissionsState)
             }
         } else {
             RadioMainScreen(
@@ -77,16 +76,38 @@ fun RadioApp(
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RadioPermissionScreen(multiplePermissionsState: MultiplePermissionsState) {
-    Text(
+fun RadioPermissionHandler(multiplePermissionsState: MultiplePermissionsState) {
+    val textToShow =
         getTextToShowGivenPermissions(
             multiplePermissionsState.revokedPermissions,
             multiplePermissionsState.shouldShowRationale
         )
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    Button(onClick = { multiplePermissionsState.launchMultiplePermissionRequest() }) {
-        Text("Request permissions")
+    RadioPermissionScreen(textToShow = textToShow) {
+        multiplePermissionsState.launchMultiplePermissionRequest()
+    }
+}
+
+@Composable
+fun RadioPermissionScreen(textToShow: String, onPermissionRequest: () -> Unit) {
+    Column {
+        Text(
+            textToShow
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onPermissionRequest) {
+            Text("Request permissions")
+        }
+    }
+
+}
+@OptIn(ExperimentalPermissionsApi::class)
+@Preview
+@Composable
+fun RadioPermissionScreenPreview() {
+    RadioTheme {
+        RadioPermissionScreen(
+            textToShow = "The INTERNET, ACCESS_NETWORK_STATE, and ACCESS_WIFI_STATE permissions are important. Please grant all of them for the app to function properly."
+        ) { }
     }
 }
 @Composable

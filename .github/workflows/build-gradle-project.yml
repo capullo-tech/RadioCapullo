@@ -2,6 +2,12 @@ name: Build Gradle project
 
 on:
   push:
+    #tags:
+      #- '*'
+
+#permissions:
+#  contents: write
+
 
 jobs:
   build-gradle-project:
@@ -25,3 +31,18 @@ jobs:
         with:
           path: ./app/build/outputs/apk/debug/app-debug.apk
           name: app-debug.apk
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(git describe --tags --abbrev=0)
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
+              --generate-notes
+      - name: Upload Release Asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(git describe --tags --abbrev=0)
+          gh release upload "$tag" ./app/build/outputs/apk/debug/app-debug.apk

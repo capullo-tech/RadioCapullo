@@ -2,6 +2,7 @@ package tech.capullo.radio.viewmodels
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
@@ -11,6 +12,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import androidx.core.content.ContextCompat.startForegroundService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
@@ -27,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import tech.capullo.radio.SnapcastProcessService
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -57,10 +60,6 @@ class RadioViewModel @Inject constructor(
 
     val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
 
-    fun remove(item: String) {
-        _hostAddresses.remove(item)
-    }
-
     init {
         viewModelScope.launch {
             val executorService = Executors.newCachedThreadPool()
@@ -87,6 +86,18 @@ class RadioViewModel @Inject constructor(
                     getDeviceName(), sessionListener
                 )
             )
+        }
+    }
+
+    fun initiateWorker(ip: String) {
+        val serviceIntent = Intent(applicationContext, SnapcastProcessService::class.java)
+        serviceIntent.putExtra("ip", ip)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            applicationContext.
+            startForegroundService(serviceIntent)
+        } else {
+            applicationContext.
+            startService(serviceIntent)
         }
     }
 

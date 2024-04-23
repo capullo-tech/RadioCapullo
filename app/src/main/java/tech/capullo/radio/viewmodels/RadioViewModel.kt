@@ -26,6 +26,7 @@ import control.json.Volume
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -37,6 +38,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
+import java.lang.Thread.sleep
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
@@ -62,6 +64,9 @@ class RadioViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            Log.d("SESSION", "about to start ${Thread.currentThread().name}")
+            delay(10000)
+            Log.d("SESSION", "onCreate! ${Thread.currentThread().name}")
             val executorService = Executors.newCachedThreadPool()
 
             val sessionListener: AndroidZeroconfServer.SessionListener =

@@ -4,6 +4,8 @@ This is a free and opensource **WiFi Radio** for Android 6+, with broadcast and 
 **RadioCapullo** creates an atmospheric music environment running in multiple android devices in a star topology. 
 All listeners play the music at exactly the same time, increasing the overall volume and the depth of field.
 
+With RadioCapullo you can give new life back to old android phones and old amp-speaker systems. This is a sweet combination of the 3.5mm audio jack era. 
+
 ```
 Gathered with friends but no loudspeaker?
 What if everyone's phone could play in unison. 
@@ -40,3 +42,5 @@ Run a broadcaster
 Run a listener
  - Use any android device from network to playback the transmission OTA. open RadioCapullo and write the broadcaster IP > click Play. Device starts playing synchronous music.
  - Any radio listener can change the music queue. Use spotfi-app to scan & JAM the broadcaster's [spotfi-speaker]. Play any song in spotfi-app.
+
+This project is in active development. PRs are welcome.

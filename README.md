@@ -1,10 +1,10 @@
 ![RadioCapullo](https://avatars.githubusercontent.com/u/152348732)
 
-This is a free and opensource **WiFi Radio** for Android 6+, with broadcast and listen dual modes.
+This is a free and opensource **WiFi Radio** for Android 6+, works both ways, broadcast and listen modes.
 **RadioCapullo** creates an atmospheric music environment running in multiple android devices in a star topology. 
 All listeners play the music at exactly the same time, increasing the overall volume and the depth of field.
 
-With RadioCapullo you can give new life back to old android phones and old amp-speaker systems. This is a sweet combination of the 3.5mm audio jack era. 
+With RadioCapullo you can give life back to old android phones and old amp-speaker systems, this is a sweet combination of the 3.5mm audio jack era. 
 
 ```
 Gathered with friends but no loudspeaker?

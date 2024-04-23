@@ -29,7 +29,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./app/build/outputs/apk/debug/app-debug.apk
-          name: radioCapullo-${{ GITHUB_REF_NAME }}.apk
+          name: radioCapullo-${{ env.GITHUB_REF_NAME }}.apk
       - name: Create Release
         env:
           GH_TOKEN: ${{ github.token }}

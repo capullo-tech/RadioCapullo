@@ -13,7 +13,7 @@ Can you imagine what happens if you place the phones around-away from you?
 Spatial audio: The beggining
 
 >3D audio effects are a group of sound effects that manipulate the sound produced by stereo speakers. This frequently involves the virtual placement of sound sources anywhere in three-dimensional space, including behind, above or below the listener.
->3-D audio (processing) is the spatial domain convolution of sound waves using Head-related transfer functions. It is the phenomenon of transforming sound waves (using head-related transfer function or HRTF filters and cross talk cancellation techniques) to mimic >natural sounds waves, which emanate from a point in a 3-D space. It allows trickery of the brain using the ears and auditory nerves, pretending to place different sounds in different 3-D locations upon hearing the sounds.
+>3-D audio (processing) is the spatial domain convolution of sound waves using Head-related transfer functions. It is the phenomenon of transforming sound waves (using head-related transfer function or HRTF filters and cross talk cancellation techniques) to mimic natural sounds waves, which emanate from a point in a 3-D space. It allows trickery of the brain using the ears and auditory nerves, pretending to place different sounds in different 3-D locations upon hearing the sounds.
 
  - We can control the volume of each listener remotely, this allows us to create some movement effect in the music (ex: spin, vaiven, jump)
  - For now we are limited to simultanueous L+R playback on each listener. 
@@ -39,4 +39,4 @@ Run a broadcaster
   
 Run a listener
  - Use any android device from network to playback the transmission OTA. open RadioCapullo and write the broadcaster IP > click Play. Device starts playing synchronous music.
- - Any radio listener can change the music queue. Use spotfi-app to scan & JAM the broadcaster's [spotfi-speaker]. Play any song in spotfi-app.>
+ - Any radio listener can change the music queue. Use spotfi-app to scan & JAM the broadcaster's [spotfi-speaker]. Play any song in spotfi-app.

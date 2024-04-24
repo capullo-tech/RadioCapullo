@@ -1,7 +1,11 @@
 # RadioCapullo
 
 ## Overview
-RadioCapullo is an Android application that integrates Snapcast's multiroom audio streaming with librespot-java, enabling devices to act both as an audio source and receiver within a multiroom setup. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery.
+This is a free and open source Android application with music broadcast and listen dual modes.
+
+**RadioCapullo** creates an atmospheric music environment running in multiple android devices in a star topology. 
+All listeners play the music at exactly the same time, increasing the overall volume and the depth of field.
+
 
 ## Features
 - **Dual Functionality**: Functions as both a Snapserver and Snapclient.
@@ -15,6 +19,8 @@ RadioCapullo is an Android application that integrates Snapcast's multiroom audi
 
 ## Architecture
 ### App Components
+It integrates Snapcast's multiroom audio streaming with librespot-java, enabling devices to act both as an audio source and receiver within a multiroom setup. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery.
+
 ```
 +---------------------+          +----------------------+
 | Android Device      |          | librespot-java     |
@@ -23,26 +29,21 @@ RadioCapullo is an Android application that integrates Snapcast's multiroom audi
 |  Server Control UI  |<-------->|  Network Discovery   |
 |  Client Control UI  |          |  FIFO Queue          |
 |  FIFO Queue         |----+     +----------------------+
+|  Audio Output       |    |
 +---------------------+    |             ^
-       ^                   |             |
-       |                   |             |
-       |                   |             |
-       |                   v             |
-       |            +------------+       |
-       |            | Snapserver |<------+
-       |            | Broadcasts | 
-       |            |   Audio    |
-       |            +------------+
-       |
-       v
-+---------------------+
-| Android Device      |
-|      (Client)       |
-|---------------------|
-|  Client Control UI  |
-|  Audio Output       |
-|  (Speakers)         |
-+---------------------+
+                           |             |
+                           |             |
+                           |             |
+                           v             |
+                    +--------------+     |
+                    |  Snapcast    |<----+
+                    |--------------|
+                    | Broadcasts & | 
+                    | Plays Audio  |
+                    +--------------+
+       
+       
+
 
 ```
 #### Audio Processing and Broadcasting
@@ -55,6 +56,25 @@ These processes ensure a cohesive and synchronized streaming experience across a
 
 ### Use case Scenarios
 ```
+Gathered with friends but no loudspeaker?
+What if everyone's phone could play in unison. 
+Can you imagine what happens if you place the phones around-away from you?
+```
+
+1. **Server as a Broadcast and Playback Unit**: 
+   - The Android device operates as a server using the `Server Control UI` to manage audio capture and processing through a `FIFO Queue`.
+   - It employs `librespot-java` for Spotify integration, appearing on the network via Zeroconf.
+   - As a Snapserver, it broadcasts the audio across the network.
+   - Simultaneously, it acts as its own Snapclient, playing the broadcasted audio locally for immediate feedback and ensuring the audio is in sync.
+
+2. **Clients Receiving Broadcast**:
+   - Multiple client devices connect to the server.
+   - Each client uses its `Client Control UI` to tune into the server's broadcast.
+   - Audio is output through each client's speakers, synchronized across all devices via Snapclient, ensuring uniform multiroom audio playback.
+
+These scenarios illustrate how RadioCapullo facilitates a comprehensive audio streaming experience, allowing devices to serve as both sources and receivers in a synchronized audio environment. This setup enhances the flexibility and usability of home audio systems.
+
+```
                         +---------------------+
                         | Android Device      |
                         | (Server & Client)   |
@@ -62,7 +82,7 @@ These processes ensure a cohesive and synchronized streaming experience across a
                         | Server Control UI   |
                         | Audio Capture       |
                         | FIFO Queue          |
-                        | librespout-java      |
+                        | librespot-java      |
                         | Snapserver &        |
                         | Snapclient          |
                         | Broadcasts & Plays  |
@@ -81,20 +101,6 @@ These processes ensure a cohesive and synchronized streaming experience across a
 | via Snapclient)  |    | via Snapclient)  |    | via Snapclient)  |
 +------------------+    +------------------+    +-------------------+
 ```
-
-1. **Server as a Broadcast and Playback Unit**: 
-   - The Android device operates as a server using the `Server Control UI` to manage audio capture and processing through a `FIFO Queue`.
-   - It employs `librespot-java` for Spotify integration, appearing on the network via Zeroconf.
-   - As a Snapserver, it broadcasts the audio across the network.
-   - Simultaneously, it acts as its own Snapclient, playing the broadcasted audio locally for immediate feedback and ensuring the audio is in sync.
-
-2. **Clients Receiving Broadcast**:
-   - Multiple client devices connect to the server.
-   - Each client uses its `Client Control UI` to tune into the server's broadcast.
-   - Audio is output through each client's speakers, synchronized across all devices via Snapclient, ensuring uniform multiroom audio playback.
-
-These scenarios illustrate how RadioCapullo facilitates a comprehensive audio streaming experience, allowing devices to serve as both sources and receivers in a synchronized audio environment. This setup enhances the flexibility and usability of home audio systems.
-
 ## Contributing
 Contributions are welcome. Please fork the repository, make your changes, and submit a pull request.
 

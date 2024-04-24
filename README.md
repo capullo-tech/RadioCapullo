@@ -45,9 +45,13 @@ RadioCapullo is an Android application that integrates Snapcast's multiroom audi
 +---------------------+
 
 ```
-The architecture of RadioCapullo involves two main components: an Android device configured as both a server and a client, and the librespot-java integration. The server side includes a server control UI, audio capture, a FIFO queue for managing audio data, and integration with librespot-java for Spotify connectivity and Zeroconf network discovery. The unique feature of the server setup is that it also acts as its own client, allowing it to play the same music it broadcasts. This dual capability ensures that the server device participates as an active player in the synchronized multiroom audio experience, seamlessly integrating into the environment as both a source and receiver of the audio stream.
+#### Audio Processing and Broadcasting
+RadioCapullo utilizes librespot-java to handle Spotify integration, allowing the server device to function as a Spotify speaker. The audio output from librespot-java is directed into a FIFO (First In, First Out) queue, which effectively manages the audio data stream. Snapserver then accesses this FIFO as its input source for broadcasting the audio across the network.
 
+#### Server Playback
+Simultaneously, the server device also acts as a Snapclient. It plays the same music it is broadcasting, ensuring that it can both stream and participate in the synchronized multiroom audio experience. This dual functionality allows for real-time monitoring and enjoyment of the streamed content directly on the server device.
 
+These processes ensure a cohesive and synchronized streaming experience across all connected devices within the network, adhering to the principles of fair use and respecting Spotify's terms of service.
 
 ### Use case Scenarios
 ```
@@ -77,8 +81,6 @@ The architecture of RadioCapullo involves two main components: an Android device
 | via Snapclient)  |    | via Snapclient)  |    | via Snapclient)  |
 +------------------+    +------------------+    +-------------------+
 ```
-## Updated Use Case Scenarios
-Below are the use case scenarios that align with the ASCII diagrams provided, detailing both the server's dual functionality and the typical client setup:
 
 1. **Server as a Broadcast and Playback Unit**: 
    - The Android device operates as a server using the `Server Control UI` to manage audio capture and processing through a `FIFO Queue`.
@@ -98,6 +100,16 @@ Contributions are welcome. Please fork the repository, make your changes, and su
 
 ## License
 RadioCapullo is released under the MIT License. See the LICENSE file in the repository for more details.
+
+## Disclaimers
+
+### Fair Use of Spotify
+RadioCapullo integrates with Spotify via librespot-java for streaming audio. This integration is intended solely for personal use within the bounds of Spotify's terms of service. Users are responsible for ensuring their usage complies with all relevant laws and Spotify’s terms.
+
+### No Endorsement for Illicit Use
+This project is developed for lawful purposes and should not be used to infringe upon the rights of Spotify or any other party. The developers of RadioCapullo do not endorse or promote any illicit use of this software or any misuse that violates Spotify's terms of service.
+
+Please ensure that your use of RadioCapullo and Spotify complies with legal standards and Spotify's terms of use.
 
 ## Acknowledgments
 Special thanks to the Snapcast and librespot-java projects for their pioneering technologies which made this app possible.

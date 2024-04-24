@@ -12,11 +12,6 @@ All listeners play the music at exactly the same time, increasing the overall vo
 - **Spotify Integration**: Streams Spotify content via librespot-java.
 - **Multiroom Audio Sync**: Ensures synchronized playback across multiple devices.
 
-## Installation
-1. Clone the repository.
-2. Open with Android Studio.
-3. Build and install on your Android device.
-
 ## Architecture
 ### App Components
 It integrates Snapcast's multiroom audio streaming with librespot-java, enabling devices to act both as an audio source and receiver within a multiroom setup. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery.
@@ -54,25 +49,13 @@ Simultaneously, the server device also acts as a Snapclient. It plays the same m
 
 These processes ensure a cohesive and synchronized streaming experience across all connected devices within the network, adhering to the principles of fair use and respecting Spotify's terms of service.
 
-### Use case Scenarios
-```
-Gathered with friends but no loudspeaker?
-What if everyone's phone could play in unison. 
-Can you imagine what happens if you place the phones around-away from you?
-```
+## Use case Scenarios
 
-1. **Server as a Broadcast and Playback Unit**: 
-   - The Android device operates as a server using the `Server Control UI` to manage audio capture and processing through a `FIFO Queue`.
-   - It employs `librespot-java` for Spotify integration, appearing on the network via Zeroconf.
-   - As a Snapserver, it broadcasts the audio across the network.
-   - Simultaneously, it acts as its own Snapclient, playing the broadcasted audio locally for immediate feedback and ensuring the audio is in sync.
+- Gathered with friends but no loudspeaker?
+- What if everyone's phone could play in unison. 
+- Can you imagine what happens if you place the phones around-away from you?
 
-2. **Clients Receiving Broadcast**:
-   - Multiple client devices connect to the server.
-   - Each client uses its `Client Control UI` to tune into the server's broadcast.
-   - Audio is output through each client's speakers, synchronized across all devices via Snapclient, ensuring uniform multiroom audio playback.
-
-These scenarios illustrate how RadioCapullo facilitates a comprehensive audio streaming experience, allowing devices to serve as both sources and receivers in a synchronized audio environment. This setup enhances the flexibility and usability of home audio systems.
+These scenarios illustrate how RadioCapullo facilitates a comprehensive audio streaming experience, allowing devices to serve as both sources and receivers in a synchronized audio environment.
 
 ```
                         +---------------------+
@@ -88,7 +71,7 @@ These scenarios illustrate how RadioCapullo facilitates a comprehensive audio st
                         | Broadcasts & Plays  |
                         | Audio               |
                         +----------+----------+
-                                   |
+                                   | LAN/WiFi Broadcast
          +-------------------------+-------------------------+
          |                         |                         |
 +--------v---------+    +---------v--------+    +-----------v-------+
@@ -101,6 +84,28 @@ These scenarios illustrate how RadioCapullo facilitates a comprehensive audio st
 | via Snapclient)  |    | via Snapclient)  |    | via Snapclient)  |
 +------------------+    +------------------+    +-------------------+
 ```
+
+*Listener mode*
+ - Default.
+ - Just open the app, and it will start listening/playing to the last broadcaster IP if available.
+
+*Broadcast mode*
+ - Button to start advertising as spotfi-speaker to any spotfi-app in the network.
+ - After its activated by any spotfi-app (including same phone), it will start playing its own broadcast.
+
+
+### Steps to use
+ 1. Make sure all devices are connected to same network SSID (WLAN, Hotspot) 
+
+Run a broadcaster
+ - Open RadioCapullo and press Broadcast button to start advertising the phone's speaker as [spotfi-speaker], labeled using phone's name.
+ - Use a spotfi-app in same or any device from network, to scan & control [phone-spotfi-speaker]. Play any song in spotfi-app.
+ - When RadioCapullo detects it has been selected as a spotfi-speaker, it starts the local WiFi broadcast and playback. Play any song in spotfi-app.
+
+Run a listener
+ - Use any android device from network to playback the transmission OTA. open RadioCapullo and write the broadcaster IP > click Play. Device starts playing synchronous music.
+ - Any radio listener can change the music queue. Use spotfi-app to scan & JAM the broadcaster's [spotfi-speaker]. Play any song in spotfi-app.>
+
 ## Contributing
 Contributions are welcome. Please fork the repository, make your changes, and submit a pull request.
 

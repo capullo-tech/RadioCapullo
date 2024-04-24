@@ -17,27 +17,23 @@ All listeners play the music at exactly the same time, increasing the overall vo
 It integrates Snapcast's multiroom audio streaming with librespot-java, enabling devices to act both as an audio source and receiver within a multiroom setup. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery.
 
 ```
-+---------------------+          +----------------------+
-| Android Device      |          | librespot-java     |
-| (Server & Client)   |          | Spotify & Zeroconf  |
-|---------------------|          |----------------------|
-|  Server Control UI  |<-------->|  Network Discovery   |
-|  Client Control UI  |          |  FIFO Queue          |
-|  FIFO Queue         |----+     +----------------------+
-|  Audio Output       |    |
-+---------------------+    |             ^
-                           |             |
-                           |             |
-                           |             |
-                           v             |
-                    +--------------+     |
-                    |  Snapcast    |<----+
-                    |--------------|
-                    | Broadcasts & | 
-                    | Plays Audio  |
-                    +--------------+
-       
-       
++----------------------------------------------------+
+|               RadioCapullo (App)                   |
+|----------------------------------------------------|
+| +---------------------+               +------------+               +-----+|
+| | librespot-java      |  FIFO Queue   | Snapserver | Plays its own | Snapclient |
+| | Spotify Network     |-------------> | Broadcasts |<------------->| Connects|
+| | Discovery           |               |   Audio    |   Broadcast   | to own  |
+| +---------------------+               +------------+   |                  | or another|
+|                         | RadioCapullo|
+|                                                | Snapserver|
++----------------------------------------------------+
+            |
+            | Initiates Playback
+            v
+ +-----------------------+
+ | External Spotify App  |
+ +-----------------------+
 
 
 ```
@@ -71,7 +67,7 @@ These scenarios illustrate how RadioCapullo facilitates a comprehensive audio st
                         | Broadcasts & Plays  |
                         | Audio               |
                         +----------+----------+
-                                   | LAN/WiFi Broadcast
+                                   | LAN Broadcast
          +-------------------------+-------------------------+
          |                         |                         |
 +--------v---------+    +---------v--------+    +-----------v-------+

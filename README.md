@@ -1,7 +1,7 @@
 # RadioCapullo
 
 ## Overview
-This is a free and open source Android application with music broadcast and listen dual modes.
+This is a free and open source Android 6+ application with music broadcast and listen dual modes, resembles a digital **WiFi Radio**.
 
 **RadioCapullo** creates an atmospheric music environment running in multiple android devices in a star topology. 
 All listeners play the music at exactly the same time, increasing the overall volume and the depth of field.
@@ -98,7 +98,7 @@ Run a broadcaster
 
 Run a listener
  - Use any android device from network to playback the transmission OTA. open RadioCapullo and write the broadcaster IP > click Play. Device starts playing synchronous music.
- - Any radio listener can change the music queue. Use spotfi-app to scan & JAM the broadcaster's [spotify-speaker]. Play any song in Spotify app.>
+ - Any radio listener can change the music queue. Use the Spotify app to scan & JAM the broadcaster [phone-spotify-speaker]. Play any song in Spotify app.
 
 ## Contributing
 Contributions are welcome. Please fork the repository, make your changes, and submit a pull request.

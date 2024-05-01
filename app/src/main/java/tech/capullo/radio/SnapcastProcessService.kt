@@ -59,8 +59,8 @@ class SnapcastProcessService : Service() {
 
         val nativeLibDir = applicationContext.applicationInfo.nativeLibraryDir
         val audioManager =
-        applicationContext
-            .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager
+            applicationContext
+                .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager
         val uniqueId = getUniqueId(applicationContext)
 
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
@@ -69,19 +69,20 @@ class SnapcastProcessService : Service() {
         val sampleFormat = "$rate:16:*"
 
         coroutineScope.launch {
-        val processBuilder =
-        ProcessBuilder().command(
-            "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
-            "--hostID", uniqueId, "--player", androidPlayer, "--sampleformat", sampleFormat,
-            "--logfilter", "*:info,Stats:debug"
-        )
+            val processBuilder =
+                ProcessBuilder().command(
+                    "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
+                    "--hostID", uniqueId, "--player", androidPlayer, "--sampleformat", sampleFormat,
+                    "--logfilter", "*:info,Stats:debug"
+                )
 
-        val process = processBuilder.start()
+            val process = processBuilder.start()
 
-        val reader = BufferedReader(process.inputStream.bufferedReader())
-        reader.forEachLine { line ->
-            Log.d("SNAPCLIENT", "${line} ${Thread.currentThread().name}")
-        } }
+            val reader = BufferedReader(process.inputStream.bufferedReader())
+            reader.forEachLine { line ->
+                Log.d("SNAPCLIENT", "$line ${Thread.currentThread().name}")
+            }
+        }
         return START_NOT_STICKY
     }
 
@@ -99,7 +100,7 @@ class SnapcastProcessService : Service() {
     }
 
     override fun onDestroy() {
-    super.onDestroy()
-    coroutineScope.cancel()
-}
+        super.onDestroy()
+        coroutineScope.cancel()
+    }
 }

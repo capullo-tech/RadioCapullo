@@ -1,35 +1,30 @@
 package tech.capullo.radio.viewmodels
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
-import androidx.core.content.ContextCompat.startForegroundService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.pgreze.process.process
 import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
 import com.spotify.connectstate.Connect
-import control.RemoteControl
-import control.json.Client
-import control.json.Group
-import control.json.ServerStatus
-import control.json.Stream
-import control.json.Volume
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import tech.capullo.radio.SnapcastProcessService
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
@@ -54,55 +49,96 @@ class RadioViewModel @Inject constructor(
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
     private val _snapclientsList = mutableListOf<String>().toMutableStateList()
-    @SuppressLint("MutableCollectionMutableState")
-    private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
+    //@SuppressLint("MutableCollectionMutableState")
+    //private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
 
-    val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
+    //val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
 
-    init {
+    fun startSpotifyBroadcasting() {
         viewModelScope.launch {
-            Log.d("SESSION", "about to start ${Thread.currentThread().name}")
-            delay(10000)
-            Log.d("SESSION", "onCreate! ${Thread.currentThread().name}")
-            val executorService = Executors.newCachedThreadPool()
+            withContext(Dispatchers.IO) {
+                delay(10000)
+                Log.d("THREAD", "10 delay done, on Thread: ${Thread.currentThread().name}")
+                val sessionListener: AndroidZeroconfServer.SessionListener =
+                    object : AndroidZeroconfServer.SessionListener {
+                        override fun sessionClosing(p0: Session) {
+                        }
 
-            val sessionListener: AndroidZeroconfServer.SessionListener =
-                object : AndroidZeroconfServer.SessionListener {
-                    override fun sessionClosing(p0: Session) {
+                        override fun sessionChanged(session: Session) {
+                            Log.d("THREAD", "spotify session:[$session], on Thread: ${Thread.currentThread().name}")
+                            viewModelScope.launch(Dispatchers.Main) {
+                                Log.d("THREAD", "calling snapcast, on Thread: ${Thread.currentThread().name}")
+                                startSnapcast(
+                                    applicationContext.cacheDir.toString(),
+                                    applicationContext.applicationInfo.nativeLibraryDir,
+                                    applicationContext
+                                        .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager,
+                                    session
+                                )
+                            }
+                        }
                     }
-
-                    override fun sessionChanged(session: Session) {
-                        Log.d("SESSION", "onSessionChanged! ${Thread.currentThread().name}")
-                        startSnapcast(
-                            applicationContext.cacheDir.toString(),
-                            applicationContext.applicationInfo.nativeLibraryDir,
-                            applicationContext
-                                .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager,
-                            session
-                        )
-                    }
-                }
-            executorService.execute(
-                SetupRunnable(
-                    applicationContext,
-                    getDeviceName(), sessionListener
-                )
-            )
+                val conf = Session.Configuration.Builder()
+                    .setDoCacheCleanUp(true)
+                    .setStoreCredentials(false)
+                    .setCacheEnabled(false)
+                    .build()
+                val builder = AndroidZeroconfServer.Builder(applicationContext, conf)
+                    .setPreferredLocale(Locale.getDefault().language)
+                    .setDeviceType(Connect.DeviceType.SPEAKER)
+                    // .setDeviceId(null)
+                    .setDeviceName( // Set name as set in preferences
+                        // "Radio Capullo"
+                        getDeviceName()
+                    )
+                val server = builder.create()
+                server.addSessionListener(sessionListener)
+            }
         }
     }
 
+    fun getSharedPreferences(context: Context): SharedPreferences {
+        return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
+    }
+
+    fun saveText(text: String) {
+        val editor = getSharedPreferences(applicationContext).edit()
+        editor.putString("my_text", text)
+        editor.apply()
+    }
+
+    fun getText(): String {
+        return getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
+    }
+    private fun isServiceRunning(serviceClass: Class<*>, context: Context): Boolean {
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+        return false
+    }
     fun initiateWorker(ip: String) {
+        if (isServiceRunning(SnapcastProcessService::class.java, applicationContext)) {
+            Log.d("SESSION", "Service already running")
+            val stopIntent = Intent(applicationContext, SnapcastProcessService::class.java)
+            applicationContext.stopService(stopIntent)
+        } else {
+            Log.d("SESSION", "Service not running")
+        }
+
         val serviceIntent = Intent(applicationContext, SnapcastProcessService::class.java)
         serviceIntent.putExtra("ip", ip)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            applicationContext.
-            startForegroundService(serviceIntent)
+            applicationContext
+                .startForegroundService(serviceIntent)
         } else {
-            applicationContext.
-            startService(serviceIntent)
+            applicationContext
+                .startService(serviceIntent)
         }
     }
 
@@ -151,209 +187,58 @@ class RadioViewModel @Inject constructor(
         audioManager: AudioManager,
         uuid: String,
         session: Session,
-    ) = withContext(Dispatchers.Default) {
+    ) = withContext(Dispatchers.IO) {
         val executorService = Executors.newCachedThreadPool()
 
-        val fili = "$cacheDir/filifo"
-        Log.i("SESSION", "sessionChanged!: filifo:$fili ${Thread.currentThread().name}")
+        val filifoFile = File("$cacheDir/filifo")
+        if (filifoFile.exists()) {
+            filifoFile.delete()
+        }
+        filifoFile.createNewFile()
 
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
         val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
         val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
         val sampleformat = "$rate:16:*"
-        executorService.execute(
-            SnapcastRunnable(
-                cacheDir,
-                nativeLibraryDir,
-                true,
-                uuid,
-                androidPlayer,
-                sampleformat,
-                rate,
-                fpb
-            ) {
-                Log.i("SERVICE", "SnapcastRunnable")
-            }
-        )
-
-        val filifofile = File(fili)
-        executorService.execute(
-            SessionChangedRunnable(
-                session,
-                filifofile,
-                object : SessionChangedCallback {
-                    override fun playerReady(player: Player, username: String) {
-                        Log.i("SESSION", "playerReady! ")
-                        executorService.execute(
-                            SnapcastRunnable(
-                                cacheDir,
-                                nativeLibraryDir,
-                                false,
-                                uuid,
-                                androidPlayer,
-                                sampleformat,
-                                rate,
-                                fpb
-                            ) {
-                                Log.i("SERVICE", "SnapcastRunnable")
-                            }
-                        )
-                    }
-
-                    override fun failedGettingReady(ex: Exception) {
-                        Log.i("SESSION", "playerFailedGettingReady!")
-                    }
-                }
+        val snapserver = async {
+            process(
+                "$nativeLibraryDir/libsnapserver.so",
+                "--server.datadir=$cacheDir", "--stream.source",
+                "pipe://$cacheDir/filifo?name=fil&dryout_ms=2000"
             )
-        )
-        val remoteControl =
-            RemoteControl(object : RemoteControl.RemoteControlListener {
-                override fun onUpdate(server: ServerStatus?) {
-                    Log.d("SESSION", "onUpdate: server:$server")
-                    server?.let {
-                        _snapserverServerStatus.add(it)
-                    }
+            Log.d("THREAD", "snapserver started, on Thread: ${Thread.currentThread().name}")
+        }
+        val player: Player
+        val configuration = PlayerConfiguration.Builder()
+            .setOutput(PlayerConfiguration.AudioOutput.PIPE)
+            .setOutputPipe(filifoFile)
+            .build()
+        player = Player(configuration, session)
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+            while (!player.isReady) {
+                try {
+                    Log.d("THREAD", "waiting for librespot player, on Thread: ${Thread.currentThread().name}")
+                    sleep(100)
+                } catch (ex: InterruptedException) {
+                    Log.d("THREAD", "waiting for librespot player exception: [$ex], on Thread: ${Thread.currentThread().name}")
                 }
+            }
+        } else {
+            try {
+                player.waitReady()
+            } catch (ex: InterruptedException) {
+                Log.d("THREAD", "waiting for librespot player exception: [$ex], on Thread: ${Thread.currentThread().name}")
+            }
+        }
+        player.play()
 
-                override fun onUpdate(streamId: String?, stream: Stream?) {
-                }
-
-                override fun onUpdate(group: Group?) {
-                }
-
-                override fun onUpdate(client: Client?) {
-                }
-
-                override fun onMute(
-                    event: RemoteControl.RPCEvent?,
-                    groupId: String?,
-                    mute: Boolean
-                ) {
-                }
-
-                override fun onStreamChanged(
-                    event: RemoteControl.RPCEvent?,
-                    groupId: String?,
-                    streamId: String?
-                ) {
-                    Log.d("SESSION", "onLatencyChanged: ${Thread.currentThread().name}")
-                }
-
-                override fun onConnect(client: Client?) {
-                    Log.d("SESSION", "onConnect: client:${client?.host}")
-                    _snapclientsList.add(client?.host.toString())
-                }
-
-                override fun onDisconnect(clientId: String?) {
-                    Log.d("SESSION", "onDisconnect: ${Thread.currentThread().name}")
-                }
-
-                override fun onVolumeChanged(
-                    event: RemoteControl.RPCEvent?,
-                    clientId: String?,
-                    volume: Volume?
-                ) {
-                    val serverStatusss = ServerStatus(_snapserverServerStatus.first().toJson())
-                    Log.d(
-                        "SESSION",
-                        "${Thread.currentThread().name} onVolumeChanged: $volume clientID:" +
-                            " $clientId serverStatus: ${serverStatusss.toJson()}"
-                    )
-
-                    val serverStatusJson = serverStatusss.toJson()
-                    if (serverStatusJson.has("groups")) {
-                        val groups = serverStatusJson.getJSONArray("groups")
-                        (0 until groups.length()).forEach { i ->
-                            val element = groups.getJSONObject(i)
-                            if (element.has("clients")) {
-
-                                val clients = element.getJSONArray("clients")
-                                (0 until clients.length()).forEach { j ->
-                                    val client = clients.getJSONObject(j)
-                                    if (client.getString("id").equals(clientId)) {
-                                        val volumee =
-                                            client
-                                                .getJSONObject("config")
-                                                .getJSONObject("volume")
-                                                .get("percent")
-                                        Log.d(
-                                            "SESSION",
-                                            "${Thread.currentThread().name} " +
-                                                "updating volume status before: $serverStatusJson"
-                                        )
-                                        val jjj =
-                                            JSONObject(
-                                                serverStatusJson.toString().replaceFirst(
-                                                    oldValue = volumee.toString(),
-                                                    newValue = volume?.percent.toString()
-                                                )
-                                            )
-                                        Log.d(
-                                            "SESSION",
-                                            "${Thread.currentThread().name} " +
-                                                "updating volume status after: " +
-                                                "${ServerStatus(jjj)}"
-                                        )
-                                        _snapserverServerStatus.clear()
-                                        _snapserverServerStatus.add(ServerStatus(jjj))
-                                    }
-                                    Log.i(
-                                        "SESSION",
-                                        "each :${client::class.java} -- " +
-                                            "$client"
-                                    )
-
-                                    // client.getJSONObject("config").getJSONObject("volume").
-                                }
-                            }
-                        }
-                        Log.i("SESSION", "serverStatus key:${groups::class.java} $groups")
-                    }
-                    volume?.percent
-                }
-
-                override fun onLatencyChanged(
-                    event: RemoteControl.RPCEvent?,
-                    clientId: String?,
-                    latency: Long
-                ) {
-                    Log.d("SESSION", "onLatencyChanged: ${Thread.currentThread().name}")
-                }
-
-                override fun onNameChanged(
-                    event: RemoteControl.RPCEvent?,
-                    clientId: String?,
-                    name: String?
-                ) {
-                    Log.d("SESSION", "onNameChanged: ${Thread.currentThread().name}")
-                }
-
-                override fun onConnected(remoteControl: RemoteControl?) {
-                    Log.d("SESSION", "onConnected: $remoteControl")
-                    remoteControl?.getServerStatus()
-                }
-
-                override fun onConnecting(remoteControl: RemoteControl?) {
-                    Log.d("SESSION", "onConnecting: ${remoteControl?.host}")
-                }
-
-                override fun onDisconnected(
-                    remoteControl: RemoteControl?,
-                    e: java.lang.Exception?
-                ) {
-                    Log.d("SESSION", "onDisconnected: ${remoteControl?.host} $e")
-                }
-
-                override fun onBatchStart() {
-                    Log.d("SESSION", "onBatchStart: ${Thread.currentThread().name}")
-                }
-
-                override fun onBatchEnd() {
-                    Log.d("SESSION", "onBatchEnd: ${Thread.currentThread().name}")
-                }
-            })
-        remoteControl.connect(getInetAddresses().first(), 1705)
-        remoteControl.getServerStatus()
+        val snapclient = async {
+            snapcastRunnable(
+                cacheDir, nativeLibraryDir, false, uuid, androidPlayer, sampleformat, rate, fpb
+            )
+            Log.d("THREAD", "snapclient started, on Thread: ${Thread.currentThread().name}")
+        }
+        awaitAll(snapclient, snapserver)
     }
 }
 private fun getInetAddresses(): List<String> =
@@ -364,139 +249,49 @@ private fun getInetAddresses(): List<String> =
             }?.let { true } ?: false
         }.map { it.hostAddress!! }
     }
-private class SnapcastRunnable(
-    private val cacheDir: String,
-    private val nativeLibDir: String,
-    private val isSnapserver: Boolean,
-    private val uniqueId: String,
-    private val player: String,
-    private val sampleFormat: String,
-    private val rate: String?,
-    private val fpb: String?,
-    private var callback: () -> Unit
-) :
-    Runnable {
-
-    private val handler = Handler(Looper.getMainLooper())
-
-    override fun run() {
-        Log.d("SERVICE", "$nativeLibDir -- $cacheDir")
-        val pb = if (isSnapserver) {
-            ProcessBuilder()
-                .command(
-                    "$nativeLibDir/libsnapserver.so",
-                    "--server.datadir=$cacheDir", "--stream.source",
-                    "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
-                )
-                .redirectErrorStream(true)
-        } else {
-            ProcessBuilder().command(
-                "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
-                "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
-                "--logfilter", "*:info,Stats:debug"
+fun snapcastRunnable(
+    cacheDir: String,
+    nativeLibDir: String,
+    isSnapserver: Boolean,
+    uniqueId: String,
+    player: String,
+    sampleFormat: String,
+    rate: String?,
+    fpb: String?
+) {
+    val pb = if (isSnapserver) {
+        ProcessBuilder()
+            .command(
+                "$nativeLibDir/libsnapserver.so",
+                "--server.datadir=$cacheDir", "--stream.source",
+                "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
             )
-        }
-        try {
-            val env = pb.environment()
-            if (rate != null) env["SAMPLE_RATE"] = rate
-            if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
-
-            val process = pb.start()
-            val bufferedReader = BufferedReader(
-                InputStreamReader(process.inputStream)
-            )
-            var line: String?
-            while (bufferedReader.readLine().also { line = it } != null) {
-                if (isSnapserver) {
-                    Log.d("SNAPSERVER", "${line!!} ${Thread.currentThread().name}")
-                } else {
-                    Log.d("SNAPCLIENT", "${line!!} ${Thread.currentThread().name}")
-                }
-            }
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        }
-        handler.post { callback() }
+            .redirectErrorStream(true)
+    } else {
+        ProcessBuilder().command(
+            "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
+            "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
+            "--logfilter", "*:info,Stats:debug"
+        )
     }
-}
+    try {
+        val env = pb.environment()
+        if (rate != null) env["SAMPLE_RATE"] = rate
+        if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
 
-private interface SessionChangedCallback {
-    fun playerReady(player: Player, username: String)
-    fun failedGettingReady(ex: Exception)
-}
-private class SessionChangedRunnable(
-    private val session: Session,
-    private val filifoFile: File,
-    private val callback: SessionChangedCallback
-) : Runnable {
-    private val handler = Handler(Looper.getMainLooper())
-    override fun run() {
-        Log.i("SESSION", "Connected to: " + session.username())
-        val player: Player
-        val configuration = PlayerConfiguration.Builder()
-            .setOutput(PlayerConfiguration.AudioOutput.PIPE)
-            .setOutputPipe(filifoFile)
-            .build()
-        player = Player(configuration, session)
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
-            while (!player.isReady) {
-                try {
-                    Log.i("SESSION", "waiting for player...")
-                    Thread.sleep(100)
-                } catch (ex: InterruptedException) {
-                    handler.post { callback.failedGettingReady(ex) }
-                    return
-                }
-            }
-        } else {
-            try {
-                Log.i("SESSION", "waiting for player...")
-                player.waitReady()
-            } catch (ex: InterruptedException) {
-                handler.post { callback.failedGettingReady(ex) }
-                return
+        val process = pb.start()
+        val bufferedReader = BufferedReader(
+            InputStreamReader(process.inputStream)
+        )
+        var line: String?
+        while (bufferedReader.readLine().also { line = it } != null) {
+            if (isSnapserver) {
+                Log.d("SNAPSERVER", "${line!!} ${Thread.currentThread().name}")
+            } else {
+                Log.d("SNAPCLIENT", "${line!!} ${Thread.currentThread().name}")
             }
         }
-        player.play()
-        handler.post { callback.playerReady(player, session.username()) }
-    }
-}
-private class SetupRunnable(
-    private val context: Context,
-    private val deviceName: String,
-    private val sessionListener: AndroidZeroconfServer.SessionListener,
-) : Runnable {
-    override fun run() {
-        Log.i("SESSION", "SetupRunnable run")
-        try {
-            val conf = Session.Configuration.Builder()
-                .setStoreCredentials(false)
-                .setCacheEnabled(false)
-                .build()
-            val builder = AndroidZeroconfServer.Builder(context, conf)
-                .setPreferredLocale(Locale.getDefault().language)
-                .setDeviceType(Connect.DeviceType.SPEAKER)
-                .setDeviceId(null)
-                .setDeviceName( // Set name as set in preferences
-                    // "Radio Capullo"
-                    deviceName
-                )
-            val server = builder.create()
-            server.addSessionListener(sessionListener)
-            // LibrespotHolder.set(server);
-            Log.i("SESSION", "SetupRunnable created and added listener")
-            Runtime.getRuntime().addShutdownHook(
-                Thread {
-                    try {
-                        server.closeSession()
-                        server.close()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-            )
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+    } catch (e: IOException) {
+        throw RuntimeException(e)
     }
 }

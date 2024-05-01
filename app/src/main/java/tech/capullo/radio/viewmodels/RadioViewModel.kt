@@ -57,7 +57,7 @@ class RadioViewModel @Inject constructor(
 
     //val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
 
-    init {
+    fun startSpotifyBroadcasting() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 delay(10000)

@@ -39,35 +39,18 @@ fun RadioApp(
     modifier: Modifier = Modifier,
     radioViewModel: RadioViewModel = viewModel()
 ) {
-    val permissionList = mutableListOf(
-        android.Manifest.permission.INTERNET,
-        android.Manifest.permission.ACCESS_NETWORK_STATE,
-        android.Manifest.permission.ACCESS_WIFI_STATE,
-    )
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        permissionList.addAll(
-            listOf(
-                android.Manifest.permission.BLUETOOTH_SCAN,
-                android.Manifest.permission.BLUETOOTH_ADVERTISE,
-                android.Manifest.permission.BLUETOOTH_CONNECT
-            )
-        )
-    }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        permissionList.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
-    }
-
     Surface(
         modifier, color = MaterialTheme.colorScheme.background
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
-                rememberMultiplePermissionsState(permissions = permissionList)
+                rememberMultiplePermissionsState(permissions = listOf(android.Manifest.permission.NEARBY_WIFI_DEVICES))
             if (multiplePermissionsState.allPermissionsGranted) {
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
                     snapclientsList = emptyList<String>(),//radioViewModel.snapClientsList,
+                    startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
                     lastServer = radioViewModel.getText(),
                     saveServer = { ip -> radioViewModel.saveText(ip) },
                     startWorker = { ip -> radioViewModel.initiateWorker(ip) }
@@ -79,7 +62,8 @@ fun RadioApp(
             RadioMainScreen(
                 deviceName = radioViewModel.getDeviceName(),
                 hostAddresses = radioViewModel.hostAddresses,
-                snapclientsList = listOf(""),//radioViewModel.snapClientsList,
+                snapclientsList = emptyList(),//radioViewModel.snapClientsList,
+                startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
                 lastServer = radioViewModel.getText(),
                 saveServer = { ip -> radioViewModel.saveText(ip) },
                 startWorker = { ip -> radioViewModel.initiateWorker(ip) }
@@ -128,13 +112,14 @@ fun RadioPermissionScreenPreview() {
 fun RadioMainScreen(
     deviceName: String,
     hostAddresses: List<String>,
+    startBroadcast: () -> Unit,
     snapclientsList: List<String>,
     lastServer: String,
     saveServer: (String) -> Unit,
     startWorker: (String) -> Unit
 ) {
     var text by remember { mutableStateOf(lastServer) }
-    var buttonText by remember { mutableStateOf("Go") }
+    var buttonText by remember { mutableStateOf("Tune in") }
 
     Column {
         Text("Radio Capullo")
@@ -144,7 +129,14 @@ fun RadioMainScreen(
                 Text(name)
             }
         }
-        SnapclientList(snapclientList = snapclientsList)
+        //SnapclientList(snapclientList = snapclientsList)
+        Button(
+            onClick = {
+                startBroadcast()
+            }
+        ) {
+            Text("Broadcast")
+        }
         Row {
             TextField(
                 value = text,
@@ -220,6 +212,7 @@ fun RadioAppPreview() {
             deviceName = "Pixel 3a API 28",
             hostAddresses = listOf("192.168.0.109", "100.17.17.4"),
             snapclientsList = listOf(),
+            startBroadcast = { println("Broadcasting") },
             lastServer = "",
             saveServer = { ip -> println(ip) },
             startWorker = { ip -> println(ip) }

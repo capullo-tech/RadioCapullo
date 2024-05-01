@@ -35,23 +35,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import control.json.ServerStatus
+import org.json.JSONObject
 import tech.capullo.radio.R
 import tech.capullo.radio.ui.theme.RadioTheme
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
 fun SnapclientList(
-    snapclientList: List<ServerStatus>,
+    snapclientList: List<String>,
     // modifier: Modifier = Modifier,
     // radioViewModel: RadioViewModel = hiltViewModel()
 ) {
     if (snapclientList.isNotEmpty()) {
-        val serverStatus = snapclientList.first().toJson()
+        val serverStatus = JSONObject()//snapclientList.first().toJson()
         Log.i("SESSION", "serverStatus updated:$serverStatus")
-        serverStatus.keys().forEach {
-            Log.i("SESSION", "serverStatus key:$it")
-        }
+
         if (serverStatus.has("groups")) {
             val groups = serverStatus.getJSONArray("groups")
             Log.i("SESSION", "serverStatus key:${groups::class.java}")

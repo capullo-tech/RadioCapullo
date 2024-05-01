@@ -30,7 +30,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import control.json.ServerStatus
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.viewmodels.RadioViewModel
 
@@ -68,7 +67,7 @@ fun RadioApp(
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
-                    snapclientsList = radioViewModel.snapClientsList,
+                    snapclientsList = emptyList<String>(),//radioViewModel.snapClientsList,
                     lastServer = radioViewModel.getText(),
                     saveServer = { ip -> radioViewModel.saveText(ip) },
                     startWorker = { ip -> radioViewModel.initiateWorker(ip) }
@@ -80,7 +79,7 @@ fun RadioApp(
             RadioMainScreen(
                 deviceName = radioViewModel.getDeviceName(),
                 hostAddresses = radioViewModel.hostAddresses,
-                snapclientsList = radioViewModel.snapClientsList,
+                snapclientsList = listOf(""),//radioViewModel.snapClientsList,
                 lastServer = radioViewModel.getText(),
                 saveServer = { ip -> radioViewModel.saveText(ip) },
                 startWorker = { ip -> radioViewModel.initiateWorker(ip) }
@@ -129,7 +128,7 @@ fun RadioPermissionScreenPreview() {
 fun RadioMainScreen(
     deviceName: String,
     hostAddresses: List<String>,
-    snapclientsList: List<ServerStatus>,
+    snapclientsList: List<String>,
     lastServer: String,
     saveServer: (String) -> Unit,
     startWorker: (String) -> Unit

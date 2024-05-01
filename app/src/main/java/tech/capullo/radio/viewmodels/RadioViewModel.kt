@@ -17,7 +17,6 @@ import androidx.lifecycle.viewModelScope
 import com.github.pgreze.process.process
 import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
 import com.spotify.connectstate.Connect
-import control.json.ServerStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -50,13 +49,13 @@ class RadioViewModel @Inject constructor(
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
     private val _snapclientsList = mutableListOf<String>().toMutableStateList()
-    @SuppressLint("MutableCollectionMutableState")
-    private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
+    //@SuppressLint("MutableCollectionMutableState")
+    //private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
 
-    val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
+    //val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
 
     init {
         viewModelScope.launch {

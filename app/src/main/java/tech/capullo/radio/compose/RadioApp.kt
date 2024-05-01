@@ -69,6 +69,8 @@ fun RadioApp(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
                     snapclientsList = radioViewModel.snapClientsList,
+                    lastServer = radioViewModel.getText(),
+                    saveServer = { ip -> radioViewModel.saveText(ip) },
                     startWorker = { ip -> radioViewModel.initiateWorker(ip) }
                 )
             } else {
@@ -79,6 +81,8 @@ fun RadioApp(
                 deviceName = radioViewModel.getDeviceName(),
                 hostAddresses = radioViewModel.hostAddresses,
                 snapclientsList = radioViewModel.snapClientsList,
+                lastServer = radioViewModel.getText(),
+                saveServer = { ip -> radioViewModel.saveText(ip) },
                 startWorker = { ip -> radioViewModel.initiateWorker(ip) }
             )
         }
@@ -126,9 +130,12 @@ fun RadioMainScreen(
     deviceName: String,
     hostAddresses: List<String>,
     snapclientsList: List<ServerStatus>,
+    lastServer: String,
+    saveServer: (String) -> Unit,
     startWorker: (String) -> Unit
 ) {
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(lastServer) }
+    var buttonText by remember { mutableStateOf("Go") }
 
     Column {
         Text("Radio Capullo")
@@ -142,7 +149,10 @@ fun RadioMainScreen(
         Row {
             TextField(
                 value = text,
-                onValueChange = { newText -> text = newText },
+                onValueChange = { newText ->
+                    text = newText
+                    saveServer(newText)
+                },
                 label = { Text("Host Address") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
@@ -150,10 +160,11 @@ fun RadioMainScreen(
             Button(
                 onClick = {
                     startWorker(text)
+                    buttonText = "Restart"
                 }
             ) {
 
-                Text("Go")
+                Text(buttonText)
             }
         }
     }
@@ -210,6 +221,8 @@ fun RadioAppPreview() {
             deviceName = "Pixel 3a API 28",
             hostAddresses = listOf("192.168.0.109", "100.17.17.4"),
             snapclientsList = listOf(),
+            lastServer = "",
+            saveServer = { ip -> println(ip) },
             startWorker = { ip -> println(ip) }
         )
     }

@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -84,13 +84,14 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    //implementation("com.github.gsalinaslopez:lib-librespot-android:0.1.0-rc01")
     implementation(libs.lib.librespot.android)
     implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")
     }
+    implementation(libs.kotlin.process)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

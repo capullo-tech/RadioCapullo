@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "tech.capullo.lib_snapcast_android"
-    compileSdk = 34
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 21
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -57,8 +57,8 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.10.0")
+    implementation(libs.androidx.appcompat)
+    implementation("com.google.android.material:material:1.11.0")
     implementation(files("libs/boost-1.81.0.aar"))
     implementation(files("libs/flac-1.4.2.aar"))
     implementation(files("libs/ogg-1.3.5.aar"))

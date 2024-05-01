@@ -2,7 +2,7 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.jetbrains.kotlin.android) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.spotless)
     alias(libs.plugins.ksp) apply false
@@ -12,7 +12,11 @@ plugins {
 spotless {
     kotlin {
         target("**/*.kt")
-        //ktlint()
-        ktlint(libs.versions.ktlint.get()).userData(mapOf("max_line_length" to "100"))
+        ktlint()
+        // ktlint(libs.versions.ktlint.get()).userData(mapOf("max_line_length" to "100"))
+    }
+    kotlinGradle {
+        target("*.gradle.kts") // default target for kotlinGradle
+        ktlint()
     }
 }

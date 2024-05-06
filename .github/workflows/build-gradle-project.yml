@@ -21,15 +21,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Build APK
         run: ./gradlew :app:assembleDebug
-      #- name: Update Artifact
-      #  uses: actions/upload-artifact@v3
-      #  with:
-      #    path: ./app/build/outputs/apk/debug/app-debug.apk
-      #    name: radio_capullo-v${{ env.GITHUB_REF_NAME }}.apk
       - name: Create Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,4 +38,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag=$(git describe --tags --abbrev=0)
-          gh release upload "$tag" "./app/build/outputs/apk/debug/app-debug.apk#radio_capullo-v$tag.apk"
+          gh release upload "$tag" "./app/build/outputs/apk/debug/app-debug.apk#radio_capullo-$tag.apk"

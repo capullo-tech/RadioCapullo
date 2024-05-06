@@ -44,12 +44,17 @@ fun RadioApp(
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
-                rememberMultiplePermissionsState(permissions = listOf(android.Manifest.permission.NEARBY_WIFI_DEVICES))
+                rememberMultiplePermissionsState(
+                    permissions = listOf(
+                        android.Manifest.permission.NEARBY_WIFI_DEVICES,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    )
+                )
             if (multiplePermissionsState.allPermissionsGranted) {
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),
                     hostAddresses = radioViewModel.hostAddresses,
-                    snapclientsList = emptyList<String>(),//radioViewModel.snapClientsList,
+                    snapclientsList = emptyList<String>(), // radioViewModel.snapClientsList,
                     startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
                     lastServer = radioViewModel.getText(),
                     saveServer = { ip -> radioViewModel.saveText(ip) },
@@ -62,7 +67,7 @@ fun RadioApp(
             RadioMainScreen(
                 deviceName = radioViewModel.getDeviceName(),
                 hostAddresses = radioViewModel.hostAddresses,
-                snapclientsList = emptyList(),//radioViewModel.snapClientsList,
+                snapclientsList = emptyList(), // radioViewModel.snapClientsList,
                 startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
                 lastServer = radioViewModel.getText(),
                 saveServer = { ip -> radioViewModel.saveText(ip) },
@@ -129,7 +134,7 @@ fun RadioMainScreen(
                 Text(name)
             }
         }
-        //SnapclientList(snapclientList = snapclientsList)
+        // SnapclientList(snapclientList = snapclientsList)
         Button(
             onClick = {
                 startBroadcast()

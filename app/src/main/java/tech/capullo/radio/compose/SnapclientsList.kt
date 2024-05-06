@@ -47,7 +47,7 @@ fun SnapclientList(
     // radioViewModel: RadioViewModel = hiltViewModel()
 ) {
     if (snapclientList.isNotEmpty()) {
-        val serverStatus = JSONObject()//snapclientList.first().toJson()
+        val serverStatus = JSONObject() // snapclientList.first().toJson()
         Log.i("SESSION", "serverStatus updated:$serverStatus")
 
         if (serverStatus.has("groups")) {

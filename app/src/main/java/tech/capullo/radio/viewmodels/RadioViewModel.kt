@@ -1,19 +1,20 @@
 package tech.capullo.radio.viewmodels
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
+import androidx.work.workDataOf
 import com.github.pgreze.process.process
 import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
 import com.spotify.connectstate.Connect
@@ -25,7 +26,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tech.capullo.radio.SnapcastProcessService
+import tech.capullo.radio.SnapcastProcessWorker
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -49,13 +50,13 @@ class RadioViewModel @Inject constructor(
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
     private val _snapclientsList = mutableListOf<String>().toMutableStateList()
-    //@SuppressLint("MutableCollectionMutableState")
-    //private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
+    // @SuppressLint("MutableCollectionMutableState")
+    // private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
 
-    //val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
+    // val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
 
     fun startSpotifyBroadcasting() {
         viewModelScope.launch {
@@ -123,23 +124,19 @@ class RadioViewModel @Inject constructor(
         return false
     }
     fun initiateWorker(ip: String) {
-        if (isServiceRunning(SnapcastProcessService::class.java, applicationContext)) {
-            Log.d("SESSION", "Service already running")
-            val stopIntent = Intent(applicationContext, SnapcastProcessService::class.java)
-            applicationContext.stopService(stopIntent)
-        } else {
-            Log.d("SESSION", "Service not running")
-        }
 
-        val serviceIntent = Intent(applicationContext, SnapcastProcessService::class.java)
-        serviceIntent.putExtra("ip", ip)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            applicationContext
-                .startForegroundService(serviceIntent)
-        } else {
-            applicationContext
-                .startService(serviceIntent)
-        }
+        val uploadWorkRequest: WorkRequest =
+            OneTimeWorkRequestBuilder<SnapcastProcessWorker>()
+                .setInputData(
+                    workDataOf(
+                        "KEY_IP" to ip
+                    )
+                )
+                .build()
+
+        WorkManager
+            .getInstance(applicationContext)
+            .enqueue(uploadWorkRequest)
     }
 
     fun startSnapcast(

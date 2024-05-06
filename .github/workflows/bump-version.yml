@@ -1,0 +1,41 @@
+name: Bump Version and Tag
+
+on:
+  push:
+    branches:
+      - release  # Specify your main branch name
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js (if your project uses Node.js, otherwise skip this step)
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14' # Set your Node version
+
+      - name: Get Current Tag
+        id: get_tag
+        run: echo ::set-output name=tag::$(git describe --tags --abbrev=0)
+
+      - name: Calculate New Version
+        id: new_version
+        run: |
+          old_tag=${{ steps.get_tag.outputs.tag }}
+          major=$(echo $old_tag | cut -d. -f1)
+          minor=$(echo $old_tag | cut -d. -f2)
+          patch=$(echo $old_tag | cut -d. -f3)
+          patch=$((patch + 1))
+          new_tag="${major}.${minor}.${patch}"
+          echo "New tag is $new_tag"
+          echo ::set-output name=new_tag::$new_tag
+
+      - name: Create New Tag
+        run: |
+          new_tag=${{ steps.new_version.outputs.new_tag }}
+          git tag $new_tag
+          git push origin $new_tag

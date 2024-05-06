@@ -90,6 +90,10 @@ dependencies {
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")
     }
+    //implementation("tech.capullo:librespot-android-sink:0.1.0")
+    //implementation("tech.capullo:librespot-android-decoder:0.1.0")
+    //implementation("tech.capullo:librespot-android-decoder-tremolo:0.1.0")
+    //implementation("tech.capullo:librespot-android-zeroconf-server:0.1.0")
     implementation(libs.kotlin.process)
 
     testImplementation(libs.junit)

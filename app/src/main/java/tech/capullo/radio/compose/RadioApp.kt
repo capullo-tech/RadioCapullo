@@ -44,7 +44,9 @@ fun RadioApp(
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
-                rememberMultiplePermissionsState(permissions = listOf(android.Manifest.permission.NEARBY_WIFI_DEVICES))
+                rememberMultiplePermissionsState(permissions = listOf(
+                    android.Manifest.permission.NEARBY_WIFI_DEVICES,
+                    ))
             if (multiplePermissionsState.allPermissionsGranted) {
                 RadioMainScreen(
                     deviceName = radioViewModel.getDeviceName(),

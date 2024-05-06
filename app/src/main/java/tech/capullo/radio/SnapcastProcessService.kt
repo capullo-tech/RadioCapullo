@@ -47,8 +47,8 @@ class SnapcastProcessService : Service() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         createNotificationChannel()
         val notification: Notification = NotificationCompat.Builder(this, "MyServiceChannel")
-            .setContentTitle("My Foreground Service")
-            .setContentText("This is running in the foreground.")
+            .setContentTitle("Radio capullo, radio capullo")
+            .setContentText("Una vuelta mas...")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
 

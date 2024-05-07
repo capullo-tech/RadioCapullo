@@ -55,18 +55,12 @@ android {
 }
 
 dependencies {
+    api(project(mapOf("path" to ":snapcast-deps")))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation("com.google.android.material:material:1.11.0")
-    implementation(files("libs/boost-1.81.0.aar"))
-    implementation(files("libs/flac-1.4.2.aar"))
-    implementation(files("libs/ogg-1.3.5.aar"))
-    implementation(files("libs/opus-1.1.2.aar"))
-    implementation(files("libs/soxr-0.1.3.aar"))
-    implementation(files("libs/tremor-1.0.0.aar"))
-    implementation(files("libs/vorbis-1.3.7.aar"))
-    implementation(files("libs/oboe-1.7.0.aar"))
+    implementation(libs.material)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

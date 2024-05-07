@@ -1,24 +1,25 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
-activityCompose = "1.8.2"
-androidGradlePlugin = "8.2.2"
+activityCompose = "1.9.0"
+androidGradlePlugin = "8.4.0"
 androidx-junit = "1.1.5"
 # @keep
 appcompat = "1.6.1"
 compileSdk = "34"
-composeLatest = "1.6.5"
-composeBom = "2024.04.00"
+composeLatest = "1.6.7"
+composeBom = "2024.05.00"
 compose-compiler = "1.5.3"
 espressoCore = "3.5.1"
 junit = "4.13.2"
 kotlin = "1.9.10"
 kotlinProcess = "1.4.1"
 ktlint = "0.40.0"
-ktx = "1.12.0"
+ktx = "1.13.1"
 hilt = "2.49"
 ksp = "1.9.10-1.0.13"
 libLibrespotAndroid = "0.1.6"
 lifecycleRuntimeKtx = "2.7.0"
+material = "1.12.0"
 material3 = "1.2.1"
 # @keep
 minSdk = "23"
@@ -26,6 +27,7 @@ startupRuntime = "1.1.1"
 # @keep
 targetSdk = "34"
 spotless = "6.4.1"
+develocity = "3.17.2"
 workRuntimeKtx = "2.9.0"
 
 [libraries]
@@ -54,6 +56,7 @@ hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", ve
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-process = { module = "com.github.pgreze:kotlin-process", version.ref = "kotlinProcess" }
 lib-librespot-android = { module = "tech.capullo:lib-librespot-android", version.ref = "libLibrespotAndroid" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
@@ -63,3 +66,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin"}
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+gradle-develocity = { id = "com.gradle.develocity", version.ref = "develocity" }

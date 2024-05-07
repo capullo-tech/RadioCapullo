@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.spotless)
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.android.test) apply false
-    alias(libs.plugins.gradle.develocity)
 }
 
 spotless {
@@ -28,7 +27,6 @@ develocity {
         termsOfUseAgree.set("yes")
         obfuscation {
             username { name -> name.reversed() }
-            hostname { host -> host.toCharArray().map { character -> Character.getNumericValue(character) }.joinToString("-") }
             ipAddresses { addresses -> addresses.map { _ -> "0.0.0.0" } }
         }
     }

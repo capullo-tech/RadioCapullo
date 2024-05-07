@@ -7,7 +7,6 @@ import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
 import android.media.AudioManager
 import android.os.Build
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -26,9 +25,9 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
         val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
         val sharedPrefs = context.getSharedPreferences(
-            PREF_UNIQUE_ID, ComponentActivity.MODE_PRIVATE
+            PREF_UNIQUE_ID, Context.MODE_PRIVATE
         )
-        var uniqueID = sharedPrefs.getString(PREF_UNIQUE_ID, null)
+        var uniqueID: String? = sharedPrefs.getString(PREF_UNIQUE_ID, null)
         if (uniqueID == null) {
             uniqueID = UUID.randomUUID().toString()
             val editor = sharedPrefs.edit()
@@ -49,21 +48,20 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
             ?: return Result.failure()
 
         val nativeLibDir = applicationContext.applicationInfo.nativeLibraryDir
+
         val audioManager =
             applicationContext
-                .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager
-        val uniqueId = getUniqueId(applicationContext)
+                .getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
         val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
-        val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
         val sampleFormat = "$rate:16:*"
 
         val snapclient = CoroutineScope(Dispatchers.IO).async {
             val processBuilder =
                 ProcessBuilder().command(
                     "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
-                    "--hostID", uniqueId, "--player", androidPlayer, "--sampleformat", sampleFormat,
+                    "--hostID", getUniqueId(applicationContext), "--player", androidPlayer, "--sampleformat", sampleFormat,
                     "--logfilter", "*:info,Stats:debug"
                 )
 

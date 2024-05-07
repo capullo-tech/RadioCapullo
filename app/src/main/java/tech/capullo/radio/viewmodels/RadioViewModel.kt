@@ -76,7 +76,7 @@ class RadioViewModel @Inject constructor(
                                     applicationContext.cacheDir.toString(),
                                     applicationContext.applicationInfo.nativeLibraryDir,
                                     applicationContext
-                                        .getSystemService(ComponentActivity.AUDIO_SERVICE) as AudioManager,
+                                        .getSystemService(Context.AUDIO_SERVICE) as AudioManager,
                                     session
                                 )
                             }
@@ -155,9 +155,10 @@ class RadioViewModel @Inject constructor(
     @Synchronized
     fun getUniqueId(context: Context): String {
         val sharedPrefs = context.getSharedPreferences(
-            PREF_UNIQUE_ID, ComponentActivity.MODE_PRIVATE
+            PREF_UNIQUE_ID, Context.MODE_PRIVATE
         )
-        var uniqueID = sharedPrefs.getString(PREF_UNIQUE_ID, null)
+
+        var uniqueID: String? = sharedPrefs.getString(PREF_UNIQUE_ID, null)
         if (uniqueID == null) {
             uniqueID = UUID.randomUUID().toString()
             val editor = sharedPrefs.edit()

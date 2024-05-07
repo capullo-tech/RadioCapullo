@@ -7,7 +7,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

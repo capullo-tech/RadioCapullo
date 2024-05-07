@@ -1,4 +1,4 @@
-name: Run Gradle Build
+name: Build
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-gradle-project:
+  build-gradle:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project sources
@@ -27,8 +27,13 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/release' }}
       - name: Execute Gradle build
         run: ./gradlew build
-      #- name: Build APK
-      #  run: ./gradlew :app:assembleDebug
+      - name: Build APK
+        run: ./gradlew :app:assembleDebug
+      - name: Upload build outputs (APKs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: APKs
+          path: '**/build/outputs/apk/**/*.apk'
       #- name: Create Release
       #  env:
       #    GH_TOKEN: ${{ github.token }}

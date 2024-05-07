@@ -14,6 +14,10 @@ dependencyResolutionManagement {
     }
 }
 
+plugins {
+    id("com.gradle.develocity") version("3.17.2")
+}
+
 rootProject.name = "Radio"
 include(":app")
 include(":snapcast-deps")

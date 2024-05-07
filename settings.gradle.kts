@@ -16,4 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Radio"
 include(":app")
+include(":snapcast-deps")
 include(":lib-snapcast-android")

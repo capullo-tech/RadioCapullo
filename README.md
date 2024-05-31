@@ -1,5 +1,25 @@
 # RadioCapullo
 
+
+<p align="center">
+  <img src="/Logo_Radio-Capullo.svg?raw=true" alt="Radio Capullo" width="40%">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/last-commit/capullo-tech/RadioCapullo" alt="GitHub last commit">
+  <img src="https://img.shields.io/github/package-json/v/capullo-tech/RadioCapullo" alt="GitHub package.json version">
+  <img src="https://img.shields.io/github/license/capullo-tech/RadioCapullo" alt="GitHub license">
+  <img src="https://img.shields.io/codecov/c/github/capullo-tech/RadioCapullo" alt="Codecov">
+  <img src="https://img.shields.io/github/sponsors/capullo-tech" alt="GitHub Sponsors">
+  <img src="https://img.shields.io/github/issues/capullo-tech/RadioCapullo" alt="GitHub issues">
+  <img src="https://img.shields.io/github/forks/capullo-tech/RadioCapullo" alt="GitHub forks">
+  <img src="https://img.shields.io/github/stars/capullo-tech/RadioCapullo" alt="GitHub stars">
+  <a href="https://capullo.tech">
+    <img src="https://img.shields.io/badge/website-capullo.tech-blue?style=flat-square" alt="Website">
+  </a>
+</p>
+
+
 ## Overview
 This is a free and open source Android 6+ application with music broadcast and listen dual modes, resembles a digital **WiFi Radio**.
 

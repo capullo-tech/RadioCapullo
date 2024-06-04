@@ -16,7 +16,7 @@ android {
             cmake {
                 arguments += listOf("-DANDROID_STL=c++_static", "-DBUILD_SERVER=ON", "-DBUILD_TESTS=OFF")
                 cppFlags += listOf("-std=c++14")
-                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
             }
         }
     }

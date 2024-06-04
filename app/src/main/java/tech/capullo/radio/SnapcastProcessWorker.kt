@@ -70,6 +70,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
             val reader = BufferedReader(process.inputStream.bufferedReader())
             reader.forEachLine { line ->
                 if (isStopped) {
+                    process.destroy()
                     return@forEachLine
                 }
                 Log.d("SNAPCLIENT", "$line ${Thread.currentThread().name}")
@@ -77,6 +78,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
         }
         snapclient.await()
         if (isStopped) {
+            Log.d("SNAPCLIENT", "Worker stopped")
             return Result.failure()
         }
         return Result.success()

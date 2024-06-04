@@ -125,22 +125,28 @@ fun RadioMainScreen(
 ) {
     var text by remember { mutableStateOf(lastServer) }
     var buttonText by remember { mutableStateOf("Tune in") }
+    var isBroadcasting by remember { mutableStateOf(false) }
 
     Column {
         Text("Radio Capullo")
-        Text("Discoverable as: $deviceName")
-        LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-            items(items = hostAddresses) { name ->
-                Text(name)
+        if (isBroadcasting) {
+            Text("Discoverable on Spotify as: $deviceName")
+            Text("Host Addresses:")
+            LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
+                items(items = hostAddresses) { name ->
+                    Text(name)
+                }
             }
+            SnapclientList(snapclientList = snapclientsList)
         }
-        // SnapclientList(snapclientList = snapclientsList)
         Button(
             onClick = {
                 startBroadcast()
-            }
+                isBroadcasting = true
+            },
+            enabled = !isBroadcasting
         ) {
-            Text("Broadcast")
+            Text(if (isBroadcasting) "Broadcasting" else "Broadcast")
         }
         Row {
             TextField(

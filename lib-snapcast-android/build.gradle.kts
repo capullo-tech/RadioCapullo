@@ -55,7 +55,7 @@ android {
 }
 
 dependencies {
-    api(project(mapOf("path" to ":snapcast-deps")))
+    implementation(project(mapOf("path" to ":snapcast-deps")))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

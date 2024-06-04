@@ -25,7 +25,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Check spotless
-        run: ./gradlew spotlessCheck --no-configuration-cache
+        run: ./gradlew spotlessCheck --no-configuration-cache --no-scan
       - name: Execute Gradle build
         run: ./gradlew build
       - name: Build APK

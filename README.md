@@ -4,24 +4,25 @@
 <p align="center">
   <img src="/Logo_Radio-Capullo.svg?raw=true" alt="Radio Capullo" width="40%">
 </p>
-
 <p align="center">
-  <img src="https://img.shields.io/github/last-commit/capullo-tech/RadioCapullo" alt="GitHub last commit">
-  <img src="https://img.shields.io/github/package-json/v/capullo-tech/RadioCapullo" alt="GitHub package.json version">
-  <img src="https://img.shields.io/github/license/capullo-tech/RadioCapullo" alt="GitHub license">
-  <img src="https://img.shields.io/codecov/c/github/capullo-tech/RadioCapullo" alt="Codecov">
-  <img src="https://img.shields.io/github/sponsors/capullo-tech" alt="GitHub Sponsors">
-  <img src="https://img.shields.io/github/issues/capullo-tech/RadioCapullo" alt="GitHub issues">
-  <img src="https://img.shields.io/github/forks/capullo-tech/RadioCapullo" alt="GitHub forks">
-  <img src="https://img.shields.io/github/stars/capullo-tech/RadioCapullo" alt="GitHub stars">
-  <a href="https://capullo.tech">
-    <img src="https://img.shields.io/badge/website-capullo.tech-blue?style=flat-square" alt="Website">
+  <a href="https://github.com/capullo-tech/RadioCapullo/actions/workflows/Build.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/capullo-tech/RadioCapullo/Build.yml?branch=main" alt="Build status">
   </a>
+  <a href="https://github.com/capullo-tech/RadioCapullo/releases">
+    <img src="https://img.shields.io/github/v/release/capullo-tech/RadioCapullo" alt="Latest Release">
+  </a>
+  <a href="https://github.com/capullo-tech/RadioCapullo/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/capullo-tech/RadioCapullo" alt="License">
+  </a>
+  <a href="https://developer.android.com/guide/">
+    <img src="https://img.shields.io/badge/Platform-Android-green.svg" alt="Platform">
+  </a>
+  <img src="https://img.shields.io/badge/Min%20Android%20version-6-green" alt="Minimum Android Version">
+  <img src="https://img.shields.io/badge/Compiled%20SDK%20version-34-green" alt="Compiled SDK Version">
 </p>
 
-
 ## Overview
-This is a free and open source Android 6+ application with music broadcast and listen dual modes, resembles a digital **WiFi Radio**.
+This is a free and open source Android application with music broadcast and listen dual modes, resembles a digital **WiFi Radio**.
 
 **RadioCapullo** creates an atmospheric music environment running in multiple android devices in a star topology. 
 All listeners play the music at exactly the same time, increasing the overall volume and the depth of field.
@@ -56,7 +57,7 @@ All listeners play the music at exactly the same time, increasing the overall vo
 
 ```
 #### Audio Processing and Broadcasting
-RadioCapullo utilizes librespot-java to handle Spotify integration, allowing the server device to function as a Spotify speaker. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery. The audio output from librespot-java is directed into a FIFO (First In, First Out) queue, which effectively manages the audio data stream. Snapserver then accesses this FIFO as its input source for broadcasting the audio across the network.
+RadioCapullo utilizes [librespot-java](https://github.com/devgianlu/librespot-java) to handle Spotify integration, allowing the server device to function as a Spotify speaker. This app transforms any Android device into a Spotify speaker using Zeroconf for device discovery. The audio output from [librespot-java](https://github.com/devgianlu/librespot-java) is directed into a FIFO (First In, First Out) queue, which effectively manages the audio data stream. [Snapcast](https://github.com/badaix/snapcast) then accesses this FIFO as its input source for broadcasting the audio across the network.
 
 #### Server Playback
 Simultaneously, the server device also acts as a Snapclient. It plays the same music it is broadcasting, ensuring that it can both stream and participate in the synchronized multiroom audio experience. This dual functionality allows for real-time monitoring and enjoyment of the streamed content directly on the server device.
@@ -126,15 +127,8 @@ Contributions are welcome. Please fork the repository, make your changes, and su
 ## Disclaimers
 
 ### Fair Use of Spotify
-RadioCapullo integrates with Spotify via librespot-java for streaming audio. This integration is intended solely for personal use within the bounds of Spotify's terms of service. Users are responsible for ensuring their usage complies with all relevant laws and Spotify’s terms.
-
-### No Endorsement for Illicit Use
-This project is developed for lawful purposes and should not be used to infringe upon the rights of Spotify or any other party. The developers of RadioCapullo do not endorse or promote any illicit use of this software or any misuse that violates Spotify's terms of service.
-
-Please ensure that your use of RadioCapullo and Spotify complies with legal standards and Spotify's terms of use.
+RadioCapullo integrates with Spotify via librespot-java for streaming audio. This integration is intended solely for personal use and is not intended for illicit use or any misuse that violates Spotify's terms of service.
 
 ## Acknowledgments
-Special thanks to the Snapcast and librespot-java projects for their pioneering technologies which made this app possible.
-
-## License
-RadioCapullo is released under the MIT License. See the LICENSE file in the repository for more details.
+- [librespot-java](https://github.com/devgianlu/librespot-java)
+- [Snapcast](https://github.com/badaix/snapcast)

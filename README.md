@@ -20,37 +20,36 @@
 RadioCapullo integrates [librespot-java](https://github.com/devgianlu/librespot-java) for Spotify content streaming and [Snapcast](https://github.com/badaix/snapcast) for synchronized multiroom audio playback. This combination allows any Android device to become a Spotify speaker and part of a synchronized audio network.
 
 ```
-                           +---------------+
-                           |  Spotify App  |
-                           +-------+-------+
-                                   |
-                                   | Initiates PLayback 
-                                   v
-                        +---------------------+
-                        | Android Device      |
-                        | (Server & Client)   |
-                        |---------------------|
-                        | Server Control UI   |
-                        | Audio Capture       |
-                        | FIFO Queue          |
-                        | librespot-java      |
-                        | Snapserver &        |
-                        | Snapclient          |
-                        | Broadcasts & Plays  |
-                        | Audio               |
-                        +----------+----------+
-                                   | LAN Broadcast
-         +-------------------------+-------------------------+
-         |                         |                         |
-+--------v---------+     +---------v--------+    +-----------v-------+
-| Android Device   |     | Android Device   |    | Android Device    |
-|     (Client 1)   |     |     (Client 2)   |    |     (Client N)    |
-|------------------|     |------------------|    |-------------------|
-| Client Control UI|     | Client Control UI|    | Client Control UI |
-| Audio Output     |     | Audio Output     |    | Audio Output      |
-| (Speakers, Sync  |     | (Speakers, Sync  |    | (Speakers, Sync  |
-| via Snapclient)  |     | via Snapclient)  |    | via Snapclient)  |
-+------------------+     +------------------+    +-------------------+
+                             +---------------+
+                             |  Spotify App  |
+                             +-------+-------+
+                                     |
+                                     | Initiates Playback 
+                                     v
+                          +---------------------+
+                          | Android Device      |
+                          | (Server & Client)   |
+                          |---------------------|
+                          | Server Control UI   |
+                          | librespot-java      |
+                          | FIFO Queue          |
+                          | Snapserver &        |
+                          | Snapclient          |
+                          | Broadcasts & Plays  |
+                          | Audio               |
+                          +----------+----------+
+                                     | LAN Broadcast
+          +--------------------------+-----------------------------+
+          |                          |                             |
++---------v---------+      +---------v---------+         +---------v---------+
+|  Android Device   |      |  Android Device   |         |  Android Device   |
+|    (Client 1)     |      |    (Client 2)     |         |    (Client N)     |
+|-------------------|      |-------------------|         |-------------------|
+| Client Control UI |      | Client Control UI |  . . .  | Client Control UI |
+| Audio Output      |      | Audio Output      |         | Audio Output      |
+| (Speakers, Sync   |      | (Speakers, Sync   |         | (Speakers, Sync   |
+| via Snapclient)   |      | via Snapclient)   |         | via Snapclient)   |
++------------------ +      +-------------------+         +-------------------+
 ```
 
 ### Server and Client Roles
@@ -80,9 +79,9 @@ RadioCapullo integrates [librespot-java](https://github.com/devgianlu/librespot-
 Contributions are welcome! Please fork the repository, make your changes, and submit a pull request.
 
 ## Disclaimers
+### Fair use of Spotify
 
 > [!IMPORTANT]
-> Fair use of Spotify
 > RadioCapullo's Spotify integration via librespot-java is intended for personal use within the bounds of Spotify's terms of service.
 > RadioCapullo does not endorse or encourage any form of illicit use or misuse of the application.
 

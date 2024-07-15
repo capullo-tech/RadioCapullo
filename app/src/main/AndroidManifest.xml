@@ -48,6 +48,10 @@
             android:foregroundServiceType="mediaPlayback"
             tools:node="merge"
             />
+        <service
+            android:name="androidx.work.multiprocess.RemoteWorkerService"
+            android:exported="false"
+            android:process=":librespot_worker" />
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

@@ -61,7 +61,8 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
             val processBuilder =
                 ProcessBuilder().command(
                     "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
-                    "--hostID", getUniqueId(applicationContext), "--player", androidPlayer, "--sampleformat", sampleFormat,
+                    "--hostID", getUniqueId(applicationContext), "--player", androidPlayer,
+                    "--sampleformat", sampleFormat,
                     "--logfilter", "*:info,Stats:debug"
                 )
 

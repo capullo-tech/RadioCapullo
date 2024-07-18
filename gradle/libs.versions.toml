@@ -12,7 +12,6 @@ compose-compiler = "1.5.3"
 espressoCore = "3.5.1"
 junit = "4.13.2"
 kotlin = "1.9.10"
-kotlinProcess = "1.4.1"
 ktlint = "0.40.0"
 ktx = "1.13.1"
 hilt = "2.49"
@@ -55,7 +54,6 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 junit = { module = "junit:junit", version.ref = "junit" }
-kotlin-process = { module = "com.github.pgreze:kotlin-process", version.ref = "kotlinProcess" }
 lib-librespot-android = { module = "tech.capullo:lib-librespot-android", version.ref = "libLibrespotAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 

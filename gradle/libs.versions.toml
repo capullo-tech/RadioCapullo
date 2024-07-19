@@ -27,7 +27,7 @@ startupRuntime = "1.1.1"
 targetSdk = "34"
 spotless = "6.4.1"
 develocity = "3.17.2"
-workRuntimeKtx = "2.9.0"
+workRuntimeKtx = "2.7.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }

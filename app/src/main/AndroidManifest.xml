@@ -59,6 +59,10 @@
             tools:node="merge">
             <meta-data  android:name="tech.capullo.radio.AndroidNativeDecoderInitializer"
                 android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
     </application>
 

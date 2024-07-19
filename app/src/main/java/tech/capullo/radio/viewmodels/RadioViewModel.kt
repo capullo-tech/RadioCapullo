@@ -1,44 +1,41 @@
 package tech.capullo.radio.viewmodels
 
-import android.app.ActivityManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
+import android.os.Process
 import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
+import androidx.work.multiprocess.RemoteListenableWorker.ARGUMENT_CLASS_NAME
+import androidx.work.multiprocess.RemoteListenableWorker.ARGUMENT_PACKAGE_NAME
+import androidx.work.multiprocess.RemoteWorkerService
 import androidx.work.workDataOf
-import com.github.pgreze.process.process
-import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
-import com.spotify.connectstate.Connect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tech.capullo.radio.LibrespotPlayerWorker
 import tech.capullo.radio.SnapcastProcessWorker
-import xyz.gianlu.librespot.core.Session
-import xyz.gianlu.librespot.player.Player
-import xyz.gianlu.librespot.player.PlayerConfiguration
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
-import java.lang.Thread.sleep
 import java.net.NetworkInterface
 import java.util.Collections
-import java.util.Locale
 import java.util.UUID
-import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @HiltViewModel
@@ -48,59 +45,10 @@ class RadioViewModel @Inject constructor(
     private val _hostAddresses = getInetAddresses().toMutableStateList()
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
-    private val _snapclientsList = mutableListOf<String>().toMutableStateList()
-    // @SuppressLint("MutableCollectionMutableState")
-    // private val _snapserverServerStatus = mutableListOf<ServerStatus>().toMutableStateList()
-
     val hostAddresses: List<String>
         get() = _hostAddresses
 
-    // val snapClientsList: SnapshotStateList<ServerStatus> get() = _snapserverServerStatus
-
-    fun startSpotifyBroadcasting() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                delay(10000)
-                Log.d("THREAD", "10 delay done, on Thread: ${Thread.currentThread().name}")
-                val sessionListener: AndroidZeroconfServer.SessionListener =
-                    object : AndroidZeroconfServer.SessionListener {
-                        override fun sessionClosing(p0: Session) {
-                        }
-
-                        override fun sessionChanged(session: Session) {
-                            Log.d("THREAD", "spotify session:[$session], on Thread: ${Thread.currentThread().name}")
-                            viewModelScope.launch(Dispatchers.Main) {
-                                Log.d("THREAD", "calling snapcast, on Thread: ${Thread.currentThread().name}")
-                                startSnapcast(
-                                    applicationContext.cacheDir.toString(),
-                                    applicationContext.applicationInfo.nativeLibraryDir,
-                                    applicationContext
-                                        .getSystemService(Context.AUDIO_SERVICE) as AudioManager,
-                                    session
-                                )
-                            }
-                        }
-                    }
-                val conf = Session.Configuration.Builder()
-                    .setDoCacheCleanUp(true)
-                    .setStoreCredentials(false)
-                    .setCacheEnabled(false)
-                    .build()
-                val builder = AndroidZeroconfServer.Builder(applicationContext, conf)
-                    .setPreferredLocale(Locale.getDefault().language)
-                    .setDeviceType(Connect.DeviceType.SPEAKER)
-                    // .setDeviceId(null)
-                    .setDeviceName( // Set name as set in preferences
-                        // "Radio Capullo"
-                        getDeviceName()
-                    )
-                val server = builder.create()
-                server.addSessionListener(sessionListener)
-            }
-        }
-    }
-
-    fun getSharedPreferences(context: Context): SharedPreferences {
+    private fun getSharedPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
     }
 
@@ -113,44 +61,7 @@ class RadioViewModel @Inject constructor(
     fun getText(): String {
         return getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
     }
-    private fun isServiceRunning(serviceClass: Class<*>, context: Context): Boolean {
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-        return false
-    }
-    fun initiateWorker(ip: String) {
 
-        val uploadWorkRequest: WorkRequest =
-            OneTimeWorkRequestBuilder<SnapcastProcessWorker>()
-                .setInputData(
-                    workDataOf(
-                        "KEY_IP" to ip
-                    )
-                )
-                .build()
-
-        WorkManager
-            .getInstance(applicationContext)
-            .enqueue(uploadWorkRequest)
-    }
-
-    fun startSnapcast(
-        cacheDir: String,
-        nativelibraryDir: String,
-        audioManager: AudioManager,
-        session: Session
-    ) {
-        viewModelScope.launch {
-            startListener(
-                cacheDir, nativelibraryDir, audioManager, getUniqueId(applicationContext),
-                session
-            )
-        }
-    }
     @Synchronized
     fun getUniqueId(context: Context): String {
         val sharedPrefs = context.getSharedPreferences(
@@ -178,117 +89,162 @@ class RadioViewModel @Inject constructor(
             Build.MODEL
         }
 
-    private suspend fun startListener(
-        cacheDir: String,
-        nativeLibraryDir: String,
-        audioManager: AudioManager,
-        uuid: String,
-        session: Session,
-    ) = withContext(Dispatchers.IO) {
-        val executorService = Executors.newCachedThreadPool()
+    private fun getInetAddresses(): List<String> =
+        Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
+            Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
+                inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
+                    it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
+                }?.let { true } ?: false
+            }.map { it.hostAddress!! }
+        }
 
+    fun startSpotifyBroadcasting() {
+        val processId = Process.myPid()
+        val threadId = Thread.currentThread().id
+        val threadName = Thread.currentThread().name
+
+        Log.d(
+            "CAPULLOWORKER",
+            "Starting from main process - " +
+                "Process ID: $processId, " +
+                "Thread ID: $threadId, " +
+                "Thread Name: $threadName"
+        )
+
+        val cacheDir = applicationContext.cacheDir.toString()
+        val nativeLibraryDir = applicationContext.applicationInfo.nativeLibraryDir
         val filifoFile = File("$cacheDir/filifo")
         if (filifoFile.exists()) {
             filifoFile.delete()
         }
         filifoFile.createNewFile()
 
+        // Setup and initialize the librespot worker as a separate process
+        val PACKAGE_NAME = "tech.capullo.radio"
+
+        val serviceName = RemoteWorkerService::class.java.name
+        val componentName = ComponentName(PACKAGE_NAME, serviceName)
+
+        val data: Data = Data.Builder()
+            .putString(ARGUMENT_PACKAGE_NAME, componentName.packageName)
+            .putString(ARGUMENT_CLASS_NAME, componentName.className)
+            .putString("DEVICE_NAME", getDeviceName())
+            .build()
+
+        val oneTimeWorkRequest = OneTimeWorkRequest.Builder(LibrespotPlayerWorker::class.java)
+            .setInputData(data)
+            .build()
+
+        WorkManager
+            .getInstance(applicationContext)
+            .enqueue(oneTimeWorkRequest)
+
+        startSnapcast(
+            cacheDir = cacheDir,
+            nativeLibraryDir = nativeLibraryDir,
+            audioManager =
+            applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager,
+        )
+    }
+
+    fun initiateWorker(ip: String) {
+        val uploadWorkRequest: WorkRequest =
+            OneTimeWorkRequestBuilder<SnapcastProcessWorker>()
+                .setInputData(
+                    workDataOf(
+                        "KEY_IP" to ip
+                    )
+                )
+                .build()
+
+        WorkManager
+            .getInstance(applicationContext)
+            .enqueue(uploadWorkRequest)
+    }
+
+    private fun startSnapcast(
+        cacheDir: String,
+        nativeLibraryDir: String,
+        audioManager: AudioManager,
+    ) {
+        // Android audio configuration
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
         val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
         val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
         val sampleformat = "$rate:16:*"
-        val snapserver = async {
-            process(
-                "$nativeLibraryDir/libsnapserver.so",
-                "--server.datadir=$cacheDir", "--stream.source",
-                "pipe://$cacheDir/filifo?name=fil&dryout_ms=2000"
-            )
-            Log.d("THREAD", "snapserver started, on Thread: ${Thread.currentThread().name}")
-        }
-        val player: Player
-        val configuration = PlayerConfiguration.Builder()
-            .setOutput(PlayerConfiguration.AudioOutput.PIPE)
-            .setOutputPipe(filifoFile)
-            .build()
-        player = Player(configuration, session)
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
-            while (!player.isReady) {
-                try {
-                    Log.d("THREAD", "waiting for librespot player, on Thread: ${Thread.currentThread().name}")
-                    sleep(100)
-                } catch (ex: InterruptedException) {
-                    Log.d("THREAD", "waiting for librespot player exception: [$ex], on Thread: ${Thread.currentThread().name}")
-                }
+
+        viewModelScope.launch {
+            val snapserver = async {
+                snapcastProcess(
+                    cacheDir,
+                    nativeLibraryDir,
+                    true,
+                    getUniqueId(applicationContext),
+                    androidPlayer,
+                    sampleformat,
+                    rate,
+                    fpb
+                )
             }
+            val snapclient = async {
+                snapcastProcess(
+                    cacheDir,
+                    nativeLibraryDir,
+                    false,
+                    getUniqueId(applicationContext),
+                    androidPlayer,
+                    sampleformat,
+                    rate,
+                    fpb
+                )
+            }
+            awaitAll(snapclient, snapserver)
+        }
+    }
+
+    private suspend fun snapcastProcess(
+        cacheDir: String,
+        nativeLibDir: String,
+        isSnapserver: Boolean,
+        uniqueId: String,
+        player: String,
+        sampleFormat: String,
+        rate: String?,
+        fpb: String?
+    ) = withContext(Dispatchers.IO) {
+        val pb = if (isSnapserver) {
+            ProcessBuilder()
+                .command(
+                    "$nativeLibDir/libsnapserver.so",
+                    "--server.datadir=$cacheDir", "--stream.source",
+                    "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
+                )
+                .redirectErrorStream(true)
         } else {
-            try {
-                player.waitReady()
-            } catch (ex: InterruptedException) {
-                Log.d("THREAD", "waiting for librespot player exception: [$ex], on Thread: ${Thread.currentThread().name}")
-            }
-        }
-        player.play()
-
-        val snapclient = async {
-            snapcastRunnable(
-                cacheDir, nativeLibraryDir, false, uuid, androidPlayer, sampleformat, rate, fpb
+            ProcessBuilder().command(
+                "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
+                "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
+                "--logfilter", "*:info,Stats:debug"
             )
-            Log.d("THREAD", "snapclient started, on Thread: ${Thread.currentThread().name}")
         }
-        awaitAll(snapclient, snapserver)
-    }
-}
-private fun getInetAddresses(): List<String> =
-    Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
-        Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
-            inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
-                it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
-            }?.let { true } ?: false
-        }.map { it.hostAddress!! }
-    }
-fun snapcastRunnable(
-    cacheDir: String,
-    nativeLibDir: String,
-    isSnapserver: Boolean,
-    uniqueId: String,
-    player: String,
-    sampleFormat: String,
-    rate: String?,
-    fpb: String?
-) {
-    val pb = if (isSnapserver) {
-        ProcessBuilder()
-            .command(
-                "$nativeLibDir/libsnapserver.so",
-                "--server.datadir=$cacheDir", "--stream.source",
-                "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
-            )
-            .redirectErrorStream(true)
-    } else {
-        ProcessBuilder().command(
-            "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
-            "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
-            "--logfilter", "*:info,Stats:debug"
-        )
-    }
-    try {
-        val env = pb.environment()
-        if (rate != null) env["SAMPLE_RATE"] = rate
-        if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
+        try {
+            val env = pb.environment()
+            if (rate != null) env["SAMPLE_RATE"] = rate
+            if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
 
-        val process = pb.start()
-        val bufferedReader = BufferedReader(
-            InputStreamReader(process.inputStream)
-        )
-        var line: String?
-        while (bufferedReader.readLine().also { line = it } != null) {
-            if (isSnapserver) {
-                Log.d("SNAPSERVER", "${line!!} ${Thread.currentThread().name}")
-            } else {
-                Log.d("SNAPCLIENT", "${line!!} ${Thread.currentThread().name}")
+            val process = pb.start()
+            val bufferedReader = BufferedReader(
+                InputStreamReader(process.inputStream)
+            )
+            var line: String?
+            while (bufferedReader.readLine().also { line = it } != null) {
+                val processId = Process.myPid()
+                val threadName = Thread.currentThread().name
+                val tag = if (isSnapserver) "SNAPSERVER" else "SNAPCLIENT"
+                Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
             }
+        } catch (e: IOException) {
+            throw RuntimeException(e)
         }
-    } catch (e: IOException) {
-        throw RuntimeException(e)
     }
 }

@@ -20,9 +20,9 @@ class LibrespotPlayerWorker(
     parameters: WorkerParameters
 ) : RemoteCoroutineWorker(context, parameters) {
     override suspend fun doRemoteWork(): Result = withContext(Dispatchers.IO) {
-        var processId = Process.myPid()
-        var threadId = Thread.currentThread().id
-        var threadName = Thread.currentThread().name
+        val processId = Process.myPid()
+        val threadId = Thread.currentThread().id
+        val threadName = Thread.currentThread().name
 
         Log.d(
             TAG,
@@ -50,14 +50,14 @@ class LibrespotPlayerWorker(
     }
 
     private fun prepareLibrespotSession(advertisingName: String): AndroidZeroconfServer {
+        // Configure the Spotify advertising session
         val conf = Session.Configuration.Builder()
-            .setDoCacheCleanUp(true)
             .setStoreCredentials(false)
             .setCacheEnabled(false)
             .build()
         val builder = AndroidZeroconfServer.Builder(applicationContext, conf)
             .setPreferredLocale(Locale.getDefault().language)
-            .setDeviceType(Connect.DeviceType.SMARTPHONE)
+            .setDeviceType(Connect.DeviceType.SPEAKER)
             .setDeviceId(null)
             .setDeviceName(advertisingName)
         return builder.create()

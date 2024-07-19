@@ -14,12 +14,15 @@ import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class LibrespotPlayerWorker(
     context: Context,
     parameters: WorkerParameters
 ) : RemoteCoroutineWorker(context, parameters) {
-    override suspend fun doRemoteWork(): Result = withContext(Dispatchers.IO) {
+
+    override suspend fun doRemoteWork(): Result {
         val processId = Process.myPid()
         val threadId = Thread.currentThread().id
         val threadName = Thread.currentThread().name
@@ -30,23 +33,35 @@ class LibrespotPlayerWorker(
                 "Process ID: $processId, Thread ID: $threadId, Thread Name: $threadName"
         )
 
-        val sessionListener = object : AndroidZeroconfServer.SessionListener {
-            override fun sessionClosing(session: Session) {
-                TODO("Not yet implemented")
-            }
+        startAdvertisingSession()
 
-            override fun sessionChanged(session: Session) {
-                val player = prepareLibrespotPlayer(session)
-                Log.d(TAG, "Player got created successfully: " +
-                        "${player.isReady} - $player" +
-                        " Process ID: $processId, Thread ID: $threadId, Thread Name: $threadName")
-            }
+        Log.d(
+            TAG,
+            "Session finished - " +
+                "Process ID: $processId, Thread ID: $threadId, Thread Name: $threadName"
+        )
+        return Result.success()
+    }
+
+    private suspend fun startAdvertisingSession() = withContext(Dispatchers.IO) {
+        suspendCoroutine { continuation ->
+            val advertisingName = inputData.getString("DEVICE_NAME") ?: "Radio Capullo"
+            val server = prepareLibrespotSession(advertisingName)
+            server.addSessionListener(object : AndroidZeroconfServer.SessionListener {
+                lateinit var player: Player
+
+                override fun sessionChanged(session: Session) {
+                    player = prepareLibrespotPlayer(session)
+                    Log.d(TAG, "Player got created successfully")
+                }
+
+                override fun sessionClosing(session: Session) {
+                    session.close()
+                    player.close()
+                    continuation.resume(Unit)
+                }
+            })
         }
-        val advertisingName = inputData.getString("DEVICE_NAME") ?: "Radio Capullo"
-        val server = prepareLibrespotSession(advertisingName)
-        server.addSessionListener(sessionListener)
-
-        return@withContext Result.success()
     }
 
     private fun prepareLibrespotSession(advertisingName: String): AndroidZeroconfServer {

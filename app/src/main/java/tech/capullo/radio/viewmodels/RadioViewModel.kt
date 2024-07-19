@@ -12,6 +12,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -137,7 +138,11 @@ class RadioViewModel @Inject constructor(
 
         WorkManager
             .getInstance(applicationContext)
-            .enqueue(oneTimeWorkRequest)
+            .enqueueUniqueWork(
+                "librespotPlayerWorker",
+                ExistingWorkPolicy.REPLACE,
+                oneTimeWorkRequest
+            )
 
         startSnapcast(
             cacheDir = cacheDir,

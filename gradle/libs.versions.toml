@@ -12,7 +12,6 @@ compose-compiler = "1.5.3"
 espressoCore = "3.5.1"
 junit = "4.13.2"
 kotlin = "1.9.10"
-kotlinProcess = "1.4.1"
 ktlint = "0.40.0"
 ktx = "1.13.1"
 hilt = "2.49"
@@ -28,7 +27,7 @@ startupRuntime = "1.1.1"
 targetSdk = "34"
 spotless = "6.4.1"
 develocity = "3.17.2"
-workRuntimeKtx = "2.9.0"
+workRuntimeKtx = "2.7.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -50,11 +49,11 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startupRuntime" }
+androidx-work-multiprocess = { module = "androidx.work:work-multiprocess", version.ref = "workRuntimeKtx" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 junit = { module = "junit:junit", version.ref = "junit" }
-kotlin-process = { module = "com.github.pgreze:kotlin-process", version.ref = "kotlinProcess" }
 lib-librespot-android = { module = "tech.capullo:lib-librespot-android", version.ref = "libLibrespotAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 

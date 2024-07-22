@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
@@ -90,11 +91,6 @@ dependencies {
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")
     }
-    //implementation("tech.capullo:librespot-android-sink:0.1.0")
-    //implementation("tech.capullo:librespot-android-decoder:0.1.0")
-    //implementation("tech.capullo:librespot-android-decoder-tremolo:0.1.0")
-    //implementation("tech.capullo:librespot-android-zeroconf-server:0.1.0")
-    implementation(libs.kotlin.process)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

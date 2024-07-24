@@ -9,10 +9,10 @@ import com.powerbling.librespot_android_zeroconf_server.AndroidZeroconfServer
 import com.spotify.connectstate.Connect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import xyz.gianlu.librespot.android.sink.AndroidSinkOutput
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
+import java.io.File
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -45,13 +45,14 @@ class LibrespotPlayerWorker(
 
     private suspend fun startAdvertisingSession() = withContext(Dispatchers.IO) {
         suspendCoroutine { continuation ->
-            val advertisingName = inputData.getString("DEVICE_NAME") ?: "Radio Capullo"
+            val advertisingName = inputData.getString(DEVICE_NAME) ?: "Radio Capullo"
+            val pipeName = inputData.getString(PIPE_NAME) ?: ""
             val server = prepareLibrespotSession(advertisingName)
             server.addSessionListener(object : AndroidZeroconfServer.SessionListener {
                 lateinit var player: Player
 
                 override fun sessionChanged(session: Session) {
-                    player = prepareLibrespotPlayer(session)
+                    player = prepareLibrespotPlayer(session, pipeName)
                     Log.d(TAG, "Player got created successfully")
                 }
 
@@ -78,15 +79,17 @@ class LibrespotPlayerWorker(
         return builder.create()
     }
 
-    private fun prepareLibrespotPlayer(session: Session): Player {
+    private fun prepareLibrespotPlayer(session: Session, pipeName: String): Player {
         val configuration = PlayerConfiguration.Builder()
-            .setOutput(PlayerConfiguration.AudioOutput.CUSTOM)
-            .setOutputClass(AndroidSinkOutput::class.java.name)
+            .setOutput(PlayerConfiguration.AudioOutput.PIPE)
+            .setOutputPipe(File(pipeName))
             .build()
         return Player(configuration, session)
     }
 
     companion object {
         private const val TAG = "CAPULLOWORKER"
+        private const val DEVICE_NAME = "DEVICE_NAME"
+        private const val PIPE_NAME = "PIPE_NAME"
     }
 }

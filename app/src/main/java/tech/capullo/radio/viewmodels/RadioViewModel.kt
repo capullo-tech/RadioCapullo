@@ -7,6 +7,9 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.system.Os.mkfifo
+import android.system.OsConstants.S_IRUSR
+import android.system.OsConstants.S_IWUSR
 import android.util.Log
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
@@ -118,7 +121,13 @@ class RadioViewModel @Inject constructor(
         if (filifoFile.exists()) {
             filifoFile.delete()
         }
-        filifoFile.createNewFile()
+
+        Log.d("CAPULLOWORKER", "Creating FIFO: ${filifoFile.absolutePath}")
+        try {
+            mkfifo(filifoFile.absolutePath, S_IRUSR or S_IWUSR)
+        } catch (e: Exception) {
+            Log.e("CAPULLOWORKER", "Error creating FIFO: $e")
+        }
 
         // Setup and initialize the librespot worker as a separate process
         val PACKAGE_NAME = "tech.capullo.radio"
@@ -130,6 +139,7 @@ class RadioViewModel @Inject constructor(
             .putString(ARGUMENT_PACKAGE_NAME, componentName.packageName)
             .putString(ARGUMENT_CLASS_NAME, componentName.className)
             .putString("DEVICE_NAME", getDeviceName())
+            .putString("PIPE_NAME", filifoFile.absolutePath)
             .build()
 
         val oneTimeWorkRequest = OneTimeWorkRequest.Builder(LibrespotPlayerWorker::class.java)
@@ -145,6 +155,7 @@ class RadioViewModel @Inject constructor(
             )
 
         startSnapcast(
+            filifoFilepath = filifoFile.absolutePath,
             cacheDir = cacheDir,
             nativeLibraryDir = nativeLibraryDir,
             audioManager =
@@ -168,6 +179,7 @@ class RadioViewModel @Inject constructor(
     }
 
     private fun startSnapcast(
+        filifoFilepath: String,
         cacheDir: String,
         nativeLibraryDir: String,
         audioManager: AudioManager,
@@ -181,6 +193,7 @@ class RadioViewModel @Inject constructor(
         viewModelScope.launch {
             val snapserver = async {
                 snapcastProcess(
+                    filifoFilepath,
                     cacheDir,
                     nativeLibraryDir,
                     true,
@@ -193,6 +206,7 @@ class RadioViewModel @Inject constructor(
             }
             val snapclient = async {
                 snapcastProcess(
+                    filifoFilepath,
                     cacheDir,
                     nativeLibraryDir,
                     false,
@@ -208,6 +222,7 @@ class RadioViewModel @Inject constructor(
     }
 
     private suspend fun snapcastProcess(
+        filifoFilepath: String,
         cacheDir: String,
         nativeLibDir: String,
         isSnapserver: Boolean,
@@ -222,7 +237,7 @@ class RadioViewModel @Inject constructor(
                 .command(
                     "$nativeLibDir/libsnapserver.so",
                     "--server.datadir=$cacheDir", "--stream.source",
-                    "pipe://$cacheDir/filifo?name=fil&mode=create&dryout_ms=2000"
+                    "pipe://$filifoFilepath?name=fil&mode=create&dryout_ms=2000"
                 )
                 .redirectErrorStream(true)
         } else {

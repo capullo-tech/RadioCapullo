@@ -10,8 +10,8 @@ class AndroidNativeDecoderInitializer : Initializer<Unit> {
 
     override fun create(context: Context) {
         // This initializer doesn't return anything (Unit)
-        Decoders.registerDecoder(SuperAudioFormat.VORBIS, AndroidNativeDecoder::class.java)
-        Decoders.registerDecoder(SuperAudioFormat.MP3, AndroidNativeDecoder::class.java)
+        Decoders.registerDecoder(SuperAudioFormat.VORBIS, 0, AndroidNativeDecoder::class.java)
+        Decoders.registerDecoder(SuperAudioFormat.MP3, 0, AndroidNativeDecoder::class.java)
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> {

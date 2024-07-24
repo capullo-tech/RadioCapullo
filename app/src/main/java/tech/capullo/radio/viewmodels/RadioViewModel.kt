@@ -33,8 +33,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.LibrespotPlayerWorker
 import tech.capullo.radio.SnapcastProcessWorker
+import tech.capullo.radio.data.RadioRepository
 import java.io.BufferedReader
-import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.net.NetworkInterface
@@ -44,7 +44,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RadioViewModel @Inject constructor(
-    @ApplicationContext private val applicationContext: Context
+    @ApplicationContext private val applicationContext: Context,
+    val radioRepository: RadioRepository,
 ) : ViewModel() {
     private val _hostAddresses = getInetAddresses().toMutableStateList()
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
@@ -115,18 +116,10 @@ class RadioViewModel @Inject constructor(
                 "Thread Name: $threadName"
         )
 
-        val cacheDir = applicationContext.cacheDir.toString()
-        val nativeLibraryDir = applicationContext.applicationInfo.nativeLibraryDir
-        val filifoFile = File("$cacheDir/filifo")
-        if (filifoFile.exists()) {
-            filifoFile.delete()
-        }
-
-        Log.d("CAPULLOWORKER", "Creating FIFO: ${filifoFile.absolutePath}")
-        try {
-            mkfifo(filifoFile.absolutePath, S_IRUSR or S_IWUSR)
-        } catch (e: Exception) {
-            Log.e("CAPULLOWORKER", "Error creating FIFO: $e")
+        val filifoFilepath = radioRepository.createNamedPipeFile()
+        if (filifoFilepath == null) {
+            Log.e("CAPULLOWORKER", "Error creating FIFO file")
+            return
         }
 
         // Setup and initialize the librespot worker as a separate process
@@ -139,7 +132,7 @@ class RadioViewModel @Inject constructor(
             .putString(ARGUMENT_PACKAGE_NAME, componentName.packageName)
             .putString(ARGUMENT_CLASS_NAME, componentName.className)
             .putString("DEVICE_NAME", getDeviceName())
-            .putString("PIPE_NAME", filifoFile.absolutePath)
+            .putString("PIPE_NAME", filifoFilepath)
             .build()
 
         val oneTimeWorkRequest = OneTimeWorkRequest.Builder(LibrespotPlayerWorker::class.java)
@@ -155,9 +148,9 @@ class RadioViewModel @Inject constructor(
             )
 
         startSnapcast(
-            filifoFilepath = filifoFile.absolutePath,
-            cacheDir = cacheDir,
-            nativeLibraryDir = nativeLibraryDir,
+            filifoFilepath = filifoFilepath,
+            cacheDir = radioRepository.getCacheDir(),
+            nativeLibraryDir = radioRepository.getNativeLibDir(),
             audioManager =
             applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager,
         )

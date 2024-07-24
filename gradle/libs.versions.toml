@@ -1,23 +1,23 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.9.0"
-androidGradlePlugin = "8.4.0"
-androidx-junit = "1.1.5"
+androidGradlePlugin = "8.5.1"
+androidx-junit = "1.2.1"
 # @keep
-appcompat = "1.6.1"
+appcompat = "1.7.0"
 compileSdk = "34"
-composeLatest = "1.6.7"
-composeBom = "2024.05.00"
-compose-compiler = "1.5.3"
-espressoCore = "3.5.1"
+composeLatest = "1.6.8"
+composeBom = "2024.06.00"
+compose-compiler = "1.5.14"
+espressoCore = "3.6.1"
 junit = "4.13.2"
-kotlin = "1.9.10"
+kotlin = "1.9.24"
 ktlint = "0.40.0"
 ktx = "1.13.1"
-hilt = "2.49"
-ksp = "1.9.10-1.0.13"
+hilt = "2.51.1"
+ksp = "1.9.24-1.0.20"
 libLibrespotAndroid = "0.1.6"
-lifecycleRuntimeKtx = "2.7.0"
+lifecycleRuntimeKtx = "2.8.3"
 material = "1.12.0"
 material3 = "1.2.1"
 # @keep
@@ -26,7 +26,6 @@ startupRuntime = "1.1.1"
 # @keep
 targetSdk = "34"
 spotless = "6.4.1"
-develocity = "3.17.2"
 workRuntimeKtx = "2.7.0"
 
 [libraries]
@@ -65,4 +64,3 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin"}
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
-gradle-develocity = { id = "com.gradle.develocity", version.ref = "develocity" }

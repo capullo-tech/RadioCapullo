@@ -35,12 +35,10 @@ class RadioRepository @Inject constructor(
         }
     }
 
-    // function to get the native library dir
     fun getNativeLibDirPath(): String {
         return NATIVE_LIB_DIR_PATH
     }
 
-    // function to get the cache dir
     fun getCacheDirPath(): String {
         return CACHE_DIR.absolutePath
     }

@@ -15,38 +15,38 @@ class RadioRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val CACHE_DIR = context.cacheDir
-    private val NATIVE_LIB_DIR = context.applicationInfo.nativeLibraryDir
+    private val NATIVE_LIB_DIR_PATH = context.applicationInfo.nativeLibraryDir
 
-    fun createNamedPipeFile(): String? {
-        val filifoFile = File(CACHE_DIR, NAMED_FIFO)
-        Log.d(TAG, "Creating FIFO: ${filifoFile.absolutePath}")
+    fun getPipeFilepath(): String? {
+        val pipeFile = File(CACHE_DIR, PIPE_NAME)
 
-        if (filifoFile.exists()) {
-            Log.d(TAG, "Deleting existing FIFO file")
-            filifoFile.delete()
+        if (pipeFile.exists()) {
+            Log.d(TAG, "Deleting existing PIPE file")
+            pipeFile.delete()
         }
 
+        Log.d(TAG, "Creating PIPE: ${pipeFile.absolutePath}")
         try {
-            mkfifo(filifoFile.absolutePath, S_IRUSR or S_IWUSR)
-            return filifoFile.absolutePath
+            mkfifo(pipeFile.absolutePath, S_IRUSR or S_IWUSR)
+            return pipeFile.absolutePath
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating FIFO file: ${e.message}")
+            Log.e(TAG, "Error creating PIPE file: ${e.message}")
             return null
         }
     }
 
     // function to get the native library dir
-    fun getNativeLibDir(): String {
-        return NATIVE_LIB_DIR
+    fun getNativeLibDirPath(): String {
+        return NATIVE_LIB_DIR_PATH
     }
 
     // function to get the cache dir
-    fun getCacheDir(): String {
+    fun getCacheDirPath(): String {
         return CACHE_DIR.absolutePath
     }
 
     companion object {
         private const val TAG = "RadioRepository"
-        private const val NAMED_FIFO = "filifo"
+        private const val PIPE_NAME = "filifo"
     }
 }

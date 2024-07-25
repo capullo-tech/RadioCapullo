@@ -46,7 +46,7 @@ class LibrespotPlayerWorker(
     private suspend fun startAdvertisingSession() = withContext(Dispatchers.IO) {
         suspendCoroutine { continuation ->
             val advertisingName = inputData.getString(DEVICE_NAME) ?: "Radio Capullo"
-            val pipeName = inputData.getString(PIPE_NAME) ?: ""
+            val pipeName = inputData.getString(PIPE_FILE_PATH) ?: ""
             val server = prepareLibrespotSession(advertisingName)
             server.addSessionListener(object : AndroidZeroconfServer.SessionListener {
                 lateinit var player: Player
@@ -90,6 +90,6 @@ class LibrespotPlayerWorker(
     companion object {
         private const val TAG = "CAPULLOWORKER"
         private const val DEVICE_NAME = "DEVICE_NAME"
-        private const val PIPE_NAME = "PIPE_NAME"
+        private const val PIPE_FILE_PATH = "PIPE_FILE_PATH"
     }
 }

@@ -46,13 +46,13 @@ class LibrespotPlayerWorker(
     private suspend fun startAdvertisingSession() = withContext(Dispatchers.IO) {
         suspendCoroutine { continuation ->
             val advertisingName = inputData.getString(DEVICE_NAME) ?: "Radio Capullo"
-            val pipeName = inputData.getString(PIPE_FILE_PATH) ?: ""
+            val pipeFilepath = inputData.getString(PIPE_FILE_PATH) ?: ""
             val server = prepareLibrespotSession(advertisingName)
             server.addSessionListener(object : AndroidZeroconfServer.SessionListener {
                 lateinit var player: Player
 
                 override fun sessionChanged(session: Session) {
-                    player = prepareLibrespotPlayer(session, pipeName)
+                    player = prepareLibrespotPlayer(session, pipeFilepath)
                     Log.d(TAG, "Player got created successfully")
                 }
 
@@ -79,10 +79,10 @@ class LibrespotPlayerWorker(
         return builder.create()
     }
 
-    private fun prepareLibrespotPlayer(session: Session, pipeName: String): Player {
+    private fun prepareLibrespotPlayer(session: Session, pipeFilepath: String): Player {
         val configuration = PlayerConfiguration.Builder()
             .setOutput(PlayerConfiguration.AudioOutput.PIPE)
-            .setOutputPipe(File(pipeName))
+            .setOutputPipe(File(pipeFilepath))
             .build()
         return Player(configuration, session)
     }

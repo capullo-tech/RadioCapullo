@@ -223,11 +223,20 @@ class RadioViewModel @Inject constructor(
         fpb: String?
     ) = withContext(Dispatchers.IO) {
         val pb = if (isSnapserver) {
+            val streamName = "name=RadioCapullo"
+            val pipeMode = "mode=read"
+            val dryoutMs = "dryout_ms=2000"
+            val librespotSampleFormat = "sampleformat=44100:16:2"
+            val pipeArgs = listOf(
+                streamName, pipeMode, dryoutMs, librespotSampleFormat
+            ).joinToString("&")
+
             ProcessBuilder()
                 .command(
                     "$nativeLibDir/libsnapserver.so",
-                    "--server.datadir=$cacheDir", "--stream.source",
-                    "pipe://$filifoFilepath?name=fil&mode=create&dryout_ms=2000"
+                    "--server.datadir=$cacheDir",
+                    "--stream.source",
+                    "pipe://$filifoFilepath?$pipeArgs",
                 )
                 .redirectErrorStream(true)
         } else {

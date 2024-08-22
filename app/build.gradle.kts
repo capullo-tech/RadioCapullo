@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -15,7 +14,7 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "v0.4.5"
+        versionName = "v0.4.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -42,11 +41,13 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "log4j2.xml"
-            excludes += "META-INF/DEPENDENCIES"
         }
         packaging {
             jniLibs {
@@ -56,31 +57,36 @@ android {
     }
 }
 
-dependencies {
+androidComponents {
+    onVariants(selector().withBuildType("release")) {
+        // Only exclude *.version files in release mode as debug mode requires
+        // these files for layout inspector to work.
+        it.packaging.resources.excludes.add("META-INF/*.version")
+    }
+}
 
+dependencies {
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.media)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
-    implementation(libs.lib.snapcast.android)
-    implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {
+    implementation(project(mapOf("path" to ":lib-snapcast-android")))
+    implementation(libs.lib.librespot.android)
+    implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")
@@ -90,7 +96,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

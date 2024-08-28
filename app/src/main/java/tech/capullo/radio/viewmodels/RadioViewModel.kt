@@ -54,13 +54,13 @@ class RadioViewModel @Inject constructor(
         return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
     }
 
-    fun saveText(text: String) {
+    fun saveLastServerText(text: String) {
         val editor = getSharedPreferences(applicationContext).edit()
         editor.putString("my_text", text)
         editor.apply()
     }
 
-    fun getText(): String {
+    fun getLastServerText(): String {
         return getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
     }
 

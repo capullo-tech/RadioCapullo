@@ -2,45 +2,35 @@ package tech.capullo.radio.compose
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import tech.capullo.radio.ui.theme.RadioTheme
-import tech.capullo.radio.viewmodels.RadioViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RadioApp(
     modifier: Modifier = Modifier,
-    radioViewModel: RadioViewModel = viewModel()
+    onStartBroadcastingClicked: () -> Unit,
+    onTuneInClicked: () -> Unit
 ) {
     Surface(
-        modifier, color = MaterialTheme.colorScheme.background
+        modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
@@ -52,26 +42,16 @@ fun RadioApp(
                 )
             if (multiplePermissionsState.allPermissionsGranted) {
                 RadioMainScreen(
-                    deviceName = radioViewModel.getDeviceName(),
-                    hostAddresses = radioViewModel.hostAddresses,
-                    snapclientsList = emptyList<String>(), // radioViewModel.snapClientsList,
-                    startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
-                    lastServer = radioViewModel.getText(),
-                    saveServer = { ip -> radioViewModel.saveText(ip) },
-                    startWorker = { ip -> radioViewModel.initiateWorker(ip) }
+                    onStartBroadcastingClicked = onStartBroadcastingClicked,
+                    onTuneInClicked = onTuneInClicked
                 )
             } else {
                 RadioPermissionHandler(multiplePermissionsState = multiplePermissionsState)
             }
         } else {
             RadioMainScreen(
-                deviceName = radioViewModel.getDeviceName(),
-                hostAddresses = radioViewModel.hostAddresses,
-                snapclientsList = emptyList(), // radioViewModel.snapClientsList,
-                startBroadcast = { radioViewModel.startSpotifyBroadcasting() },
-                lastServer = radioViewModel.getText(),
-                saveServer = { ip -> radioViewModel.saveText(ip) },
-                startWorker = { ip -> radioViewModel.initiateWorker(ip) }
+                onStartBroadcastingClicked = onStartBroadcastingClicked,
+                onTuneInClicked = onTuneInClicked
             )
         }
     }
@@ -115,58 +95,19 @@ fun RadioPermissionScreenPreview() {
 }
 @Composable
 fun RadioMainScreen(
-    deviceName: String,
-    hostAddresses: List<String>,
-    startBroadcast: () -> Unit,
-    snapclientsList: List<String>,
-    lastServer: String,
-    saveServer: (String) -> Unit,
-    startWorker: (String) -> Unit
+    onStartBroadcastingClicked: () -> Unit,
+    onTuneInClicked: () -> Unit
 ) {
-    var text by remember { mutableStateOf(lastServer) }
-    var buttonText by remember { mutableStateOf("Tune in") }
-    var isBroadcasting by remember { mutableStateOf(false) }
-
-    Column {
-        Text("Radio Capullo")
-        if (isBroadcasting) {
-            Text("Discoverable on Spotify as: $deviceName")
-            Text("Host Addresses:")
-            LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-                items(items = hostAddresses) { name ->
-                    Text(name)
-                }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(onClick = onStartBroadcastingClicked) {
+                Text("Start Broadcasting")
             }
-            SnapclientList(snapclientList = snapclientsList)
-        }
-        Button(
-            onClick = {
-                startBroadcast()
-                isBroadcasting = true
-            },
-            enabled = !isBroadcasting
-        ) {
-            Text(if (isBroadcasting) "Broadcasting" else "Broadcast")
-        }
-        Row {
-            TextField(
-                value = text,
-                onValueChange = { newText ->
-                    text = newText
-                    saveServer(newText)
-                },
-                label = { Text("Host Address") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = {
-                    startWorker(text)
-                    buttonText = "Restart"
-                }
-            ) {
-
-                Text(buttonText)
+            Button(onClick = onTuneInClicked) {
+                Text("Tune in to a station")
             }
         }
     }
@@ -220,13 +161,8 @@ private fun getTextToShowGivenPermissions(
 fun RadioAppPreview() {
     RadioTheme {
         RadioMainScreen(
-            deviceName = "Pixel 3a API 28",
-            hostAddresses = listOf("192.168.0.109", "100.17.17.4"),
-            snapclientsList = listOf(),
-            startBroadcast = { println("Broadcasting") },
-            lastServer = "",
-            saveServer = { ip -> println(ip) },
-            startWorker = { ip -> println(ip) }
+            onStartBroadcastingClicked = { println("Start Broadcasting") },
+            onTuneInClicked = { println("Tune in") }
         )
     }
 }

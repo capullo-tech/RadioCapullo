@@ -2,9 +2,9 @@ package tech.capullo.radio
 
 import android.content.Context
 import androidx.startup.Initializer
+import bruhcollective.itaysonlab.jetispot.playback.sp.AndroidNativeDecoder
 import xyz.gianlu.librespot.audio.decoders.Decoders
 import xyz.gianlu.librespot.audio.format.SuperAudioFormat
-import xyz.gianlu.librespot.player.decoders.AndroidNativeDecoder
 
 class AndroidNativeDecoderInitializer : Initializer<Unit> {
 

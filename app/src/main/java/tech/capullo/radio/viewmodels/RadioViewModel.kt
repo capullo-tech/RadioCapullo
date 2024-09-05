@@ -44,11 +44,9 @@ class RadioViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     val radioRepository: RadioRepository,
 ) : ViewModel() {
-    private val _hostAddresses = getInetAddresses().toMutableStateList()
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
 
-    val hostAddresses: List<String>
-        get() = _hostAddresses
+
 
     private fun getSharedPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
@@ -80,25 +78,7 @@ class RadioViewModel @Inject constructor(
         return uniqueID
     }
 
-    fun getDeviceName(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            val deviceName = Settings.Global.getString(
-                applicationContext.contentResolver,
-                Settings.Global.DEVICE_NAME
-            )
-            if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
-        } else {
-            Build.MODEL
-        }
 
-    private fun getInetAddresses(): List<String> =
-        Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
-            Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
-                inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
-                    it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
-                }?.let { true } ?: false
-            }.map { it.hostAddress!! }
-        }
 
     fun startSpotifyBroadcasting() {
         val processId = Process.myPid()
@@ -128,7 +108,7 @@ class RadioViewModel @Inject constructor(
         val data: Data = Data.Builder()
             .putString(ARGUMENT_PACKAGE_NAME, componentName.packageName)
             .putString(ARGUMENT_CLASS_NAME, componentName.className)
-            .putString("DEVICE_NAME", getDeviceName())
+            //.putString("DEVICE_NAME", getDeviceName())
             .putString("PIPE_FILE_PATH", pipeFilepath)
             .build()
 
@@ -266,4 +246,5 @@ class RadioViewModel @Inject constructor(
             throw RuntimeException(e)
         }
     }
+
 }

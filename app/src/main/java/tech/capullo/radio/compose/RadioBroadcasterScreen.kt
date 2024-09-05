@@ -4,26 +4,46 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 import tech.capullo.radio.viewmodels.RadioViewModel
 
 @Composable
 fun RadioBroadcasterScreen(
-    radioViewModel: RadioViewModel = hiltViewModel(),
+    viewModel: RadioBroadcasterViewModel = hiltViewModel(),
 ) {
-    radioViewModel.startSpotifyBroadcasting()
+    var isServiceRunning by remember { mutableStateOf(false) }
 
     Column {
-        Text("Discoverable on Spotify as: ${radioViewModel.getDeviceName()}")
-        Text("Host Addresses:")
-        LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-            items(items = radioViewModel.hostAddresses) { name ->
-                Text(name)
+        if (isServiceRunning) {
+            Text("Discoverable on Spotify as: ${viewModel.getDeviceName()}")
+            Text("Host Addresses:")
+            LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
+                items(items = viewModel.hostAddresses) { name ->
+                    Text(name)
+                }
             }
+        }
+        Button(
+            onClick = {
+                if (isServiceRunning) {
+                    viewModel.stopNsdService()
+                } else {
+                    viewModel.startNsdService()
+                }
+                isServiceRunning = !isServiceRunning
+            }
+        ) {
+            Text(if (isServiceRunning) "Stop NSD Service" else "Start NSD Service")
         }
     }
 }

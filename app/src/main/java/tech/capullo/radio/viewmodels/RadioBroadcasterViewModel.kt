@@ -1,59 +1,59 @@
 package tech.capullo.radio.viewmodels
 
 import android.content.Context
+import android.media.AudioManager
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
-import android.provider.Settings
+import android.os.Process
 import android.util.Log
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.spotify.connectstate.Connect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.AndroidZeroconfServer
+import tech.capullo.radio.data.RadioRepository
 import xyz.gianlu.librespot.android.sink.AndroidSinkOutput
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
-import java.net.NetworkInterface
-import java.util.Collections
+import java.io.BufferedReader
+import java.io.File
+import java.io.IOException
+import java.io.InputStreamReader
 import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @HiltViewModel
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
+    private val repository: RadioRepository
 ): ViewModel() {
-    private val _hostAddresses = getInetAddresses().toMutableStateList()
-    val executorService = Executors.newSingleThreadExecutor()
-    private val TAG = "RadioBroadcasterViewModel"
+    private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
+    val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
 
-    private fun getInetAddresses(): List<String> =
-        Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
-            Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
-                inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
-                    it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
-                }?.let { true } ?: false
-            }.map { it.hostAddress!! }
-        }
-
-    fun getDeviceName(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            val deviceName = Settings.Global.getString(
-                applicationContext.contentResolver,
-                Settings.Global.DEVICE_NAME
-            )
-            if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
-        } else {
-            Build.MODEL
-        }
+    fun getDeviceName(): String = repository.getDeviceName()
 
     fun startNsdService() {
+        val pipeFilepath = repository.getPipeFilepath()
+        if (pipeFilepath == null) {
+            Log.e("CAPULLOWORKER", "Error creating FIFO file")
+            return
+        }
+
         val sessionListener = object : AndroidZeroconfServer.SessionListener {
             val executorService = Executors.newSingleThreadExecutor()
             override fun sessionClosing(session: Session) {
@@ -66,6 +66,7 @@ class RadioBroadcasterViewModel @Inject constructor(
                 executorService.execute(
                     SessionChangedRunnable(
                         session,
+                        pipeFilepath,
                         object : SessionChangedCallback {
                             override fun onPlayerReady(player: Player) {
                                 Log.d("NSD", "Player ready")
@@ -80,7 +81,6 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
         }
 
-
         executorService.execute(
             ZeroconfServerRunnable(
                 getDeviceName(),
@@ -88,9 +88,14 @@ class RadioBroadcasterViewModel @Inject constructor(
                 applicationContext
             )
         )
+
+        startSnapcast(
+            pipeFilepath,
+            repository.getCacheDirPath(),
+            repository.getNativeLibDirPath(),
+            applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        )
     }
-
-
 
     fun stopNsdService() {
         //nsdManager.unregisterService(registrationListener)
@@ -171,6 +176,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             return builder.create()
         }
     }
+
     interface SessionChangedCallback {
         fun onPlayerReady(player: Player)
         fun onPlayerError(ex: Exception)
@@ -178,6 +184,7 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     private class SessionChangedRunnable(
         val session: Session,
+        val pipeFilepath: String,
         val callback: SessionChangedCallback
     ) : Runnable {
         override fun run() {
@@ -193,10 +200,111 @@ class RadioBroadcasterViewModel @Inject constructor(
 
         private fun prepareLibrespotPlayer(session: Session): Player {
             val configuration = PlayerConfiguration.Builder()
-                .setOutput(PlayerConfiguration.AudioOutput.CUSTOM)
-                .setOutputClass(AndroidSinkOutput::class.java.name)
+                //.setOutput(PlayerConfiguration.AudioOutput.CUSTOM)
+                //.setOutputClass(AndroidSinkOutput::class.java.name)
+                .setOutput(PlayerConfiguration.AudioOutput.PIPE)
+                .setOutputPipe(File(pipeFilepath))
                 .build()
             return Player(configuration, session)
+        }
+    }
+
+    private fun startSnapcast(
+        filifoFilepath: String,
+        cacheDir: String,
+        nativeLibraryDir: String,
+        audioManager: AudioManager,
+    ) {
+        // Android audio configuration
+        val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
+        val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+        val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
+        val sampleformat = "$rate:16:*"
+
+        viewModelScope.launch {
+            val snapserver = async {
+                snapcastProcess(
+                    filifoFilepath,
+                    cacheDir,
+                    nativeLibraryDir,
+                    true,
+                    UUID.randomUUID().toString(),
+                    androidPlayer,
+                    sampleformat,
+                    rate,
+                    fpb
+                )
+            }
+            val snapclient = async {
+                snapcastProcess(
+                    filifoFilepath,
+                    cacheDir,
+                    nativeLibraryDir,
+                    false,
+                    UUID.randomUUID().toString(),
+                    androidPlayer,
+                    sampleformat,
+                    rate,
+                    fpb
+                )
+            }
+            awaitAll(snapclient, snapserver)
+        }
+    }
+
+    private suspend fun snapcastProcess(
+        filifoFilepath: String,
+        cacheDir: String,
+        nativeLibDir: String,
+        isSnapserver: Boolean,
+        uniqueId: String,
+        player: String,
+        sampleFormat: String,
+        rate: String?,
+        fpb: String?
+    ) = withContext(Dispatchers.IO) {
+        val pb = if (isSnapserver) {
+            val streamName = "name=RadioCapullo"
+            val pipeMode = "mode=read"
+            val dryoutMs = "dryout_ms=2000"
+            val librespotSampleFormat = "sampleformat=44100:16:2"
+            val pipeArgs = listOf(
+                streamName, pipeMode, dryoutMs, librespotSampleFormat
+            ).joinToString("&")
+
+            ProcessBuilder()
+                .command(
+                    "$nativeLibDir/libsnapserver.so",
+                    "--server.datadir=$cacheDir",
+                    "--stream.source",
+                    "pipe://$filifoFilepath?$pipeArgs",
+                )
+                .redirectErrorStream(true)
+        } else {
+            ProcessBuilder().command(
+                "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
+                "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
+                "--logfilter", "*:info,Stats:debug"
+            )
+        }
+        try {
+            val env = pb.environment()
+            if (rate != null) env["SAMPLE_RATE"] = rate
+            if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
+
+            val process = pb.start()
+            val bufferedReader = BufferedReader(
+                InputStreamReader(process.inputStream)
+            )
+            var line: String?
+            while (bufferedReader.readLine().also { line = it } != null) {
+                val processId = Process.myPid()
+                val threadName = Thread.currentThread().name
+                val tag = if (isSnapserver) "SNAPSERVER" else "SNAPCLIENT"
+                Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
+            }
+        } catch (e: IOException) {
+            throw RuntimeException(e)
         }
     }
     override fun onCleared() {

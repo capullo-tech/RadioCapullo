@@ -2,15 +2,12 @@ package tech.capullo.radio.viewmodels
 
 import android.content.Context
 import android.media.AudioManager
-import android.net.nsd.NsdManager
-import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.os.Process
 import android.util.Log
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spotify.connectstate.Connect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -18,9 +15,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tech.capullo.radio.SpZeroconfServer
 import tech.capullo.radio.data.AndroidZeroconfServer
 import tech.capullo.radio.data.RadioRepository
-import xyz.gianlu.librespot.android.sink.AndroidSinkOutput
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -28,7 +25,6 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -40,7 +36,7 @@ class RadioBroadcasterViewModel @Inject constructor(
     private val repository: RadioRepository
 ): ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
-    val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
@@ -81,13 +77,11 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
         }
 
-        executorService.execute(
-            ZeroconfServerRunnable(
-                getDeviceName(),
-                sessionListener,
-                applicationContext
-            )
+        val zeroconfServer = SpZeroconfServer(
+            applicationContext,
+            executorService
         )
+        zeroconfServer.start(getDeviceName(), sessionListener)
 
         startSnapcast(
             pipeFilepath,
@@ -99,82 +93,6 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun stopNsdService() {
         //nsdManager.unregisterService(registrationListener)
-    }
-
-    private class ZeroconfServerRunnable(
-        val advertisingName: String,
-        val sessionListener: AndroidZeroconfServer.SessionListener,
-        val applicationContext: Context
-    ) : Runnable {
-        override fun run() {
-            val server = prepareLibrespotSession(advertisingName)
-            server.addSessionListener(sessionListener)
-
-            val nsdManager = applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
-
-            val serviceInfo = NsdServiceInfo().apply {
-                serviceName = "RadioCapullo"
-                serviceType = "_spotify-connect._tcp"
-                port = server.listenPort
-                Log.d("NSD", "Service port: $port")
-            }
-
-            nsdManager.registerService(
-                serviceInfo,
-                NsdManager.PROTOCOL_DNS_SD,
-                registrationListener
-            )
-
-            Runtime.getRuntime().addShutdownHook(
-                Thread {
-                    try {
-                        server.closeSession()
-                        server.close()
-                    } catch (ex: Exception) {
-                        Log.e("CAPULLO", "Error closing Zeroconf server", ex)
-                    }
-                }
-            )
-        }
-
-        private val registrationListener = object : NsdManager.RegistrationListener {
-
-            override fun onServiceRegistered(NsdServiceInfo: NsdServiceInfo) {
-                // Save the service name. Android may have changed it in order to
-                // resolve a conflict, so update the name you initially requested
-                // with the name Android actually used.
-                Log.d("NSD", "Service registered")
-            }
-
-            override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                // Registration failed! Put debugging code here to determine why.
-                Log.d("NSD", "Registration failed")
-            }
-
-            override fun onServiceUnregistered(arg0: NsdServiceInfo) {
-                // Service has been unregistered. This only happens when you call
-                // NsdManager.unregisterService() and pass in this listener.
-                Log.d("NSD", "Service unregistered")
-            }
-
-            override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                // Unregistration failed. Put debugging code here to determine why.
-                Log.d("NSD", "Unregistration failed")
-            }
-        }
-        private fun prepareLibrespotSession(advertisingName: String): AndroidZeroconfServer {
-            // Configure the Spotify advertising session
-            val conf = Session.Configuration.Builder()
-                .setStoreCredentials(false)
-                .setCacheEnabled(false)
-                .build()
-            val builder = AndroidZeroconfServer.Builder(applicationContext, conf)
-                .setPreferredLocale(Locale.getDefault().language)
-                .setDeviceType(Connect.DeviceType.SPEAKER)
-                .setDeviceId(null)
-                .setDeviceName(advertisingName)
-            return builder.create()
-        }
     }
 
     interface SessionChangedCallback {
@@ -200,8 +118,6 @@ class RadioBroadcasterViewModel @Inject constructor(
 
         private fun prepareLibrespotPlayer(session: Session): Player {
             val configuration = PlayerConfiguration.Builder()
-                //.setOutput(PlayerConfiguration.AudioOutput.CUSTOM)
-                //.setOutputClass(AndroidSinkOutput::class.java.name)
                 .setOutput(PlayerConfiguration.AudioOutput.PIPE)
                 .setOutputPipe(File(pipeFilepath))
                 .build()

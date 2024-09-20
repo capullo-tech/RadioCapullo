@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
-import tech.capullo.radio.viewmodels.RadioViewModel
 
 @Composable
 fun RadioBroadcasterScreen(
@@ -33,17 +32,15 @@ fun RadioBroadcasterScreen(
                 }
             }
         }
-        Button(
-            onClick = {
-                if (isServiceRunning) {
-                    viewModel.stopNsdService()
-                } else {
+        else {
+            Button(
+                onClick = {
                     viewModel.startNsdService()
+                    isServiceRunning = !isServiceRunning
                 }
-                isServiceRunning = !isServiceRunning
+            ) {
+                Text("Start NSD Service")
             }
-        ) {
-            Text(if (isServiceRunning) "Stop NSD Service" else "Start NSD Service")
         }
     }
 }

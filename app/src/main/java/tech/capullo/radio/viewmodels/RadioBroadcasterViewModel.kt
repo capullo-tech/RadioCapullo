@@ -58,7 +58,6 @@ class RadioBroadcasterViewModel @Inject constructor(
 
             override fun sessionChanged(session: Session) {
                 Log.d("NSD", "Session changed on thread: ${Thread.currentThread().name}")
-                // start the execution service from the main thread
                 executorService.execute(
                     SessionChangedRunnable(
                         session,
@@ -89,10 +88,6 @@ class RadioBroadcasterViewModel @Inject constructor(
             repository.getNativeLibDirPath(),
             applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         )
-    }
-
-    fun stopNsdService() {
-        //nsdManager.unregisterService(registrationListener)
     }
 
     interface SessionChangedCallback {

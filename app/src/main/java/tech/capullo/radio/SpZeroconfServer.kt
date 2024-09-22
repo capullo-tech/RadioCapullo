@@ -85,7 +85,7 @@ class SpZeroconfServer(
             .setStoreCredentials(false)
             .setCacheEnabled(false)
             .build()
-        val builder = AndroidZeroconfServer.Builder(applicationContext, conf)
+        val builder = AndroidZeroconfServer.Builder(conf)
             .setPreferredLocale(Locale.getDefault().language)
             .setDeviceType(Connect.DeviceType.SPEAKER)
             .setDeviceId(null)

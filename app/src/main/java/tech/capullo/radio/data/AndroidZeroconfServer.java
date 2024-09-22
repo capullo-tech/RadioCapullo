@@ -1,7 +1,6 @@
 package tech.capullo.radio.data;
 
 
-import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.JsonObject;
@@ -17,20 +16,14 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.URLDecoder;
-import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +31,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -56,34 +48,12 @@ import xyz.gianlu.librespot.mercury.MercuryClient;
  * @author Powerbling
  */
 public class AndroidZeroconfServer implements Closeable {
-    public static final String SERVICE = "spotify-connect";
     private final static int MAX_PORT = 65536;
     private final static int MIN_PORT = 1024;
     private static final Logger LOGGER = LoggerFactory.getLogger(AndroidZeroconfServer.class);
     private static final byte[] EOL = new byte[]{'\r', '\n'};
     private static final JsonObject DEFAULT_GET_INFO_FIELDS = new JsonObject();
     private static final JsonObject DEFAULT_SUCCESSFUL_ADD_USER = new JsonObject();
-    private static final byte[][] VIRTUAL_INTERFACES = new byte[][]{
-            new byte[]{(byte) 0x00, (byte) 0x0F, (byte) 0x4B}, // Virtual Iron Software, Inc.
-            new byte[]{(byte) 0x00, (byte) 0x13, (byte) 0x07}, // Paravirtual Corporation
-            new byte[]{(byte) 0x00, (byte) 0x13, (byte) 0xBE}, // Virtual Conexions
-            new byte[]{(byte) 0x00, (byte) 0x21, (byte) 0xF6}, // Virtual Iron Software
-            new byte[]{(byte) 0x00, (byte) 0x24, (byte) 0x0B}, // Virtual Computer Inc.
-            new byte[]{(byte) 0x00, (byte) 0xA0, (byte) 0xB1}, // First Virtual Corporation
-            new byte[]{(byte) 0x00, (byte) 0xE0, (byte) 0xC8}, // Virtual access, ltd.
-            new byte[]{(byte) 0x54, (byte) 0x52, (byte) 0x00}, // Linux kernel virtual machine (kvm)
-            new byte[]{(byte) 0x00, (byte) 0x21, (byte) 0xF6}, // Oracle Corporation
-            new byte[]{(byte) 0x18, (byte) 0x92, (byte) 0x2C}, // Virtual Instruments
-            new byte[]{(byte) 0x3C, (byte) 0xF3, (byte) 0x92}, // VirtualTek. Co. Ltd.
-            new byte[]{(byte) 0x00, (byte) 0x05, (byte) 0x69}, // VMWare 1
-            new byte[]{(byte) 0x00, (byte) 0x0C, (byte) 0x29}, // VMWare 2
-            new byte[]{(byte) 0x00, (byte) 0x50, (byte) 0x56}, // VMWare 3
-            new byte[]{(byte) 0x00, (byte) 0x1C, (byte) 0x42}, // Parallels
-            new byte[]{(byte) 0x00, (byte) 0x03, (byte) 0xFF}, // Microsoft Virtual PC
-            new byte[]{(byte) 0x00, (byte) 0x16, (byte) 0x3E}, // Red Hat Xen, Oracle VM, Xen Source, Novell Xen
-            new byte[]{(byte) 0x08, (byte) 0x00, (byte) 0x27}, // VirtualBox
-            new byte[]{(byte) 0x00, (byte) 0x15, (byte) 0x5D}, // Hyper-V
-    };
 
     static {
         DEFAULT_GET_INFO_FIELDS.addProperty("status", 101);
@@ -114,97 +84,21 @@ public class AndroidZeroconfServer implements Closeable {
     private final List<SessionListener> sessionListeners;
     private final Object connectionLock = new Object();
     private final Inner inner;
-    private final Context context;
     private volatile Session session;
     private String connectingUsername = null;
     //private final Disposable registeredService;
     public int listenPort;
 
-    private AndroidZeroconfServer(Context context, @NotNull Inner inner, int listenPort) throws IOException {
+    private AndroidZeroconfServer(@NotNull Inner inner, int listenPort) throws IOException {
         this.inner = inner;
         this.keys = new DiffieHellman(inner.random);
         this.sessionListeners = new ArrayList<>();
-        this.context = context;
 
         if (listenPort == -1)
             listenPort = inner.random.nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT;
         this.listenPort = listenPort;
 
         new Thread(this.runner = new HttpRunner(listenPort), "zeroconf-http-server").start();
-        /*
-
-
-        Rx2Dnssd rxDnssd;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            rxDnssd = new Rx2DnssdEmbedded(this.context);
-        } else {
-            rxDnssd = new Rx2DnssdBindable(this.context);
-        }
-
-        Map<String, String> txt = new HashMap<>();
-        txt.put("CPath", "/");
-        txt.put("VERSION", "1.0");
-        txt.put("Stack", "SP");
-
-        BonjourService bs = new BonjourService.Builder(0, 0, inner.deviceName, "_" + SERVICE + "._tcp", null)
-                .hostname(getUsefulHostname())
-                .port(listenPort)
-                .dnsRecords(txt)
-                .build();
-        registeredService = rxDnssd.register(bs)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(bonjourService -> {
-                    Log.d("CAPULLO", "Register successfully " + bonjourService.toString());
-                    LOGGER.info("Register successfully " + bonjourService.toString());
-                }, throwable -> {
-                    Log.e("CAPULLO", "error", throwable);
-                    LOGGER.error("error", throwable);
-                });
-         */
-    }
-
-    @NotNull
-    public static String getUsefulHostname() throws UnknownHostException {
-        String host = InetAddress.getLocalHost().getHostName();
-        if (Objects.equals(host, "localhost")) {
-            host = Utils.toBase64(BigInteger.valueOf(ThreadLocalRandom.current().nextLong()).toByteArray()) + ".local";
-            LOGGER.warn("Hostname cannot be `localhost`, temporary hostname: " + host);
-            return host;
-        }
-
-        return host;
-    }
-
-    private static boolean isVirtual(@NotNull NetworkInterface nif) throws SocketException {
-        byte[] mac = nif.getHardwareAddress();
-        if (mac == null) return true;
-
-        outer:
-        for (byte[] virtual : VIRTUAL_INTERFACES) {
-            for (int i = 0; i < Math.min(virtual.length, mac.length); i++) {
-                if (virtual[i] != mac[i])
-                    continue outer;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private static void checkInterface(List<NetworkInterface> list, @NotNull NetworkInterface nif) throws SocketException {
-        if (nif.isLoopback() || isVirtual(nif)) return;
-        list.add(nif);
-    }
-
-    @NotNull
-    private static List<NetworkInterface> getAllInterfaces() throws SocketException {
-        List<NetworkInterface> list = new ArrayList<>();
-        Enumeration<NetworkInterface> is = NetworkInterface.getNetworkInterfaces();
-        while (is.hasMoreElements()) checkInterface(list, is.nextElement());
-        return list;
     }
 
     @NotNull
@@ -217,7 +111,6 @@ public class AndroidZeroconfServer implements Closeable {
 
     @Override
     public void close() throws IOException {
-        //if (registeredService != null && !registeredService.isDisposed()) registeredService.dispose();
         runner.close();
     }
 
@@ -423,15 +316,9 @@ public class AndroidZeroconfServer implements Closeable {
 
     public static class Builder extends Session.AbsBuilder<Builder> {
         private int listenPort = -1;
-        private final Context context;
 
-        public Builder(@NotNull Context context, Session.@NotNull Configuration conf) {
+        public Builder(Session.@NotNull Configuration conf) {
             super(conf);
-            this.context = context;
-        }
-
-        public Builder(@NotNull Context context) {
-            this.context = context;
         }
 
         public Builder setListenPort(int listenPort) {
@@ -441,7 +328,7 @@ public class AndroidZeroconfServer implements Closeable {
 
         @NonNls
         public AndroidZeroconfServer create() throws IOException {
-            return new AndroidZeroconfServer(context, new Inner(deviceType, deviceName, deviceId, preferredLocale, conf), listenPort);
+            return new AndroidZeroconfServer(new Inner(deviceType, deviceName, deviceId, preferredLocale, conf), listenPort);
         }
     }
 
@@ -537,9 +424,10 @@ public class AndroidZeroconfServer implements Closeable {
                 headers.put(split[0], split[1].trim());
             }
 
-            if (!hasValidSession())
+            if (!hasValidSession()) {
                 Log.d("CAPULLO", "Handling request: " + method + " " + path + " " + httpVersion + ", headers: " + headers);
                 LOGGER.trace("Handling request: {} {} {}, headers: {}", method, path, httpVersion, headers);
+            }
 
             Map<String, String> params;
             if (Objects.equals(method, "POST")) {

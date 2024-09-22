@@ -6,6 +6,7 @@ import com.spotify.connectstate.Connect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.jetbrains.annotations.NonNls
@@ -44,9 +45,6 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.Volatile
 
 
-/**
- * @author Powerbling
- */
 class AndroidZeroconfServer private constructor(
     inner: Inner,
     listenPort: Int,
@@ -158,7 +156,7 @@ class AndroidZeroconfServer private constructor(
 
         synchronized(connectionLock) {
             if (username == connectingUsername) {
-                Log.d("CAPULLO", username + " is already trying to connect.")
+                Log.d(TAG, "$username is already trying to connect.")
                 LOGGER.info("{} is already trying to connect.", username)
 
                 out.write(httpVersion.toByteArray())
@@ -224,7 +222,7 @@ class AndroidZeroconfServer private constructor(
             }
 
             Log.d(
-                "CAPULLO",
+                TAG,
                 "Accepted new user from " + params.get("deviceName") + ". {deviceId: " + inner.deviceId + "}"
             )
             LOGGER.info(
@@ -263,7 +261,7 @@ class AndroidZeroconfServer private constructor(
                 l.sessionChanged(session!!)
             }
         } catch (ex: SpotifyAuthenticationException) {
-            Log.d("CAPULLO", "Couldn't establish a new session." + ex)
+            Log.d(TAG, "Couldn't establish a new session.$ex")
             LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
@@ -276,7 +274,7 @@ class AndroidZeroconfServer private constructor(
             out.write(EOL)
             out.flush()
         } catch (ex: MercuryException) {
-            Log.d("CAPULLO", "Couldn't establish a new session." + ex)
+            Log.d(TAG, "Couldn't establish a new session.$ex")
             LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
@@ -289,7 +287,7 @@ class AndroidZeroconfServer private constructor(
             out.write(EOL)
             out.flush()
         } catch (ex: IOException) {
-            Log.d("CAPULLO", "Couldn't establish a new session." + ex)
+            Log.d(TAG, "Couldn't establish a new session.$ex")
             LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
@@ -302,7 +300,7 @@ class AndroidZeroconfServer private constructor(
             out.write(EOL)
             out.flush()
         } catch (ex: GeneralSecurityException) {
-            Log.d("CAPULLO", "Couldn't establish a new session." + ex)
+            Log.d(TAG, "Couldn't establish a new session.$ex")
             LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
@@ -337,7 +335,6 @@ class AndroidZeroconfServer private constructor(
         fun sessionChanged(session: Session)
     }
 
-    //class Builder(conf: Session.Configuration) : AbsBuilder<Builder?>(conf) {
     class Builder(conf: Session.Configuration) : AbsBuilder<Builder>(conf) {
         private var listenPort = -1
 
@@ -357,28 +354,15 @@ class AndroidZeroconfServer private constructor(
     }
 
     private class Inner(
-        deviceType: Connect.DeviceType,
-        deviceName: String,
+        val deviceType: Connect.DeviceType,
+        val deviceName: String,
         deviceId: String?,
-        preferredLocale: String,
-        conf: Session.Configuration
+        val preferredLocale: String,
+        val conf: Session.Configuration
     ) {
         val random: Random = SecureRandom()
-        val deviceType: Connect.DeviceType
-        val deviceName: String
-        val deviceId: String
-        val preferredLocale: String
-        val conf: Session.Configuration
-
-        init {
-            this.deviceType = deviceType
-            this.deviceName = deviceName
-            this.preferredLocale = preferredLocale
-            this.conf = conf
-            this.deviceId =
-                if ((deviceId == null || deviceId.isEmpty())) Utils.randomHexString(random, 40)
-                    .lowercase(Locale.getDefault()) else deviceId
-        }
+        val deviceId: String = deviceId?.takeIf { it.isNotEmpty() }
+            ?: Utils.randomHexString(random, 40).lowercase(Locale.getDefault())
     }
 
     private inner class HttpRunner(port: Int) : Closeable {
@@ -387,32 +371,27 @@ class AndroidZeroconfServer private constructor(
         private val executorService: ExecutorService =
             Executors.newCachedThreadPool(NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }))
 
-        @Volatile
-        private var shouldStop = false
-
         init {
-            Log.d("CAPULLO", "Zeroconf HTTP server started successfully on port $port!")
+            Log.d(TAG, "Zeroconf HTTP server started successfully on port $port!")
             LOGGER.info("Zeroconf HTTP server started successfully on port {}!", port)
         }
 
         fun startListening() {
             scope.launch {
-            while (!shouldStop) {
                 try {
                     val socket = serverSocket.accept()
                     executorService.execute(Runnable {
                         try {
-                            Log.d("CAPULLO", "Handling request!")
+                            Log.d(TAG, "Handling request!")
                             handle(socket)
                             socket.close()
                         } catch (ex: IOException) {
-                            LOGGER.error("Failed handling request!", ex)
+                            Log.d(TAG, "Failed handling request!: $ex")
                         }
                     })
                 } catch (ex: IOException) {
-                    if (!shouldStop) LOGGER.error("Failed handling connection!", ex)
+                    Log.d(TAG, "Failed handling connection!: $ex")
                 }
-            }
             }
         }
 
@@ -426,7 +405,7 @@ class AndroidZeroconfServer private constructor(
                 requireNotNull(params)
 
                 try {
-                    Log.d("CAPULLO", "Handling addUser!$out $params $httpVersion")
+                    Log.d(TAG, "Handling addUser!$out $params $httpVersion")
                     handleAddUser(out, params, httpVersion)
                 } catch (ex: GeneralSecurityException) {
                     LOGGER.error("Failed handling addUser!", ex)
@@ -435,7 +414,7 @@ class AndroidZeroconfServer private constructor(
                 }
             } else if (action == "getInfo") {
                 try {
-                    Log.d("CAPULLO", "Handling getInfo!$out $httpVersion")
+                    Log.d(TAG, "Handling getInfo!$out $httpVersion")
                     handleGetInfo(out, httpVersion)
                 } catch (ex: IOException) {
                     LOGGER.error("Failed handling getInfo!", ex)
@@ -452,7 +431,7 @@ class AndroidZeroconfServer private constructor(
 
             val requestLine = Utils.split(Utils.readLine(`in`), ' ')
             if (requestLine.size != 3) {
-                Log.d("CAPULLO", "Unexpected request line: " + requestLine.contentToString())
+                Log.d(TAG, "Unexpected request line: " + requestLine.contentToString())
                 LOGGER.warn("Unexpected request line: " + requestLine.contentToString())
                 return
             }
@@ -470,7 +449,7 @@ class AndroidZeroconfServer private constructor(
 
             if (!hasValidSession()) {
                 Log.d(
-                    "CAPULLO",
+                    TAG,
                     "Handling request: $method $path $httpVersion, headers: $headers"
                 )
                 LOGGER.trace(
@@ -516,7 +495,7 @@ class AndroidZeroconfServer private constructor(
 
             val action = params["action"]
             if (action == null) {
-                Log.d("CAPULLO", "Request is missing action.")
+                Log.d(TAG, "Request is missing action.")
                 LOGGER.debug("Request is missing action.")
                 return
             }
@@ -526,13 +505,14 @@ class AndroidZeroconfServer private constructor(
 
         @Throws(IOException::class)
         override fun close() {
-            shouldStop = true
             serverSocket.close()
             executorService.shutdown()
+            scope.cancel()
         }
     }
 
     companion object {
+        private const val TAG = "AndroidZeroconfServer"
         private const val MAX_PORT = 65536
         private const val MIN_PORT = 1024
         private val LOGGER: Logger = LoggerFactory.getLogger(AndroidZeroconfServer::class.java)

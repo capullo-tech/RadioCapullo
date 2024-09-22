@@ -26,7 +26,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.util.UUID
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
 
@@ -36,7 +35,6 @@ class RadioBroadcasterViewModel @Inject constructor(
     private val repository: RadioRepository
 ): ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
@@ -78,7 +76,6 @@ class RadioBroadcasterViewModel @Inject constructor(
 
         val zeroconfServer = SpZeroconfServer(
             applicationContext,
-            executorService
         )
         zeroconfServer.start(getDeviceName(), sessionListener)
 

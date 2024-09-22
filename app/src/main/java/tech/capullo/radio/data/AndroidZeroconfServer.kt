@@ -34,7 +34,6 @@ import java.util.Arrays
 import java.util.HashMap
 import java.util.Locale
 import java.util.Random
-import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.function.Function
@@ -51,7 +50,6 @@ import kotlin.concurrent.Volatile
 class AndroidZeroconfServer private constructor(
     inner: Inner,
     listenPort: Int,
-    executor: Executor
 ) : Closeable {
     private var runner: HttpRunner
     private val keys: DiffieHellman
@@ -75,7 +73,7 @@ class AndroidZeroconfServer private constructor(
             inner.random.nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT
         this.listenPort = listenPort
 
-        executor.execute(HttpRunner(listenPort).also { this.runner = it })
+        this.runner = HttpRunner(listenPort).apply { startListening() }
     }
 
     @Throws(IOException::class)
@@ -344,7 +342,7 @@ class AndroidZeroconfServer private constructor(
         private var listenPort = -1
 
         @Throws(IOException::class)
-        fun create(executor: Executor): @NonNls AndroidZeroconfServer {
+        fun create(): @NonNls AndroidZeroconfServer {
             return AndroidZeroconfServer(
                 Inner(
                     deviceType,
@@ -354,7 +352,6 @@ class AndroidZeroconfServer private constructor(
                     conf
                 ),
                 listenPort,
-                executor
             )
         }
     }
@@ -384,7 +381,7 @@ class AndroidZeroconfServer private constructor(
         }
     }
 
-    private inner class HttpRunner(port: Int) : Runnable, Closeable {
+    private inner class HttpRunner(port: Int) : Closeable {
         private val serverSocket: ServerSocket = ServerSocket(port)
         private val scope = CoroutineScope(Dispatchers.IO + Job())
         private val executorService: ExecutorService =
@@ -398,7 +395,7 @@ class AndroidZeroconfServer private constructor(
             LOGGER.info("Zeroconf HTTP server started successfully on port {}!", port)
         }
 
-        override fun run() {
+        fun startListening() {
             scope.launch {
             while (!shouldStop) {
                 try {

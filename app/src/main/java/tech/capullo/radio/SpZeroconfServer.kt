@@ -8,12 +8,10 @@ import com.spotify.connectstate.Connect
 import tech.capullo.radio.data.AndroidZeroconfServer
 import xyz.gianlu.librespot.core.Session
 import java.util.Locale
-import java.util.concurrent.Executor
 
 
 class SpZeroconfServer(
     private val applicationContext: Context,
-    private val executor: Executor
 ) {
 
     fun start(
@@ -91,6 +89,6 @@ class SpZeroconfServer(
             .setDeviceType(Connect.DeviceType.SPEAKER)
             .setDeviceId(null)
             .setDeviceName(advertisingName)
-        return builder.create(executor)
+        return builder.create()
     }
 }

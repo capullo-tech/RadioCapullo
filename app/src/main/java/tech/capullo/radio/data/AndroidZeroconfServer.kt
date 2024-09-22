@@ -3,6 +3,10 @@ package tech.capullo.radio.data
 import android.util.Log
 import com.google.gson.JsonObject
 import com.spotify.connectstate.Connect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.jetbrains.annotations.NonNls
 import org.slf4j.Logger
@@ -72,12 +76,6 @@ class AndroidZeroconfServer private constructor(
         this.listenPort = listenPort
 
         executor.execute(HttpRunner(listenPort).also { this.runner = it })
-        /*
-        Thread(
-            HttpRunner(listenPort).also { this.runner = it },
-            "zeroconf-http-server"
-        ).start()
-         */
     }
 
     @Throws(IOException::class)
@@ -388,6 +386,7 @@ class AndroidZeroconfServer private constructor(
 
     private inner class HttpRunner(port: Int) : Runnable, Closeable {
         private val serverSocket: ServerSocket = ServerSocket(port)
+        private val scope = CoroutineScope(Dispatchers.IO + Job())
         private val executorService: ExecutorService =
             Executors.newCachedThreadPool(NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }))
 
@@ -400,6 +399,7 @@ class AndroidZeroconfServer private constructor(
         }
 
         override fun run() {
+            scope.launch {
             while (!shouldStop) {
                 try {
                     val socket = serverSocket.accept()
@@ -415,6 +415,7 @@ class AndroidZeroconfServer private constructor(
                 } catch (ex: IOException) {
                     if (!shouldStop) LOGGER.error("Failed handling connection!", ex)
                 }
+            }
             }
         }
 

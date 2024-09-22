@@ -32,7 +32,8 @@ import javax.inject.Inject
 @HiltViewModel
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
-    private val repository: RadioRepository
+    private val repository: RadioRepository,
+    private val spZeroconfServer: SpZeroconfServer
 ): ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
@@ -74,10 +75,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
         }
 
-        val zeroconfServer = SpZeroconfServer(
-            applicationContext,
-        )
-        zeroconfServer.start(getDeviceName(), sessionListener)
+        spZeroconfServer.start(getDeviceName(), sessionListener)
 
         startSnapcast(
             pipeFilepath,

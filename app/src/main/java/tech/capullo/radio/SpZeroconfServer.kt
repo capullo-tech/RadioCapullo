@@ -5,13 +5,15 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.util.Log
 import com.spotify.connectstate.Connect
+import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.capullo.radio.data.AndroidZeroconfServer
 import xyz.gianlu.librespot.core.Session
 import java.util.Locale
+import javax.inject.Inject
 
 
-class SpZeroconfServer(
-    private val applicationContext: Context,
+class SpZeroconfServer @Inject constructor(
+    @ApplicationContext private val applicationContext: Context,
 ) {
 
     fun start(

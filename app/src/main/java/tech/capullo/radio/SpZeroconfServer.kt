@@ -38,20 +38,6 @@ class SpZeroconfServer @Inject constructor(
             NsdManager.PROTOCOL_DNS_SD,
             registrationListener
         )
-
-            /*
-            Runtime.getRuntime().addShutdownHook(
-                Thread {
-                    try {
-                        nsdManager.unregisterService(registrationListener)
-                        server.closeSession()
-                        server.close()
-                    } catch (ex: Exception) {
-                        Log.e("CAPULLO", "Error closing Zeroconf server", ex)
-                    }
-                }
-            )
-             */
     }
 
     private val registrationListener = object : NsdManager.RegistrationListener {

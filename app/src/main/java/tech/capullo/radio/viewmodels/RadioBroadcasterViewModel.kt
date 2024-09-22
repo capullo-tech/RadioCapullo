@@ -40,11 +40,12 @@ class RadioBroadcasterViewModel @Inject constructor(
     val hostAddresses: List<String>
         get() = _hostAddresses
 
+
+
     fun getDeviceName(): String = repository.getDeviceName()
 
     fun startNsdService() {
-        val pipeFilepath = repository.getPipeFilepath()
-        if (pipeFilepath == null) {
+        val pipeFilepath = repository.getPipeFilepath() ?: run {
             Log.e("CAPULLOWORKER", "Error creating FIFO file")
             return
         }

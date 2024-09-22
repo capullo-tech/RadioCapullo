@@ -20,25 +20,26 @@ class SpZeroconfServer(
         advertisingName: String,
         sessionListener: AndroidZeroconfServer.SessionListener,
     ) {
-        executor.execute {
-            val server = prepareLibrespotSession(advertisingName)
-            server.addSessionListener(sessionListener)
+        // the server initializes the runnable inside the executor
+        val server = prepareLibrespotSession(advertisingName)
+        server.addSessionListener(sessionListener)
 
-            val nsdManager = applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
+        val nsdManager = applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
 
-            val serviceInfo = NsdServiceInfo().apply {
-                serviceName = "RadioCapullo"
-                serviceType = "_spotify-connect._tcp"
-                port = server.listenPort
-                Log.d("NSD", "Service port: $port")
-            }
+        val serviceInfo = NsdServiceInfo().apply {
+            serviceName = "RadioCapullo"
+            serviceType = "_spotify-connect._tcp"
+            port = server.listenPort
+            Log.d("NSD", "Service port: $port")
+        }
 
-            nsdManager.registerService(
-                serviceInfo,
-                NsdManager.PROTOCOL_DNS_SD,
-                registrationListener
-            )
+        nsdManager.registerService(
+            serviceInfo,
+            NsdManager.PROTOCOL_DNS_SD,
+            registrationListener
+        )
 
+            /*
             Runtime.getRuntime().addShutdownHook(
                 Thread {
                     try {
@@ -50,7 +51,7 @@ class SpZeroconfServer(
                     }
                 }
             )
-        }
+             */
     }
 
     private val registrationListener = object : NsdManager.RegistrationListener {
@@ -90,6 +91,6 @@ class SpZeroconfServer(
             .setDeviceType(Connect.DeviceType.SPEAKER)
             .setDeviceId(null)
             .setDeviceName(advertisingName)
-        return builder.create()
+        return builder.create(executor)
     }
 }

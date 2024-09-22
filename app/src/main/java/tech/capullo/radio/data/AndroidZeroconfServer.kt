@@ -30,6 +30,7 @@ import java.util.Arrays
 import java.util.HashMap
 import java.util.Locale
 import java.util.Random
+import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.function.Function
@@ -43,7 +44,11 @@ import kotlin.concurrent.Volatile
 /**
  * @author Powerbling
  */
-class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) : Closeable {
+class AndroidZeroconfServer private constructor(
+    inner: Inner,
+    listenPort: Int,
+    executor: Executor
+) : Closeable {
     private var runner: HttpRunner
     private val keys: DiffieHellman
     private val sessionListeners: MutableList<SessionListener>
@@ -54,7 +59,6 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
     private var session: Session? = null
     private var connectingUsername: String? = null
 
-    //private final Disposable registeredService;
     var listenPort: Int
 
     init {
@@ -67,10 +71,13 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
             inner.random.nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT
         this.listenPort = listenPort
 
+        executor.execute(HttpRunner(listenPort).also { this.runner = it })
+        /*
         Thread(
             HttpRunner(listenPort).also { this.runner = it },
             "zeroconf-http-server"
         ).start()
+         */
     }
 
     @Throws(IOException::class)
@@ -339,7 +346,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
         private var listenPort = -1
 
         @Throws(IOException::class)
-        fun create(): @NonNls AndroidZeroconfServer {
+        fun create(executor: Executor): @NonNls AndroidZeroconfServer {
             return AndroidZeroconfServer(
                 Inner(
                     deviceType,
@@ -347,7 +354,9 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
                     deviceId,
                     preferredLocale,
                     conf
-                ), listenPort
+                ),
+                listenPort,
+                executor
             )
         }
     }
@@ -378,7 +387,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
     }
 
     private inner class HttpRunner(port: Int) : Runnable, Closeable {
-        private val serverSocket: ServerSocket
+        private val serverSocket: ServerSocket = ServerSocket(port)
         private val executorService: ExecutorService =
             Executors.newCachedThreadPool(NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }))
 
@@ -386,8 +395,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
         private var shouldStop = false
 
         init {
-            serverSocket = ServerSocket(port)
-            Log.d("CAPULLO", "Zeroconf HTTP server started successfully on port " + port + "!")
+            Log.d("CAPULLO", "Zeroconf HTTP server started successfully on port $port!")
             LOGGER.info("Zeroconf HTTP server started successfully on port {}!", port)
         }
 
@@ -420,7 +428,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
                 requireNotNull(params)
 
                 try {
-                    Log.d("CAPULLO", "Handling addUser!" + out + " " + params + " " + httpVersion)
+                    Log.d("CAPULLO", "Handling addUser!$out $params $httpVersion")
                     handleAddUser(out, params, httpVersion)
                 } catch (ex: GeneralSecurityException) {
                     LOGGER.error("Failed handling addUser!", ex)
@@ -429,13 +437,13 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
                 }
             } else if (action == "getInfo") {
                 try {
-                    Log.d("CAPULLO", "Handling getInfo!" + out + " " + httpVersion)
+                    Log.d("CAPULLO", "Handling getInfo!$out $httpVersion")
                     handleGetInfo(out, httpVersion)
                 } catch (ex: IOException) {
                     LOGGER.error("Failed handling getInfo!", ex)
                 }
             } else {
-                LOGGER.warn("Unknown action: " + action)
+                LOGGER.warn("Unknown action: $action")
             }
         }
 
@@ -465,7 +473,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
             if (!hasValidSession()) {
                 Log.d(
                     "CAPULLO",
-                    "Handling request: " + method + " " + path + " " + httpVersion + ", headers: " + headers
+                    "Handling request: $method $path $httpVersion, headers: $headers"
                 )
                 LOGGER.trace(
                     "Handling request: {} {} {}, headers: {}",
@@ -478,13 +486,13 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
 
             var params: MutableMap<String?, String?>?
             if (method == "POST") {
-                val contentType = headers.get("Content-Type")
+                val contentType = headers["Content-Type"]
                 if (contentType != "application/x-www-form-urlencoded") {
-                    LOGGER.error("Bad Content-Type: " + contentType)
+                    LOGGER.error("Bad Content-Type: $contentType")
                     return
                 }
 
-                val contentLengthStr = headers.get("Content-Length")
+                val contentLengthStr = headers["Content-Length"]
                 if (contentLengthStr == null) {
                     LOGGER.error("Missing Content-Length header!")
                     return
@@ -508,7 +516,7 @@ class AndroidZeroconfServer private constructor(inner: Inner, listenPort: Int) :
                 params = parsePath(path)
             }
 
-            val action = params.get("action")
+            val action = params["action"]
             if (action == null) {
                 Log.d("CAPULLO", "Request is missing action.")
                 LOGGER.debug("Request is missing action.")

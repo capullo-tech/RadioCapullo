@@ -371,6 +371,9 @@ class AndroidZeroconfServer private constructor(
         private val executorService: ExecutorService =
             Executors.newCachedThreadPool(NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }))
 
+        @Volatile
+        private var shouldStop = false
+
         init {
             Log.d(TAG, "Zeroconf HTTP server started successfully on port $port!")
             LOGGER.info("Zeroconf HTTP server started successfully on port {}!", port)
@@ -378,19 +381,21 @@ class AndroidZeroconfServer private constructor(
 
         fun startListening() {
             scope.launch {
-                try {
-                    val socket = serverSocket.accept()
-                    executorService.execute(Runnable {
-                        try {
-                            Log.d(TAG, "Handling request!")
-                            handle(socket)
-                            socket.close()
-                        } catch (ex: IOException) {
-                            Log.d(TAG, "Failed handling request!: $ex")
-                        }
-                    })
-                } catch (ex: IOException) {
-                    Log.d(TAG, "Failed handling connection!: $ex")
+                while (!shouldStop) {
+                    try {
+                        val socket = serverSocket.accept()
+                        executorService.execute(Runnable {
+                            try {
+                                Log.d(TAG, "Handling request!")
+                                handle(socket)
+                                socket.close()
+                            } catch (ex: IOException) {
+                                Log.d(TAG, "Failed handling request!: $ex")
+                            }
+                        })
+                    } catch (ex: IOException) {
+                        Log.d(TAG, "Failed handling connection!: $ex")
+                    }
                 }
             }
         }
@@ -505,6 +510,7 @@ class AndroidZeroconfServer private constructor(
 
         @Throws(IOException::class)
         override fun close() {
+            shouldStop = true
             serverSocket.close()
             executorService.shutdown()
             scope.cancel()

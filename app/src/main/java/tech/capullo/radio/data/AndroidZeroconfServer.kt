@@ -9,13 +9,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.jetbrains.annotations.NonNls
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import xyz.gianlu.librespot.common.NameThreadFactory
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.core.Session
-import xyz.gianlu.librespot.core.Session.AbsBuilder
 import xyz.gianlu.librespot.core.Session.SpotifyAuthenticationException
 import xyz.gianlu.librespot.crypto.DiffieHellman
 import xyz.gianlu.librespot.mercury.MercuryClient.MercuryException
@@ -33,7 +31,6 @@ import java.security.SecureRandom
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.Locale
-import java.util.Random
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.function.Function
@@ -43,32 +40,25 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.Volatile
 
-class AndroidZeroconfServer private constructor(
-    inner: Inner,
-    listenPort: Int,
+class AndroidZeroconfServer(
+    val deviceType: Connect.DeviceType,
+    val deviceName: String,
+    val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
+    val preferredLocale: String = Locale.getDefault().language,
+    val conf: Session.Configuration,
 ) : Closeable {
     private var runner: HttpRunner
-    private val keys: DiffieHellman
-    private val sessionListeners: MutableList<SessionListener>
+    private val keys: DiffieHellman = DiffieHellman(SecureRandom())
+    private val sessionListeners: MutableList<SessionListener> = ArrayList()
     private val connectionLock = Any()
-    private val inner: Inner
 
     @Volatile
     private var session: Session? = null
     private var connectingUsername: String? = null
 
-    var listenPort: Int
+    var listenPort: Int = SecureRandom().nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT
 
     init {
-        var listenPort = listenPort
-        this.inner = inner
-        this.keys = DiffieHellman(inner.random)
-        this.sessionListeners = ArrayList<SessionListener>()
-
-        if (listenPort == -1) listenPort =
-            inner.random.nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT
-        this.listenPort = listenPort
-
         this.runner = HttpRunner(listenPort).apply { startListening() }
     }
 
@@ -102,10 +92,10 @@ class AndroidZeroconfServer private constructor(
     @Throws(IOException::class)
     private fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
-        info.addProperty("deviceID", inner.deviceId)
-        info.addProperty("remoteName", inner.deviceName)
+        info.addProperty("deviceID", deviceId)
+        info.addProperty("remoteName", deviceName)
         info.addProperty("publicKey", Utils.toBase64(keys.publicKeyArray()))
-        info.addProperty("deviceType", inner.deviceType.name.uppercase(Locale.getDefault()))
+        info.addProperty("deviceType", deviceType.name.uppercase(Locale.getDefault()))
 
         synchronized(connectionLock) {
             info.addProperty(
@@ -225,12 +215,12 @@ class AndroidZeroconfServer private constructor(
                 TAG,
                 "Accepted new user from " +
                         params["deviceName"] + ". {deviceId: " +
-                    inner.deviceId + "}"
+                    deviceId + "}"
             )
             LOGGER.info(
                 "Accepted new user from {}. {deviceId: {}}",
                 params["deviceName"],
-                inner.deviceId
+                deviceId
             )
 
             // Sending response
@@ -247,11 +237,11 @@ class AndroidZeroconfServer private constructor(
             out.write(resp.toByteArray())
             out.flush()
 
-            session = Session.Builder(inner.conf)
-                .setDeviceId(inner.deviceId)
-                .setDeviceName(inner.deviceName)
-                .setDeviceType(inner.deviceType)
-                .setPreferredLocale(inner.preferredLocale)
+            session = Session.Builder(conf)
+                .setDeviceId(deviceId)
+                .setDeviceName(deviceName)
+                .setDeviceType(deviceType)
+                .setPreferredLocale(preferredLocale)
                 .blob(username, decrypted)
                 .create()
 
@@ -336,36 +326,6 @@ class AndroidZeroconfServer private constructor(
          * @param session The new [Session]
          */
         fun sessionChanged(session: Session)
-    }
-
-    class Builder(conf: Session.Configuration) : AbsBuilder<Builder>(conf) {
-        private var listenPort = -1
-
-        @Throws(IOException::class)
-        fun create(): @NonNls AndroidZeroconfServer {
-            return AndroidZeroconfServer(
-                Inner(
-                    deviceType,
-                    deviceName,
-                    deviceId,
-                    preferredLocale,
-                    conf
-                ),
-                listenPort,
-            )
-        }
-    }
-
-    private class Inner(
-        val deviceType: Connect.DeviceType,
-        val deviceName: String,
-        deviceId: String?,
-        val preferredLocale: String,
-        val conf: Session.Configuration
-    ) {
-        val random: Random = SecureRandom()
-        val deviceId: String = deviceId?.takeIf { it.isNotEmpty() }
-            ?: Utils.randomHexString(random, 40).lowercase(Locale.getDefault())
     }
 
     private inner class HttpRunner(port: Int) : Closeable {

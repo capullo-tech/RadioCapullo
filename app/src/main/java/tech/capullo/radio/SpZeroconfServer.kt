@@ -8,7 +8,6 @@ import com.spotify.connectstate.Connect
 import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.capullo.radio.data.AndroidZeroconfServer
 import xyz.gianlu.librespot.core.Session
-import java.util.Locale
 import javax.inject.Inject
 
 class SpZeroconfServer @Inject constructor(
@@ -71,11 +70,10 @@ class SpZeroconfServer @Inject constructor(
             .setStoreCredentials(false)
             .setCacheEnabled(false)
             .build()
-        val builder = AndroidZeroconfServer.Builder(conf)
-            .setPreferredLocale(Locale.getDefault().language)
-            .setDeviceType(Connect.DeviceType.SPEAKER)
-            .setDeviceId(null)
-            .setDeviceName(advertisingName)
-        return builder.create()
+        return AndroidZeroconfServer(
+            deviceType = Connect.DeviceType.SPEAKER,
+            deviceName = advertisingName,
+            conf = conf
+        )
     }
 }

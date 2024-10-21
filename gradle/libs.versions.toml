@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.9.0"
-androidGradlePlugin = "8.5.2"
+androidGradlePlugin = "8.7.1"
 androidx-junit = "1.2.1"
 # @keep
 appcompat = "1.7.0"

@@ -31,7 +31,6 @@ import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.ArrayList
-import java.util.Arrays
 import java.util.HashMap
 import java.util.Locale
 import java.util.Random
@@ -171,13 +170,13 @@ class AndroidZeroconfServer private constructor(
 
         val sharedKey = Utils.toByteArray(keys.computeSharedKey(Utils.fromBase64(clientKeyStr)))
         val blobBytes = Utils.fromBase64(blobStr)
-        val iv = Arrays.copyOfRange(blobBytes, 0, 16)
-        val encrypted = Arrays.copyOfRange(blobBytes, 16, blobBytes.size - 20)
-        val checksum = Arrays.copyOfRange(blobBytes, blobBytes.size - 20, blobBytes.size)
+        val iv = blobBytes.copyOfRange(0, 16)
+        val encrypted = blobBytes.copyOfRange(16, blobBytes.size - 20)
+        val checksum = blobBytes.copyOfRange(blobBytes.size - 20, blobBytes.size)
 
         val sha1 = MessageDigest.getInstance("SHA-1")
         sha1.update(sharedKey)
-        val baseKey = Arrays.copyOfRange(sha1.digest(), 0, 16)
+        val baseKey = sha1.digest().copyOfRange(0, 16)
 
         val hmac = Mac.getInstance("HmacSHA1")
         hmac.init(SecretKeySpec(baseKey, "HmacSHA1"))
@@ -206,7 +205,7 @@ class AndroidZeroconfServer private constructor(
         val aes = Cipher.getInstance("AES/CTR/NoPadding")
         aes.init(
             Cipher.DECRYPT_MODE,
-            SecretKeySpec(Arrays.copyOfRange(encryptionKey, 0, 16), "AES"),
+            SecretKeySpec(encryptionKey.copyOfRange(0, 16), "AES"),
             IvParameterSpec(iv)
         )
         val decrypted = aes.doFinal(encrypted)

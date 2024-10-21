@@ -6,9 +6,7 @@ import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
 import android.os.Process
-import android.provider.Settings
 import android.util.Log
-import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
@@ -34,8 +32,6 @@ import tech.capullo.radio.data.RadioRepository
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
-import java.net.NetworkInterface
-import java.util.Collections
 import java.util.UUID
 import javax.inject.Inject
 
@@ -45,8 +41,6 @@ class RadioViewModel @Inject constructor(
     val radioRepository: RadioRepository,
 ) : ViewModel() {
     private val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
-
-
 
     private fun getSharedPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
@@ -78,8 +72,6 @@ class RadioViewModel @Inject constructor(
         return uniqueID
     }
 
-
-
     fun startSpotifyBroadcasting() {
         val processId = Process.myPid()
         val threadId = Thread.currentThread().id
@@ -108,7 +100,7 @@ class RadioViewModel @Inject constructor(
         val data: Data = Data.Builder()
             .putString(ARGUMENT_PACKAGE_NAME, componentName.packageName)
             .putString(ARGUMENT_CLASS_NAME, componentName.className)
-            //.putString("DEVICE_NAME", getDeviceName())
+            // .putString("DEVICE_NAME", getDeviceName())
             .putString("PIPE_FILE_PATH", pipeFilepath)
             .build()
 
@@ -246,5 +238,4 @@ class RadioViewModel @Inject constructor(
             throw RuntimeException(e)
         }
     }
-
 }

@@ -31,8 +31,7 @@ fun RadioBroadcasterScreen(
                     Text(name)
                 }
             }
-        }
-        else {
+        } else {
             Button(
                 onClick = {
                     viewModel.startNsdService()

@@ -10,8 +10,7 @@ import javax.inject.Inject
 
 class RadioAdvertisingDataSource @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
-)
-{
+) {
     fun getInetAddresses(): List<String> =
         Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
             Collections.list(networkInterface.inetAddresses).filter { inetAddress ->

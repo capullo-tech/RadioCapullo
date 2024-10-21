@@ -11,7 +11,6 @@ import xyz.gianlu.librespot.core.Session
 import java.util.Locale
 import javax.inject.Inject
 
-
 class SpZeroconfServer @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
 ) {

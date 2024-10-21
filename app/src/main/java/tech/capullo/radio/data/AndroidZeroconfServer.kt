@@ -44,7 +44,6 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.Volatile
 
-
 class AndroidZeroconfServer private constructor(
     inner: Inner,
     listenPort: Int,
@@ -112,7 +111,9 @@ class AndroidZeroconfServer private constructor(
         synchronized(connectionLock) {
             info.addProperty(
                 "activeUser",
-                if (connectingUsername != null) connectingUsername else (if (hasValidSession()) session!!.username() else "")
+                if (connectingUsername != null)
+                    connectingUsername
+                else (if (hasValidSession()) session!!.username() else "")
             )
         }
 
@@ -136,19 +137,19 @@ class AndroidZeroconfServer private constructor(
         params: MutableMap<String?, String?>,
         httpVersion: String
     ) {
-        val username = params.get("userName")
+        val username = params["userName"]
         if (username == null || username.isEmpty()) {
             LOGGER.error("Missing userName!")
             return
         }
 
-        val blobStr = params.get("blob")
+        val blobStr = params["blob"]
         if (blobStr == null || blobStr.isEmpty()) {
             LOGGER.error("Missing blob!")
             return
         }
 
-        val clientKeyStr = params.get("clientKey")
+        val clientKeyStr = params["clientKey"]
         if (clientKeyStr == null || clientKeyStr.isEmpty()) {
             LOGGER.error("Missing clientKey!")
             return
@@ -223,11 +224,13 @@ class AndroidZeroconfServer private constructor(
 
             Log.d(
                 TAG,
-                "Accepted new user from " + params.get("deviceName") + ". {deviceId: " + inner.deviceId + "}"
+                "Accepted new user from " +
+                        params["deviceName"] + ". {deviceId: " +
+                    inner.deviceId + "}"
             )
             LOGGER.info(
                 "Accepted new user from {}. {deviceId: {}}",
-                params.get("deviceName"),
+                params["deviceName"],
                 inner.deviceId
             )
 
@@ -269,7 +272,8 @@ class AndroidZeroconfServer private constructor(
             }
 
             out.write(httpVersion.toByteArray())
-            out.write(" 500 Internal Server Error".toByteArray()) // I don't think this is the Spotify way
+            // I don't think this is the Spotify way
+            out.write(" 500 Internal Server Error".toByteArray())
             out.write(EOL)
             out.write(EOL)
             out.flush()
@@ -369,7 +373,9 @@ class AndroidZeroconfServer private constructor(
         private val serverSocket: ServerSocket = ServerSocket(port)
         private val scope = CoroutineScope(Dispatchers.IO + Job())
         private val executorService: ExecutorService =
-            Executors.newCachedThreadPool(NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }))
+            Executors.newCachedThreadPool(
+                NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() })
+            )
 
         @Volatile
         private var shouldStop = false
@@ -384,15 +390,17 @@ class AndroidZeroconfServer private constructor(
                 while (!shouldStop) {
                     try {
                         val socket = serverSocket.accept()
-                        executorService.execute(Runnable {
-                            try {
-                                Log.d(TAG, "Handling request!")
-                                handle(socket)
-                                socket.close()
-                            } catch (ex: IOException) {
-                                Log.d(TAG, "Failed handling request!: $ex")
+                        executorService.execute(
+                            Runnable {
+                                try {
+                                    Log.d(TAG, "Handling request!")
+                                    handle(socket)
+                                    socket.close()
+                                } catch (ex: IOException) {
+                                    Log.d(TAG, "Failed handling request!: $ex")
+                                }
                             }
-                        })
+                        )
                     } catch (ex: IOException) {
                         Log.d(TAG, "Failed handling connection!: $ex")
                     }
@@ -410,7 +418,7 @@ class AndroidZeroconfServer private constructor(
                 requireNotNull(params)
 
                 try {
-                    Log.d(TAG, "Handling addUser!$out $params $httpVersion")
+                    Log.d(TAG, "Handling addUser! $params $httpVersion")
                     handleAddUser(out, params, httpVersion)
                 } catch (ex: GeneralSecurityException) {
                     LOGGER.error("Failed handling addUser!", ex)
@@ -419,7 +427,7 @@ class AndroidZeroconfServer private constructor(
                 }
             } else if (action == "getInfo") {
                 try {
-                    Log.d(TAG, "Handling getInfo!$out $httpVersion")
+                    Log.d(TAG, "Handling getInfo! $httpVersion")
                     handleGetInfo(out, httpVersion)
                 } catch (ex: IOException) {
                     LOGGER.error("Failed handling getInfo!", ex)
@@ -558,4 +566,3 @@ class AndroidZeroconfServer private constructor(
         }
     }
 }
-

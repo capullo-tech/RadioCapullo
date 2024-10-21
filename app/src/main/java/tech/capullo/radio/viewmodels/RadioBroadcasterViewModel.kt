@@ -34,13 +34,11 @@ class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val spZeroconfServer: SpZeroconfServer
-): ViewModel() {
+) : ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
     val hostAddresses: List<String>
         get() = _hostAddresses
-
-
 
     fun getDeviceName(): String = repository.getDeviceName()
 

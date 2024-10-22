@@ -1,4 +1,4 @@
-package tech.capullo.radio.data
+package tech.capullo.radio.data.sp
 
 import android.util.Log
 import com.google.gson.JsonObject
@@ -9,8 +9,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import xyz.gianlu.librespot.common.NameThreadFactory
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.core.Session
@@ -40,7 +38,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.Volatile
 
-class AndroidZeroconfServer(
+class SpZeroconfServer(
     val deviceType: Connect.DeviceType,
     val deviceName: String,
     val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
@@ -128,26 +126,25 @@ class AndroidZeroconfServer(
     ) {
         val username = params["userName"]
         if (username == null || username.isEmpty()) {
-            LOGGER.error("Missing userName!")
+            Log.d(TAG, "Missing userName!")
             return
         }
 
         val blobStr = params["blob"]
         if (blobStr == null || blobStr.isEmpty()) {
-            LOGGER.error("Missing blob!")
+            Log.d(TAG, "Missing blob!")
             return
         }
 
         val clientKeyStr = params["clientKey"]
         if (clientKeyStr == null || clientKeyStr.isEmpty()) {
-            LOGGER.error("Missing clientKey!")
+            Log.d(TAG, "Missing clientKey!")
             return
         }
 
         synchronized(connectionLock) {
             if (username == connectingUsername) {
                 Log.d(TAG, "$username is already trying to connect.")
-                LOGGER.info("{} is already trying to connect.", username)
 
                 out.write(httpVersion.toByteArray())
                 out.write(" 403 Forbidden".toByteArray()) // I don't think this is the Spotify way
@@ -182,7 +179,7 @@ class AndroidZeroconfServer(
         val mac = hmac.doFinal()
 
         if (!mac.contentEquals(checksum)) {
-            LOGGER.error("Mac and checksum don't match!")
+            Log.d(TAG, "Mac and checksum don't match!")
 
             out.write(httpVersion.toByteArray())
             out.write(" 400 Bad Request".toByteArray()) // I don't think this is the Spotify way
@@ -203,7 +200,7 @@ class AndroidZeroconfServer(
         try {
             closeSession()
         } catch (ex: IOException) {
-            LOGGER.warn("Failed closing previous session.", ex)
+            Log.d(TAG, "Failed closing previous session.", ex)
         }
 
         try {
@@ -214,13 +211,8 @@ class AndroidZeroconfServer(
             Log.d(
                 TAG,
                 "Accepted new user from " +
-                        params["deviceName"] + ". {deviceId: " +
+                    params["deviceName"] + ". {deviceId: " +
                     deviceId + "}"
-            )
-            LOGGER.info(
-                "Accepted new user from {}. {deviceId: {}}",
-                params["deviceName"],
-                deviceId
             )
 
             // Sending response
@@ -253,8 +245,7 @@ class AndroidZeroconfServer(
                 l.sessionChanged(session!!)
             }
         } catch (ex: SpotifyAuthenticationException) {
-            Log.d(TAG, "Couldn't establish a new session.$ex")
-            LOGGER.error("Couldn't establish a new session.", ex)
+            Log.d(TAG, "Couldn't establish a new session. $ex")
 
             synchronized(connectionLock) {
                 connectingUsername = null
@@ -268,7 +259,6 @@ class AndroidZeroconfServer(
             out.flush()
         } catch (ex: MercuryException) {
             Log.d(TAG, "Couldn't establish a new session.$ex")
-            LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
                 connectingUsername = null
@@ -281,7 +271,6 @@ class AndroidZeroconfServer(
             out.flush()
         } catch (ex: IOException) {
             Log.d(TAG, "Couldn't establish a new session.$ex")
-            LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
                 connectingUsername = null
@@ -294,7 +283,6 @@ class AndroidZeroconfServer(
             out.flush()
         } catch (ex: GeneralSecurityException) {
             Log.d(TAG, "Couldn't establish a new session.$ex")
-            LOGGER.error("Couldn't establish a new session.", ex)
 
             synchronized(connectionLock) {
                 connectingUsername = null
@@ -341,7 +329,6 @@ class AndroidZeroconfServer(
 
         init {
             Log.d(TAG, "Zeroconf HTTP server started successfully on port $port!")
-            LOGGER.info("Zeroconf HTTP server started successfully on port {}!", port)
         }
 
         fun startListening() {
@@ -352,7 +339,11 @@ class AndroidZeroconfServer(
                         executorService.execute(
                             Runnable {
                                 try {
-                                    Log.d(TAG, "Handling request!")
+                                    Log.d(
+                                        TAG,
+                                        "Handling request!" +
+                                            " on thread: ${Thread.currentThread().name}"
+                                    )
                                     handle(socket)
                                     socket.close()
                                 } catch (ex: IOException) {
@@ -380,19 +371,19 @@ class AndroidZeroconfServer(
                     Log.d(TAG, "Handling addUser! $params $httpVersion")
                     handleAddUser(out, params, httpVersion)
                 } catch (ex: GeneralSecurityException) {
-                    LOGGER.error("Failed handling addUser!", ex)
+                    Log.d(TAG, "Failed handling addUser!", ex)
                 } catch (ex: IOException) {
-                    LOGGER.error("Failed handling addUser!", ex)
+                    Log.d(TAG, "Failed handling addUser!", ex)
                 }
             } else if (action == "getInfo") {
                 try {
                     Log.d(TAG, "Handling getInfo! $httpVersion")
                     handleGetInfo(out, httpVersion)
                 } catch (ex: IOException) {
-                    LOGGER.error("Failed handling getInfo!", ex)
+                    Log.d(TAG, "Failed handling getInfo!", ex)
                 }
             } else {
-                LOGGER.warn("Unknown action: $action")
+                Log.d(TAG, "Unknown action: $action")
             }
         }
 
@@ -404,7 +395,6 @@ class AndroidZeroconfServer(
             val requestLine = Utils.split(Utils.readLine(`in`), ' ')
             if (requestLine.size != 3) {
                 Log.d(TAG, "Unexpected request line: " + requestLine.contentToString())
-                LOGGER.warn("Unexpected request line: " + requestLine.contentToString())
                 return
             }
 
@@ -424,26 +414,19 @@ class AndroidZeroconfServer(
                     TAG,
                     "Handling request: $method $path $httpVersion, headers: $headers"
                 )
-                LOGGER.trace(
-                    "Handling request: {} {} {}, headers: {}",
-                    method,
-                    path,
-                    httpVersion,
-                    headers
-                )
             }
 
             var params: MutableMap<String?, String?>?
             if (method == "POST") {
                 val contentType = headers["Content-Type"]
                 if (contentType != "application/x-www-form-urlencoded") {
-                    LOGGER.error("Bad Content-Type: $contentType")
+                    Log.d(TAG, "Bad Content-Type: $contentType")
                     return
                 }
 
                 val contentLengthStr = headers["Content-Length"]
                 if (contentLengthStr == null) {
-                    LOGGER.error("Missing Content-Length header!")
+                    Log.d(TAG, "Missing Content-Length header!")
                     return
                 }
 
@@ -468,7 +451,6 @@ class AndroidZeroconfServer(
             val action = params["action"]
             if (action == null) {
                 Log.d(TAG, "Request is missing action.")
-                LOGGER.debug("Request is missing action.")
                 return
             }
 
@@ -485,10 +467,9 @@ class AndroidZeroconfServer(
     }
 
     companion object {
-        private const val TAG = "AndroidZeroconfServer"
         private const val MAX_PORT = 65536
         private const val MIN_PORT = 1024
-        private val LOGGER: Logger = LoggerFactory.getLogger(AndroidZeroconfServer::class.java)
+        private val TAG = SpZeroconfServer::class.java.simpleName
         private val EOL = byteArrayOf('\r'.code.toByte(), '\n'.code.toByte())
         private val DEFAULT_GET_INFO_FIELDS = JsonObject()
         private val DEFAULT_SUCCESSFUL_ADD_USER = JsonObject()

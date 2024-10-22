@@ -15,9 +15,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tech.capullo.radio.SpZeroconfServer
-import tech.capullo.radio.data.AndroidZeroconfServer
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.data.sp.SpNsdManager
+import tech.capullo.radio.data.sp.SpZeroconfServer
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -33,7 +33,7 @@ import javax.inject.Inject
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
-    private val spZeroconfServer: SpZeroconfServer
+    private val spNsdManager: SpNsdManager
 ) : ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
@@ -48,7 +48,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             return
         }
 
-        val sessionListener = object : AndroidZeroconfServer.SessionListener {
+        val sessionListener = object : SpZeroconfServer.SessionListener {
             val executorService = Executors.newSingleThreadExecutor()
             override fun sessionClosing(session: Session) {
                 session.close()
@@ -74,7 +74,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
         }
 
-        spZeroconfServer.start(getDeviceName(), sessionListener)
+        spNsdManager.start(getDeviceName(), sessionListener)
 
         startSnapcast(
             pipeFilepath,

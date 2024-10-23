@@ -16,14 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
-import tech.capullo.radio.viewmodels.RadioViewModel
+import tech.capullo.radio.viewmodels.RadioTuneInModel
 
 @Composable
 fun RadioTuneInScreen(
-    radioViewModel: RadioViewModel = hiltViewModel(),
+    radioTuneInModel: RadioTuneInModel = hiltViewModel(),
 ) {
     var lastServerText by remember {
-        mutableStateOf(radioViewModel.getLastServerText())
+        mutableStateOf(radioTuneInModel.getLastServerText())
     }
     var isTunedIn by remember { mutableStateOf(false) }
     Box(
@@ -35,14 +35,14 @@ fun RadioTuneInScreen(
                 value = lastServerText,
                 onValueChange = { newServerText ->
                     lastServerText = newServerText
-                    radioViewModel.saveLastServerText(newServerText)
+                    radioTuneInModel.saveLastServerText(newServerText)
                 },
                 label = { Text("Server IP") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
             Button(
                 onClick = {
-                    radioViewModel.initiateWorker(lastServerText)
+                    radioTuneInModel.initiateWorker(lastServerText)
                     isTunedIn = true
                 },
                 enabled = !isTunedIn

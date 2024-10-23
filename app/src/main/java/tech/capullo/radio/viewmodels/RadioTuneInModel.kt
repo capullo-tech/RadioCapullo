@@ -9,7 +9,7 @@ import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import tech.capullo.radio.services.SnapcastProcessWorker
+import tech.capullo.radio.SnapcastProcessWorker
 import javax.inject.Inject
 
 @HiltViewModel

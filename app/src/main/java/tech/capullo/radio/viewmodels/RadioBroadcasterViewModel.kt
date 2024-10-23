@@ -42,6 +42,10 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun getDeviceName(): String = repository.getDeviceName()
 
+    init {
+        startNsdService()
+    }
+
     fun startNsdService() {
         val pipeFilepath = repository.getPipeFilepath() ?: run {
             Log.e("CAPULLOWORKER", "Error creating FIFO file")

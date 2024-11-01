@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.Process
@@ -27,19 +28,33 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
+import xyz.gianlu.librespot.core.Session
+import xyz.gianlu.librespot.player.Player
+import xyz.gianlu.librespot.player.PlayerConfiguration
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.util.UUID
+import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
     @Inject lateinit var repository: RadioRepository
 
+    val executorService = Executors.newSingleThreadExecutor()
+
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private lateinit var snapserver: Deferred<Unit>
     private lateinit var snapclient: Deferred<Unit>
+
+    // Binder given to clients
+    private val binder = LocalBinder()
+
+    inner class LocalBinder : Binder() {
+        fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
+    }
 
     private fun createChannel() {
         // Create a Notification channel
@@ -106,18 +121,63 @@ class RadioBroadcasterService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? {
-        return null
+        return binder
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        // TODO: properly stop the service
-        // TODO: stop the snapcast processes
-        Log.d("CAPULLOWORKER", "Task removed")
-        //snapserver.cancel()
-        //snapclient.cancel()
         scope.cancel()
         stopSelf()
+    }
+
+    fun startLibrespot(session: Session) {
+        Log.d("CAPULLOWORKER", "Starting librespot")
+        val pipeFilepath = repository.getPipeFilepath()!!
+        executorService.execute(
+            SessionChangedRunnable(
+                session,
+                pipeFilepath,
+                object : SessionChangedCallback {
+                    override fun onPlayerReady(player: Player) {
+                        Log.d("NSD", "Player ready")
+                    }
+
+                    override fun onPlayerError(ex: Exception) {
+                        Log.e("NSD", "Error creating player", ex)
+                    }
+                }
+            )
+        )
+    }
+
+    interface SessionChangedCallback {
+        fun onPlayerReady(player: Player)
+        fun onPlayerError(ex: Exception)
+    }
+
+    private class SessionChangedRunnable(
+        val session: Session,
+        val pipeFilepath: String,
+        val callback: SessionChangedCallback
+    ) : Runnable {
+        override fun run() {
+            val player = prepareLibrespotPlayer(session)
+            try {
+                player.waitReady()
+                callback.onPlayerReady(player)
+            } catch (ex: Exception) {
+                Log.e("NSD", "Error waiting for player to be ready", ex)
+                callback.onPlayerError(ex)
+            }
+        }
+
+        private fun prepareLibrespotPlayer(session: Session): Player {
+            val configuration = PlayerConfiguration.Builder()
+                .setOutput(PlayerConfiguration.AudioOutput.PIPE)
+                .setOutputPipe(File(pipeFilepath))
+                .build()
+            return Player(configuration, session)
+        }
     }
 
     private fun startSnapcast(

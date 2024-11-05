@@ -4,7 +4,6 @@ import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
@@ -44,6 +43,8 @@ class RadioBroadcasterService : Service() {
     @Inject lateinit var repository: RadioRepository
 
     val executorService = Executors.newSingleThreadExecutor()
+    var player: Player? = null
+    var session: Session? = null
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private lateinit var snapserver: Deferred<Unit>
@@ -114,7 +115,7 @@ class RadioBroadcasterService : Service() {
             pipeFilepath,
             repository.getCacheDirPath(),
             repository.getNativeLibDirPath(),
-            applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
         )
 
         return START_NOT_STICKY
@@ -127,10 +128,15 @@ class RadioBroadcasterService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         scope.cancel()
+        player?.close()
+        session?.close()
+        executorService.shutdownNow()
+        Log.d("CAPULLOWORKER", "stopSelf")
         stopSelf()
     }
 
     fun startLibrespot(session: Session) {
+        this.session = session
         Log.d("CAPULLOWORKER", "Starting librespot")
         val pipeFilepath = repository.getPipeFilepath()!!
         executorService.execute(
@@ -138,8 +144,9 @@ class RadioBroadcasterService : Service() {
                 session,
                 pipeFilepath,
                 object : SessionChangedCallback {
-                    override fun onPlayerReady(player: Player) {
+                    override fun onPlayerReady(callbackPlayer: Player) {
                         Log.d("NSD", "Player ready")
+                        player = callbackPlayer
                     }
 
                     override fun onPlayerError(ex: Exception) {
@@ -276,10 +283,9 @@ class RadioBroadcasterService : Service() {
                 Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (e: IOException) {
-            throw RuntimeException(e)
+            Log.e("CAPULLOWORKER", "Error starting snapcast process", e)
         } catch (e: CancellationException) {
-            Log.d("CAPULLOWORKER", "Worker stopped")
-            throw RuntimeException(e)
+            Log.e("CAPULLOWORKER", "Worker stopped", e)
         }
     }
 

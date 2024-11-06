@@ -1,4 +1,4 @@
-package tech.capullo.radio.data
+package tech.capullo.radio.espoti
 
 import android.media.AudioFormat
 import android.media.MediaCodec

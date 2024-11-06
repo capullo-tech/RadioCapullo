@@ -13,10 +13,10 @@ import androidx.core.os.HandlerCompat
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import tech.capullo.radio.RadioBroadcasterService
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.espoti.SpNsdManager
-import tech.capullo.radio.data.sp.SpZeroconfServer
+import tech.capullo.radio.espoti.EspotiNsdManager
+import tech.capullo.radio.espoti.EspotiZeroconfServer
+import tech.capullo.radio.services.RadioBroadcasterService
 import xyz.gianlu.librespot.core.Session
 import javax.inject.Inject
 
@@ -24,7 +24,7 @@ import javax.inject.Inject
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
-    private val spNsdManager: SpNsdManager
+    private val espotiNsdManager: EspotiNsdManager
 ) : ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
@@ -57,12 +57,8 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun startNsdService() {
         startBroadcasterService()
-        val pipeFilepath = repository.getPipeFilepath() ?: run {
-            Log.e("CAPULLOWORKER", "Error creating FIFO file")
-            return
-        }
 
-        val sessionListener = object : SpZeroconfServer.SessionListener {
+        val sessionListener = object : EspotiZeroconfServer.SessionListener {
             override fun sessionClosing(session: Session) {
                 session.close()
             }
@@ -75,7 +71,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
         }
 
-        spNsdManager.start(getDeviceName(), sessionListener)
+        espotiNsdManager.start(getDeviceName(), sessionListener)
     }
 
     fun startBroadcasterService() {
@@ -88,9 +84,14 @@ class RadioBroadcasterViewModel @Inject constructor(
         }
         applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
-
+    fun unbindBroadcasterService() {
+        if (mBound) {
+            applicationContext.unbindService(connection)
+            mBound = false
+        }
+    }
     override fun onCleared() {
         super.onCleared()
-        Log.d("ViewModel", "RadioViewModel destroyed")
+        unbindBroadcasterService()
     }
 }

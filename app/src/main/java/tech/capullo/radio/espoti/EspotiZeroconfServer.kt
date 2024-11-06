@@ -1,4 +1,4 @@
-package tech.capullo.radio.data.sp
+package tech.capullo.radio.espoti
 
 import android.util.Log
 import com.google.gson.JsonObject
@@ -38,7 +38,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.Volatile
 
-class SpZeroconfServer(
+class EspotiZeroconfServer(
     val deviceType: Connect.DeviceType,
     val deviceName: String,
     val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
@@ -469,7 +469,7 @@ class SpZeroconfServer(
     companion object {
         private const val MAX_PORT = 65536
         private const val MIN_PORT = 1024
-        private val TAG = SpZeroconfServer::class.java.simpleName
+        private val TAG = EspotiZeroconfServer::class.java.simpleName
         private val EOL = byteArrayOf('\r'.code.toByte(), '\n'.code.toByte())
         private val DEFAULT_GET_INFO_FIELDS = JsonObject()
         private val DEFAULT_SUCCESSFUL_ADD_USER = JsonObject()

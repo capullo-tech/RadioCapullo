@@ -1,4 +1,4 @@
-package tech.capullo.radio
+package tech.capullo.radio.services
 
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel

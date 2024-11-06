@@ -49,7 +49,7 @@
             tools:node="merge"
             />
         <service
-            android:name=".RadioBroadcasterService"
+            android:name=".services.RadioBroadcasterService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
         <provider
@@ -57,7 +57,7 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <meta-data  android:name="tech.capullo.radio.AndroidNativeDecoderInitializer"
+            <meta-data  android:name="tech.capullo.radio.espoti.AndroidNativeDecoderInitializer"
                 android:value="androidx.startup" />
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"

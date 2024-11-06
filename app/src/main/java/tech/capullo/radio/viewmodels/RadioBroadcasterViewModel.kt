@@ -15,13 +15,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.capullo.radio.RadioBroadcasterService
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.data.sp.SpNsdManager
+import tech.capullo.radio.espoti.SpNsdManager
 import tech.capullo.radio.data.sp.SpZeroconfServer
 import xyz.gianlu.librespot.core.Session
-import xyz.gianlu.librespot.player.Player
-import xyz.gianlu.librespot.player.PlayerConfiguration
-import java.io.File
-import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @HiltViewModel
@@ -92,7 +88,6 @@ class RadioBroadcasterViewModel @Inject constructor(
         }
         applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
-
 
     override fun onCleared() {
         super.onCleared()

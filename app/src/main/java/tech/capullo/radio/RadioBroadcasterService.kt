@@ -50,19 +50,16 @@ class RadioBroadcasterService : Service() {
     private lateinit var snapserver: Deferred<Unit>
     private lateinit var snapclient: Deferred<Unit>
 
-    // Binder given to clients
     private val binder = LocalBinder()
-
     inner class LocalBinder : Binder() {
         fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
     }
 
     private fun createChannel() {
-        // Create a Notification channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "My Foreground Service Channel",
+                CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_DEFAULT
             )
             val notificationManager =
@@ -78,13 +75,11 @@ class RadioBroadcasterService : Service() {
                 createChannel()
             }
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                // Create the notification to display while the service is running
                 .build()
             ServiceCompat.startForeground(
-                /* service = */ this,
-                /* id = */ 100, // Cannot be 0
-                /* notification = */ notification,
-                /* foregroundServiceType = */
+                this,
+                100,
+                notification,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 } else {
@@ -96,11 +91,9 @@ class RadioBroadcasterService : Service() {
                 e is ForegroundServiceStartNotAllowedException
             ) {
                 // App not in a valid state to start foreground service
-                // (e.g. started from bg)
-                Log.d("CAPULLOWORKER", "Foreground service not allowed")
+                Log.d(TAG, "Foreground service not allowed")
             } else
-                Log.d("CAPULLOWORKER", "Error starting foreground service")
-            // ...
+                Log.d(TAG, "Error starting foreground service")
         }
     }
     override fun onCreate() {
@@ -131,13 +124,12 @@ class RadioBroadcasterService : Service() {
         player?.close()
         session?.close()
         executorService.shutdownNow()
-        Log.d("CAPULLOWORKER", "stopSelf")
+        Log.d(TAG, "Stop Service")
         stopSelf()
     }
 
     fun startLibrespot(session: Session) {
         this.session = session
-        Log.d("CAPULLOWORKER", "Starting librespot")
         val pipeFilepath = repository.getPipeFilepath()!!
         executorService.execute(
             SessionChangedRunnable(
@@ -145,12 +137,12 @@ class RadioBroadcasterService : Service() {
                 pipeFilepath,
                 object : SessionChangedCallback {
                     override fun onPlayerReady(callbackPlayer: Player) {
-                        Log.d("NSD", "Player ready")
+                        Log.d(TAG, "Player ready")
                         player = callbackPlayer
                     }
 
-                    override fun onPlayerError(ex: Exception) {
-                        Log.e("NSD", "Error creating player", ex)
+                    override fun onPlayerError(e: Exception) {
+                        Log.e(TAG, "Error creating player", e)
                     }
                 }
             )
@@ -283,13 +275,15 @@ class RadioBroadcasterService : Service() {
                 Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (e: IOException) {
-            Log.e("CAPULLOWORKER", "Error starting snapcast process", e)
+            Log.e(TAG, "Error starting snapcast process", e)
         } catch (e: CancellationException) {
-            Log.e("CAPULLOWORKER", "Worker stopped", e)
+            Log.e(TAG, "Worker stopped", e)
         }
     }
 
     companion object {
         const val CHANNEL_ID = "RadioBroadcasterServiceChannel"
+        const val CHANNEL_NAME = "Radio Broadcaster Service Channel"
+        const val TAG = "RadioBroadcasterService"
     }
 }

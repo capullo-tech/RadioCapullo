@@ -40,14 +40,14 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Log.d("RadioBroadcasterViewModel", "Service connected")
+            Log.d(TAG, "Service connected")
             val binder = service as RadioBroadcasterService.LocalBinder
             mService = binder.getService()
             mBound = true
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Log.d("RadioBroadcasterViewModel", "Service disconnected")
+            Log.d(TAG, "Service disconnected")
             mBound = false
         }
     }
@@ -64,7 +64,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             }
 
             override fun sessionChanged(session: Session) {
-                Log.d("NSD", "Session changed on thread: ${Thread.currentThread().name}")
+                Log.d(TAG, "Session changed on thread: ${Thread.currentThread().name}")
                 mainThreadHandler.post {
                     mService.startLibrespot(session)
                 }
@@ -84,14 +84,20 @@ class RadioBroadcasterViewModel @Inject constructor(
         }
         applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
+
     fun unbindBroadcasterService() {
         if (mBound) {
             applicationContext.unbindService(connection)
             mBound = false
         }
     }
+
     override fun onCleared() {
         super.onCleared()
         unbindBroadcasterService()
+    }
+
+    companion object {
+        private const val TAG = "RadioBroadcasterViewModel"
     }
 }

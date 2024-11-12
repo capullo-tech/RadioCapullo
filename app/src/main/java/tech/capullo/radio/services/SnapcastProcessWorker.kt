@@ -1,4 +1,4 @@
-package tech.capullo.radio
+package tech.capullo.radio.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -15,6 +15,7 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import tech.capullo.radio.R
 import java.io.BufferedReader
 import java.util.UUID
 

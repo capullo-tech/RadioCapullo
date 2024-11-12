@@ -1,4 +1,4 @@
-package tech.capullo.radio.data.sp
+package tech.capullo.radio.espoti
 
 import android.content.Context
 import android.net.nsd.NsdManager
@@ -9,13 +9,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import xyz.gianlu.librespot.core.Session
 import javax.inject.Inject
 
-class SpNsdManager @Inject constructor(
+class EspotiNsdManager @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
 ) {
 
     fun start(
         advertisingName: String,
-        sessionListener: SpZeroconfServer.SessionListener,
+        sessionListener: EspotiZeroconfServer.SessionListener,
     ) {
         // the server initializes the runnable inside the executor
         val server = prepareLibrespotSession(advertisingName)
@@ -63,13 +63,13 @@ class SpNsdManager @Inject constructor(
         }
     }
 
-    private fun prepareLibrespotSession(advertisingName: String): SpZeroconfServer {
+    private fun prepareLibrespotSession(advertisingName: String): EspotiZeroconfServer {
         // Configure the Spotify advertising session
         val conf = Session.Configuration.Builder()
             .setStoreCredentials(false)
             .setCacheEnabled(false)
             .build()
-        return SpZeroconfServer(
+        return EspotiZeroconfServer(
             deviceType = Connect.DeviceType.SPEAKER,
             deviceName = advertisingName,
             conf = conf

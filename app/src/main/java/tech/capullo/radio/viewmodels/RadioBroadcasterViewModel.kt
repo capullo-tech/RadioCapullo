@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiZeroconfServer
+import tech.capullo.radio.espoti.EspotiZeroconfServer.SessionParams
 import tech.capullo.radio.services.RadioBroadcasterService
 import xyz.gianlu.librespot.core.Session
 import javax.inject.Inject
@@ -63,10 +64,10 @@ class RadioBroadcasterViewModel @Inject constructor(
                 session.close()
             }
 
-            override fun sessionChanged(session: Session) {
+            override fun sessionChanged(sessionParams: SessionParams) {
                 Log.d(TAG, "Session changed on thread: ${Thread.currentThread().name}")
                 mainThreadHandler.post {
-                    mService.startLibrespot(session)
+                    mService.startLibrespot(sessionParams)
                 }
             }
         }

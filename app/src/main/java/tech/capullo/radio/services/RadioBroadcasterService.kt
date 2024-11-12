@@ -27,6 +27,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.espoti.EspotiZeroconfServer.SessionParams
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -128,17 +129,20 @@ class RadioBroadcasterService : Service() {
         stopSelf()
     }
 
-    fun startLibrespot(session: Session) {
-        this.session = session
+    fun startLibrespot(sessionParams: SessionParams) {
+        // TODO: close the session using executor closeable
+        //this.session = session
         val pipeFilepath = repository.getPipeFilepath()!!
         executorService.execute(
             SessionChangedRunnable(
-                session,
+                sessionParams,
                 pipeFilepath,
                 object : SessionChangedCallback {
                     override fun onPlayerReady(callbackPlayer: Player) {
                         Log.d(TAG, "Player ready")
                         player = callbackPlayer
+                        player?.next()
+                        player?.play()
                     }
 
                     override fun onPlayerError(e: Exception) {
@@ -155,11 +159,19 @@ class RadioBroadcasterService : Service() {
     }
 
     private class SessionChangedRunnable(
-        val session: Session,
+        val sessionParams: SessionParams,
         val pipeFilepath: String,
         val callback: SessionChangedCallback
     ) : Runnable {
         override fun run() {
+            // build the session
+            val session = Session.Builder(sessionParams.conf)
+                .setDeviceId(sessionParams.deviceId)
+                .setDeviceName(sessionParams.deviceName)
+                .setDeviceType(sessionParams.deviceType)
+                .setPreferredLocale(sessionParams.preferredLocale)
+                .blob(sessionParams.username, sessionParams.decrypted)
+                .create()
             val player = prepareLibrespotPlayer(session)
             try {
                 player.waitReady()

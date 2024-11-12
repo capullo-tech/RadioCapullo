@@ -87,6 +87,16 @@ class EspotiZeroconfServer(
         }
     }
 
+    data class SessionParams(
+        val username: String,
+        val decrypted: ByteArray,
+        val deviceId: String,
+        val deviceName: String,
+        val deviceType: Connect.DeviceType,
+        val preferredLocale: String,
+        val conf: Session.Configuration
+    )
+
     @Throws(IOException::class)
     private fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
@@ -229,6 +239,17 @@ class EspotiZeroconfServer(
             out.write(resp.toByteArray())
             out.flush()
 
+            val sessionParams = SessionParams(
+                username = username,
+                decrypted = decrypted,
+                deviceId = deviceId,
+                deviceName = deviceName,
+                deviceType = deviceType,
+                preferredLocale = preferredLocale,
+                conf = conf
+            )
+
+            /*
             session = Session.Builder(conf)
                 .setDeviceId(deviceId)
                 .setDeviceName(deviceName)
@@ -236,13 +257,15 @@ class EspotiZeroconfServer(
                 .setPreferredLocale(preferredLocale)
                 .blob(username, decrypted)
                 .create()
+             */
 
             synchronized(connectionLock) {
                 connectingUsername = null
             }
 
             for (l in sessionListeners) {
-                l.sessionChanged(session!!)
+                l.sessionChanged(sessionParams)
+                //l.sessionChanged(session!!)
             }
         } catch (ex: SpotifyAuthenticationException) {
             Log.d(TAG, "Couldn't establish a new session. $ex")
@@ -313,7 +336,7 @@ class EspotiZeroconfServer(
          *
          * @param session The new [Session]
          */
-        fun sessionChanged(session: Session)
+        fun sessionChanged(sessionParams: SessionParams)
     }
 
     private inner class HttpRunner(port: Int) : Closeable {

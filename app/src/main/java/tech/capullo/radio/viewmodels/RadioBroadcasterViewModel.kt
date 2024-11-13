@@ -15,17 +15,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.EspotiNsdManager
+import tech.capullo.radio.espoti.EspotiPlayerManager
+import tech.capullo.radio.espoti.EspotiSessionManager
 import tech.capullo.radio.espoti.EspotiZeroconfServer
 import tech.capullo.radio.espoti.EspotiZeroconfServer.SessionParams
 import tech.capullo.radio.services.RadioBroadcasterService
-import xyz.gianlu.librespot.core.Session
 import javax.inject.Inject
 
 @HiltViewModel
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
-    private val espotiNsdManager: EspotiNsdManager
+    private val espotiNsdManager: EspotiNsdManager,
+    private val espotiSessionManager: EspotiSessionManager,
+    private val espotiPlayerManager: EspotiPlayerManager,
 ) : ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
@@ -60,14 +63,27 @@ class RadioBroadcasterViewModel @Inject constructor(
         startBroadcasterService()
 
         val sessionListener = object : EspotiZeroconfServer.SessionListener {
-            override fun sessionClosing(session: Session) {
-                session.close()
-            }
-
             override fun sessionChanged(sessionParams: SessionParams) {
                 Log.d(TAG, "Session changed on thread: ${Thread.currentThread().name}")
+
+                try {
+                    espotiSessionManager.setSession(
+                        espotiSessionManager.createSession(getDeviceName())
+                            .setDeviceId(sessionParams.deviceId)
+                            .setDeviceName(sessionParams.deviceName)
+                            .setDeviceType(sessionParams.deviceType)
+                            .setPreferredLocale(sessionParams.preferredLocale)
+                            .blob(sessionParams.username, sessionParams.decrypted)
+                            .create()
+                    )
+                    espotiPlayerManager.createPlayer()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error creating session", e)
+                }
+
                 mainThreadHandler.post {
-                    mService.startLibrespot(sessionParams)
+                    espotiNsdManager.stop()
+                    mService.startLibrespot()
                 }
             }
         }

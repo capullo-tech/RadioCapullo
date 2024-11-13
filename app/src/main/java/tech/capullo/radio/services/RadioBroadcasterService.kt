@@ -27,7 +27,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -156,7 +155,7 @@ class RadioBroadcasterService : Service() {
             espotiPlayerManager.player().waitReady()
         }
         val future =
-        createListenableFuture { espotiPlayerManager.player().play() }
+            createListenableFuture { espotiPlayerManager.player().play() }
     }
 
     private fun startSnapcast(

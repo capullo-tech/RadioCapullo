@@ -1,5 +1,6 @@
 package tech.capullo.radio.services
 
+import android.annotation.SuppressLint
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -20,18 +21,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.espoti.AudioFocusManager
+import tech.capullo.radio.espoti.EspotiPlayerManager
+import tech.capullo.radio.espoti.EspotiSessionManager
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
-import xyz.gianlu.librespot.player.PlayerConfiguration
 import java.io.BufferedReader
-import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.util.UUID
@@ -41,8 +46,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
     @Inject lateinit var repository: RadioRepository
+    @Inject lateinit var audioFocusManager: AudioFocusManager
+    @Inject lateinit var espotiSessionManager: EspotiSessionManager
+    @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
-    val executorService = Executors.newSingleThreadExecutor()
+    val playbackExecutor = Executors.newSingleThreadExecutor()
+    private val playbackScope =
+        CoroutineScope(playbackExecutor.asCoroutineDispatcher() + SupervisorJob())
     var player: Player? = null
     var session: Session? = null
 
@@ -53,6 +63,17 @@ class RadioBroadcasterService : Service() {
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
         fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
+    }
+
+    fun runOnPlayback(func: () -> Unit) = playbackExecutor.submit(func)
+
+    @SuppressLint("RestrictedApi")
+    private fun createListenableFuture(action: suspend () -> Unit) = playbackScope.future {
+        return@future try {
+            action()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun createChannel() {
@@ -123,60 +144,18 @@ class RadioBroadcasterService : Service() {
         scope.cancel()
         player?.close()
         session?.close()
-        executorService.shutdownNow()
+        playbackExecutor.shutdownNow()
         Log.d(TAG, "Stop Service")
         stopSelf()
     }
 
-    fun startLibrespot(session: Session) {
-        this.session = session
-        val pipeFilepath = repository.getPipeFilepath()!!
-        executorService.execute(
-            SessionChangedRunnable(
-                session,
-                pipeFilepath,
-                object : SessionChangedCallback {
-                    override fun onPlayerReady(callbackPlayer: Player) {
-                        Log.d(TAG, "Player ready")
-                        player = callbackPlayer
-                    }
-
-                    override fun onPlayerError(e: Exception) {
-                        Log.e(TAG, "Error creating player", e)
-                    }
-                }
-            )
-        )
-    }
-
-    interface SessionChangedCallback {
-        fun onPlayerReady(player: Player)
-        fun onPlayerError(ex: Exception)
-    }
-
-    private class SessionChangedRunnable(
-        val session: Session,
-        val pipeFilepath: String,
-        val callback: SessionChangedCallback
-    ) : Runnable {
-        override fun run() {
-            val player = prepareLibrespotPlayer(session)
-            try {
-                player.waitReady()
-                callback.onPlayerReady(player)
-            } catch (ex: Exception) {
-                Log.e("NSD", "Error waiting for player to be ready", ex)
-                callback.onPlayerError(ex)
-            }
+    fun startLibrespot() {
+        audioFocusManager.requestFocus()
+        runOnPlayback {
+            espotiPlayerManager.player().waitReady()
         }
-
-        private fun prepareLibrespotPlayer(session: Session): Player {
-            val configuration = PlayerConfiguration.Builder()
-                .setOutput(PlayerConfiguration.AudioOutput.PIPE)
-                .setOutputPipe(File(pipeFilepath))
-                .build()
-            return Player(configuration, session)
-        }
+        val future =
+            createListenableFuture { espotiPlayerManager.player().play() }
     }
 
     private fun startSnapcast(

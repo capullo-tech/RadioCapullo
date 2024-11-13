@@ -3,15 +3,16 @@ package tech.capullo.radio.espoti
 import android.util.Log
 import com.google.gson.JsonObject
 import com.spotify.connectstate.Connect
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import xyz.gianlu.librespot.common.NameThreadFactory
 import xyz.gianlu.librespot.common.Utils
-import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.core.Session.SpotifyAuthenticationException
 import xyz.gianlu.librespot.crypto.DiffieHellman
 import xyz.gianlu.librespot.mercury.MercuryClient.MercuryException
@@ -19,7 +20,6 @@ import java.io.Closeable
 import java.io.DataInputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.lang.IllegalStateException
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URLDecoder
@@ -43,7 +43,6 @@ class EspotiZeroconfServer(
     val deviceName: String,
     val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
     val preferredLocale: String = Locale.getDefault().language,
-    val conf: Session.Configuration,
 ) : Closeable {
     private var runner: HttpRunner
     private val keys: DiffieHellman = DiffieHellman(SecureRandom())
@@ -51,7 +50,6 @@ class EspotiZeroconfServer(
     private val connectionLock = Any()
 
     @Volatile
-    private var session: Session? = null
     private var connectingUsername: String? = null
 
     var listenPort: Int = SecureRandom().nextInt((MAX_PORT - MIN_PORT) + 1) + MIN_PORT
@@ -65,28 +63,6 @@ class EspotiZeroconfServer(
         runner.close()
     }
 
-    @Throws(IOException::class)
-    fun closeSession() {
-        if (session == null) return
-
-        for (l in sessionListeners) {
-            l.sessionClosing(session!!)
-        }
-        session!!.close()
-        session = null
-    }
-
-    private fun hasValidSession(): Boolean {
-        try {
-            val valid = session != null && session!!.isValid()
-            if (!valid) session = null
-            return valid
-        } catch (_: IllegalStateException) {
-            session = null
-            return false
-        }
-    }
-
     data class SessionParams(
         val username: String,
         val decrypted: ByteArray,
@@ -94,7 +70,6 @@ class EspotiZeroconfServer(
         val deviceName: String,
         val deviceType: Connect.DeviceType,
         val preferredLocale: String,
-        val conf: Session.Configuration
     )
 
     @Throws(IOException::class)
@@ -110,7 +85,7 @@ class EspotiZeroconfServer(
                 "activeUser",
                 if (connectingUsername != null)
                     connectingUsername
-                else (if (hasValidSession()) session!!.username() else "")
+                else ""
             )
         }
 
@@ -208,12 +183,6 @@ class EspotiZeroconfServer(
         val decrypted = aes.doFinal(encrypted)
 
         try {
-            closeSession()
-        } catch (ex: IOException) {
-            Log.d(TAG, "Failed closing previous session.", ex)
-        }
-
-        try {
             synchronized(connectionLock) {
                 connectingUsername = username
             }
@@ -246,18 +215,7 @@ class EspotiZeroconfServer(
                 deviceName = deviceName,
                 deviceType = deviceType,
                 preferredLocale = preferredLocale,
-                conf = conf
             )
-
-            /*
-            session = Session.Builder(conf)
-                .setDeviceId(deviceId)
-                .setDeviceName(deviceName)
-                .setDeviceType(deviceType)
-                .setPreferredLocale(preferredLocale)
-                .blob(username, decrypted)
-                .create()
-             */
 
             synchronized(connectionLock) {
                 connectingUsername = null
@@ -265,7 +223,6 @@ class EspotiZeroconfServer(
 
             for (l in sessionListeners) {
                 l.sessionChanged(sessionParams)
-                //l.sessionChanged(session!!)
             }
         } catch (ex: SpotifyAuthenticationException) {
             Log.d(TAG, "Couldn't establish a new session. $ex")
@@ -324,18 +281,6 @@ class EspotiZeroconfServer(
     }
 
     interface SessionListener {
-        /**
-         * The session instance is going to be closed after this call.
-         *
-         * @param session The old [Session]
-         */
-        fun sessionClosing(session: Session)
-
-        /**
-         * The session instance changed. [.sessionClosing] has been already called.
-         *
-         * @param session The new [Session]
-         */
         fun sessionChanged(sessionParams: SessionParams)
     }
 
@@ -358,6 +303,7 @@ class EspotiZeroconfServer(
             scope.launch {
                 while (!shouldStop) {
                     try {
+                        ensureActive()
                         val socket = serverSocket.accept()
                         executorService.execute(
                             Runnable {
@@ -376,6 +322,8 @@ class EspotiZeroconfServer(
                         )
                     } catch (ex: IOException) {
                         Log.d(TAG, "Failed handling connection!: $ex")
+                    } catch (ex: CancellationException) {
+                        Log.d(TAG, "Server stopped: $ex")
                     }
                 }
             }
@@ -432,12 +380,7 @@ class EspotiZeroconfServer(
                 headers.put(split[0], split[1].trim { it <= ' ' })
             }
 
-            if (!hasValidSession()) {
-                Log.d(
-                    TAG,
-                    "Handling request: $method $path $httpVersion, headers: $headers"
-                )
-            }
+            Log.d(TAG, "Handling request: $method $path $httpVersion, headers: $headers")
 
             var params: MutableMap<String?, String?>?
             if (method == "POST") {

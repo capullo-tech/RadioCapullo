@@ -78,6 +78,8 @@ RadioCapullo integrates [librespot-java](https://github.com/devgianlu/librespot-
 
 Contributions are welcome! Please fork the repository, make your changes, and submit a pull request.
 
+Clone this repo with `git clone --recurse-submodules` or do `git submodule update --init --recursive` immediately after cloning to initialize all submodules
+
 ## Disclaimers
 ### Fair use of Spotify
 
@@ -88,4 +90,5 @@ Contributions are welcome! Please fork the repository, make your changes, and su
 ## Acknowledgments
 
 - [librespot-java](https://github.com/devgianlu/librespot-java)
+- [jetispot](https://github.com/iTaysonLab/jetispot)
 - [Snapcast](https://github.com/badaix/snapcast)

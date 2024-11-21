@@ -1,6 +1,7 @@
 package tech.capullo.radio.espoti
 
 import android.os.Looper
+import android.util.Log
 import tech.capullo.radio.data.RadioRepository
 import xyz.gianlu.librespot.player.Player
 import xyz.gianlu.librespot.player.PlayerConfiguration
@@ -26,12 +27,16 @@ class EspotiPlayerManager @Inject constructor(
                 PlayerConfiguration.Builder().apply {
                     setOutput(PlayerConfiguration.AudioOutput.PIPE)
                     setOutputPipe(File(radioRepository.getPipeFilepath()!!))
+                    //setOutput(PlayerConfiguration.AudioOutput.CUSTOM)
+                    //setOutputClass(AndroidSinkOutput::class.java.name)
 
-                    setAutoplayEnabled(true)
+                    //setAutoplayEnabled(false)
+                    //setPreloadEnabled(true)
                 }.build(),
                 espotiSessionManager.session
             )
         }
+        Log.d("EspotiPlayerManager", "Player created")
     }
 
     fun player(): Player {

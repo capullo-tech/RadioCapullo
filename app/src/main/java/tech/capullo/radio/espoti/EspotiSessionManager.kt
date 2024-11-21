@@ -24,7 +24,8 @@ class EspotiSessionManager @Inject constructor(
     private fun createCfg() =
         Session.Configuration.Builder().setCacheEnabled(true).setDoCacheCleanUp(true)
             .setCacheDir(File(appContext.cacheDir, "spa_cache"))
-            .setStoredCredentialsFile(File(appContext.filesDir, "spa_creds")).build()
+            .setStoredCredentialsFile(File(appContext.filesDir, "spa_creds"))
+            .build()
 
     fun setSession(s: Session) {
         _session = s

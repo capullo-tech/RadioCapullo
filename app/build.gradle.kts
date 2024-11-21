@@ -48,6 +48,7 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "log4j2.xml"
+            excludes += "META-INF/DEPENDENCIES"
         }
         packaging {
             jniLibs {
@@ -89,11 +90,13 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    implementation(libs.lib.librespot.android)
-    implementation("xyz.gianlu.librespot:librespot-player:1.6.3:thin") {
+    //implementation(libs.lib.librespot.android)
+    implementation("de.mindpipe.android:android-logging-log4j:1.0.3")
+    //implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {
+    implementation("com.github.iTaysonLab.librespot-java:librespot-player:6244f91aeb:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
-        exclude(group = "org.apache.logging.log4j")
+        //exclude(group = "org.apache.logging.log4j")
     }
 
     testImplementation(libs.junit)

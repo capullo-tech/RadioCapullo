@@ -2,6 +2,7 @@ package tech.capullo.radio.espoti
 
 import android.content.Context
 import android.media.AudioManager
+import android.util.Log
 import androidx.core.content.getSystemService
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
@@ -39,12 +40,15 @@ class AudioFocusManager @Inject constructor(
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                espotiPlayerManager.playerNullable()?.pause()
+                Log.d("AudioFocusManager", "Lost focus")
+                //espotiPlayerManager.playerNullable()?.pause()
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                Log.d("AudioFocusManager", "Lost focus transient")
                 espotiPlayerManager.playerNullable()?.volumeDown(24) // 64 total
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
+                Log.d("AudioFocusManager", "Gained focus")
                 espotiPlayerManager.playerNullable()?.play()
                 espotiPlayerManager.playerNullable()?.volumeUp(24) // 64 total
             }

@@ -128,6 +128,7 @@ class RadioBroadcasterService : Service() {
         stopSelf()
     }
 
+<<<<<<< Updated upstream
     fun startLibrespot(session: Session) {
         this.session = session
         val pipeFilepath = repository.getPipeFilepath()!!
@@ -177,6 +178,29 @@ class RadioBroadcasterService : Service() {
                 .build()
             return Player(configuration, session)
         }
+=======
+    fun startLibrespot() {
+        audioFocusManager.requestFocus()
+        runOnPlayback {
+            espotiPlayerManager.player().waitReady()
+            /*
+            Log.d(TAG, "Librespot ready")
+            espotiPlayerManager.player().currentPlayable()?.let {
+                Log.d(TAG, "Current playable: ${it.toSpotifyUri()}")
+            } ?: run {
+                Log.d(TAG, "No current playable")
+                espotiPlayerManager.player().load("spotify:track:4cOdK2wGLETKBW3PvgPWqT", false, false)
+            }
+            espotiPlayerManager.player().play()
+             */
+        }
+        /*
+        createListenableFuture {
+            Log.d(TAG, "Playing")
+            espotiPlayerManager.player().play()
+        }
+         */
+>>>>>>> Stashed changes
     }
 
     private fun startSnapcast(

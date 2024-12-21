@@ -41,7 +41,7 @@ class AudioFocusManager @Inject constructor(
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 Log.d("AudioFocusManager", "Lost focus")
-                //espotiPlayerManager.playerNullable()?.pause()
+                // espotiPlayerManager.playerNullable()?.pause()
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 Log.d("AudioFocusManager", "Lost focus transient")

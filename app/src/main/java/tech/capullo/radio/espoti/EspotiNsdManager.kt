@@ -6,19 +6,23 @@ import android.net.nsd.NsdServiceInfo
 import android.util.Log
 import com.spotify.connectstate.Connect
 import dagger.hilt.android.qualifiers.ApplicationContext
-import xyz.gianlu.librespot.core.Session
 import javax.inject.Inject
 
 class EspotiNsdManager @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
 ) {
+    private lateinit var server: EspotiZeroconfServer
 
     fun start(
         advertisingName: String,
         sessionListener: EspotiZeroconfServer.SessionListener,
     ) {
         // the server initializes the runnable inside the executor
-        val server = prepareLibrespotSession(advertisingName)
+        server =
+            EspotiZeroconfServer(
+                deviceType = Connect.DeviceType.SPEAKER,
+                deviceName = advertisingName,
+            )
         server.addSessionListener(sessionListener)
 
         val nsdManager = applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
@@ -27,7 +31,7 @@ class EspotiNsdManager @Inject constructor(
             serviceName = "RadioCapullo"
             serviceType = "_spotify-connect._tcp"
             port = server.listenPort
-            Log.d("NSD", "Service port: $port")
+            Log.d(TAG, "Service port: $port")
         }
 
         nsdManager.registerService(
@@ -43,36 +47,34 @@ class EspotiNsdManager @Inject constructor(
             // Save the service name. Android may have changed it in order to
             // resolve a conflict, so update the name you initially requested
             // with the name Android actually used.
-            Log.d("NSD", "Service registered")
+            Log.d(TAG, "Service registered")
         }
 
         override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
             // Registration failed! Put debugging code here to determine why.
-            Log.d("NSD", "Registration failed")
+            Log.d(TAG, "Registration failed")
         }
 
         override fun onServiceUnregistered(arg0: NsdServiceInfo) {
             // Service has been unregistered. This only happens when you call
             // NsdManager.unregisterService() and pass in this listener.
-            Log.d("NSD", "Service unregistered")
+            Log.d(TAG, "Service unregistered")
         }
 
         override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
             // Unregistration failed. Put debugging code here to determine why.
-            Log.d("NSD", "Unregistration failed")
+            Log.d(TAG, "Unregistration failed")
         }
     }
 
-    private fun prepareLibrespotSession(advertisingName: String): EspotiZeroconfServer {
-        // Configure the Spotify advertising session
-        val conf = Session.Configuration.Builder()
-            .setStoreCredentials(false)
-            .setCacheEnabled(false)
-            .build()
-        return EspotiZeroconfServer(
-            deviceType = Connect.DeviceType.SPEAKER,
-            deviceName = advertisingName,
-            conf = conf
-        )
+    // close both the nsdManager and the server
+    fun stop() {
+        server.close()
+        val nsdManager = applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
+        nsdManager.unregisterService(registrationListener)
+    }
+
+    companion object {
+        private val TAG = EspotiNsdManager::class.java.simpleName
     }
 }

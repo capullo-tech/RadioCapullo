@@ -13,6 +13,7 @@ espressoCore = "3.6.1"
 hiltNavigationCompose = "1.2.0"
 junit = "4.13.2"
 kotlin = "1.9.24"
+kotlinxCoroutinesGuava = "1.7.3"
 ktlint = "0.40.0"
 ktx = "1.13.1"
 hilt = "2.51.1"
@@ -22,12 +23,8 @@ lifecycleRuntimeKtx = "2.8.4"
 material = "1.12.0"
 material3 = "1.2.1"
 # @keep
-<<<<<<< Updated upstream
-minSdk = "23"
-=======
 media = "1.7.0"
 minSdk = "26"
->>>>>>> Stashed changes
 navigationCompose = "2.7.7"
 startupRuntime = "1.1.1"
 # @keep
@@ -55,6 +52,7 @@ androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-j
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-media = { module = "androidx.media:media", version.ref = "media" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startupRuntime" }
 androidx-work-multiprocess = { module = "androidx.work:work-multiprocess", version.ref = "workRuntimeKtx" }
@@ -62,6 +60,7 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 junit = { module = "junit:junit", version.ref = "junit" }
+kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
 lib-librespot-android = { module = "tech.capullo:lib-librespot-android", version.ref = "libLibrespotAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 

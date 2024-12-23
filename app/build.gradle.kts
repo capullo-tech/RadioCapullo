@@ -75,7 +75,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.media)
-    implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -89,12 +88,11 @@ dependencies {
     implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
-    implementation(project(mapOf("path" to ":lib-snapcast-android")))
-    //implementation(libs.lib.librespot.android)
+    implementation(libs.lib.snapcast.android)
     implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
-        //exclude(group = "org.apache.logging.log4j")
+        exclude(group = "org.apache.logging.log4j")
     }
 
     testImplementation(libs.junit)

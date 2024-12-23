@@ -1,11 +1,11 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.9.0"
-androidGradlePlugin = "8.7.2"
+androidGradlePlugin = "8.7.3"
 androidx-junit = "1.2.1"
 # @keep
 appcompat = "1.7.0"
-compileSdk = "34"
+compileSdk = "35"
 composeLatest = "1.6.8"
 composeBom = "2024.06.00"
 compose-compiler = "1.5.14"
@@ -13,22 +13,21 @@ espressoCore = "3.6.1"
 hiltNavigationCompose = "1.2.0"
 junit = "4.13.2"
 kotlin = "1.9.24"
-kotlinxCoroutinesGuava = "1.7.3"
 ktlint = "0.40.0"
 ktx = "1.13.1"
 hilt = "2.51.1"
 ksp = "1.9.24-1.0.20"
-libLibrespotAndroid = "0.1.6"
+libSnapcastAndroid = "0.2.0"
 lifecycleRuntimeKtx = "2.8.4"
 material = "1.12.0"
 material3 = "1.2.1"
-# @keep
 media = "1.7.0"
+# @keep
 minSdk = "23"
 navigationCompose = "2.7.7"
 startupRuntime = "1.1.1"
 # @keep
-targetSdk = "34"
+targetSdk = "35"
 spotless = "6.4.1"
 workRuntimeKtx = "2.7.0"
 
@@ -60,8 +59,7 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 junit = { module = "junit:junit", version.ref = "junit" }
-kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
-lib-librespot-android = { module = "tech.capullo:lib-librespot-android", version.ref = "libLibrespotAndroid" }
+lib-snapcast-android = { module = "tech.capullo:lib-snapcast-android", version.ref = "libSnapcastAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
 [plugins]

@@ -10,7 +10,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://www.jitpack.io")
+        maven {
+            name = "GithubPackages"
+            url = uri("https://maven.pkg.github.com/capullo-tech/lib-snapcast-android")
+            credentials {
+                username = providers.gradleProperty("GITHUB_USERNAME").getOrElse(System.getenv("GITHUB_USERNAME") ?: "")
+                password = providers.gradleProperty("GITHUB_TOKEN").getOrElse(System.getenv("GITHUB_TOKEN") ?: "")
+            }
+        }
     }
 }
 
@@ -20,5 +27,3 @@ plugins {
 
 rootProject.name = "Radio"
 include(":app")
-include(":snapcast-deps")
-include(":lib-snapcast-android")

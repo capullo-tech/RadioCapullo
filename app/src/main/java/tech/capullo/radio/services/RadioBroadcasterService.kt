@@ -1,6 +1,5 @@
 package tech.capullo.radio.services
 
-import android.annotation.SuppressLint
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -27,7 +26,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
@@ -66,15 +64,6 @@ class RadioBroadcasterService : Service() {
     }
 
     fun runOnPlayback(func: () -> Unit) = playbackExecutor.submit(func)
-
-    @SuppressLint("RestrictedApi")
-    private fun createListenableFuture(action: suspend () -> Unit) = playbackScope.future {
-        return@future try {
-            action()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -154,8 +143,6 @@ class RadioBroadcasterService : Service() {
         runOnPlayback {
             espotiPlayerManager.player().waitReady()
         }
-        val future =
-            createListenableFuture { espotiPlayerManager.player().play() }
     }
 
     private fun startSnapcast(

@@ -28,8 +28,14 @@ jobs:
         run: ./gradlew spotlessCheck --no-configuration-cache
       - name: Execute Gradle build
         run: ./gradlew clean build
+        env:
+          GITHUB_USERNAME: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build APK
         run: ./gradlew :app:assembleDebug
+        env:
+          GITHUB_USERNAME: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload build outputs (APK)
         uses: actions/upload-artifact@v4
         with:

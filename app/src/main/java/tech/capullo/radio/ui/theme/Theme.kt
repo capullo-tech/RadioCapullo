@@ -14,33 +14,57 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.compose.ui.graphics.Color
+
+// Define Colors (These will match the colors from your earlier `color.kt`).
+val primaryGreen = Color(0xFF1DB954) // Spotify Green
+val secondaryBlack = Color(0xFF121212) // Dark Background (Spotify/Apple)
+val tertiaryOrange = Color(0xFFFF5722) // Hint of Orange Accent
+
+val backgroundLight = Color(0xFFFFFFFF) // White (Apple Background)
+val surfaceLight = Color(0xFFF5F5F5) // Light Grey (Apple Surface)
+
+val onPrimaryLight = Color(0xFFFFFFFF) // White text on primary green
+val onSecondaryLight = Color(0xFFFFFFFF) // White text on secondary black
+val onTertiaryLight = Color(0xFFFFFFFF) // White text on orange
+
+val errorColor = Color(0xFFB00020) // Standard Material error color
+
+// Updated Dark and Light Color Schemes using the custom colors
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = primaryGreen,
+    secondary = secondaryBlack,
+    tertiary = tertiaryOrange,
+    background = secondaryBlack,
+    surface = secondaryBlack,
+    onPrimary = Color.Black,
+    onSecondary = Color.White,
+    onTertiary = Color.Black,
+    onBackground = Color.White,
+    onSurface = Color.White,
+    error = errorColor,
+    onError = Color.Black
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = primaryGreen,
+    secondary = secondaryBlack,
+    tertiary = tertiaryOrange,
+    background = backgroundLight,
+    surface = surfaceLight,
+    onPrimary = onPrimaryLight,
+    onSecondary = onSecondaryLight,
+    onTertiary = onTertiaryLight,
+    onBackground = secondaryBlack,
+    onSurface = secondaryBlack,
+    error = errorColor,
+    onError = Color.White
 )
 
 @Composable
 fun RadioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -49,10 +73,10 @@ fun RadioTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -64,7 +88,7 @@ fun RadioTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography,  // Assuming Typography is defined elsewhere
         content = content
     )
 }

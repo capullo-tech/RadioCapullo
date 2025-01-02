@@ -2,7 +2,11 @@ package tech.capullo.radio.compose
 
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import tech.capullo.radio.ui.theme.*
+import tech.capullo.radio.ui.theme.primaryBlack
+import tech.capullo.radio.ui.theme.secondaryOrange
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -79,13 +84,13 @@ fun RadioMainScreen(
             Button(
                 onClick = onStartBroadcastingClicked,
                 modifier = Modifier
-                    .fillMaxWidth() // Set button width to fill the screen
-                    .weight(1f) // Set button height to take equal space in the column
-                    .padding(vertical = 8.dp), // Add vertical padding to create space between buttons
+                    .fillMaxWidth()
+                    .weight(1f) // height equal space in the column
+                    .padding(vertical = 8.dp), // vertical space between buttons
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = secondaryBlack, // Button background color (secondary color)
-                    contentColor = MaterialTheme.colorScheme.onSecondary // Text color (onSecondary color)
+                    containerColor = primaryBlack,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 )
             ) {
                 Text("RADIO-ON", style = MaterialTheme.typography.displayLarge)
@@ -95,13 +100,13 @@ fun RadioMainScreen(
             Button(
                 onClick = onTuneInClicked,
                 modifier = Modifier
-                    .fillMaxWidth() // Set button width to fill the screen
-                    .weight(1f) // Set button height to take equal space in the column
-                    .padding(vertical = 8.dp), // Add vertical padding to create space between buttons
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 8.dp),
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = tertiaryOrange, // Button background color (tertiary color)
-                    contentColor = Color.Black // Text color (onTertiary color)
+                    containerColor = secondaryOrange,
+                    contentColor = Color.Black
                 )
             ) {
                 Text("TUNE-IN", style = MaterialTheme.typography.displayLarge)

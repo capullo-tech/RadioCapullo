@@ -19,19 +19,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import tech.capullo.radio.ui.theme.*  // Import the typography and color scheme
+import tech.capullo.radio.ui.theme.Typography
+import tech.capullo.radio.ui.theme.primaryBlack
+import tech.capullo.radio.ui.theme.secondaryOrange
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
-//import androidx.lifecycle.ViewModel
 
 @Composable
 fun RadioBroadcasterScreen(
     viewModel: RadioBroadcasterViewModel = hiltViewModel(),
     useDarkTheme: Boolean = false // Option to toggle between light and dark themes
 ) {
-    // Choose the color scheme based on the theme preference
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
 
     MaterialTheme(
@@ -49,32 +48,32 @@ fun RadioBroadcasterScreen(
                     .padding(16.dp)
                     .fillMaxWidth()
                     .fillMaxHeight(0.5f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp), // Adjust the elevation for the shadow effect
-                shape = MaterialTheme.shapes.medium, // Optional: You can change the shape of the card (rounded corners)
-                colors = CardDefaults.cardColors(containerColor = secondaryBlack)
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = primaryBlack)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Discoverable on Spotify as:",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Typography.bodyMedium,
                         color = Color.White
                     )
                     Text(
                         text = viewModel.getDeviceName(),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = tertiaryOrange
+                        style = Typography.titleLarge,
+                        color = secondaryOrange
                     )
                     Text(
                         text = "Host Addresses:",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Typography.bodyMedium,
                         color = Color.White
                     )
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                         items(items = viewModel.hostAddresses) { name ->
                             Text(
                                 text = name,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = tertiaryOrange
+                                style = Typography.titleLarge,
+                                color = secondaryOrange
                             )
                         }
                     }

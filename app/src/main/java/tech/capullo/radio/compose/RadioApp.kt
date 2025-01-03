@@ -1,26 +1,27 @@
 package tech.capullo.radio.compose
 
-import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.MultiplePermissionsState
-import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.primaryBlack
+import tech.capullo.radio.ui.theme.secondaryOrange
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -30,7 +31,8 @@ fun RadioApp(
     onTuneInClicked: () -> Unit
 ) {
     Surface(
-        modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+        modifier = modifier.fillMaxSize(),
+        color = Color.DarkGray
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
@@ -46,9 +48,13 @@ fun RadioApp(
                     onTuneInClicked = onTuneInClicked
                 )
             } else {
-                RadioPermissionHandler(multiplePermissionsState = multiplePermissionsState)
+                // Launch the permission request
+                LaunchedEffect(multiplePermissionsState) {
+                    multiplePermissionsState.launchMultiplePermissionRequest()
+                }
             }
         } else {
+            // For devices below TIRAMISU, show the main screen directly
             RadioMainScreen(
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
                 onTuneInClicked = onTuneInClicked
@@ -57,112 +63,54 @@ fun RadioApp(
     }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun RadioPermissionHandler(multiplePermissionsState: MultiplePermissionsState) {
-    val textToShow =
-        getTextToShowGivenPermissions(
-            multiplePermissionsState.revokedPermissions,
-            multiplePermissionsState.shouldShowRationale
-        )
-    RadioPermissionScreen(textToShow = textToShow) {
-        multiplePermissionsState.launchMultiplePermissionRequest()
-    }
-}
-
-@Composable
-fun RadioPermissionScreen(textToShow: String, onPermissionRequest: () -> Unit) {
-    Column {
-        Text(
-            textToShow
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onPermissionRequest) {
-            Text("Request permissions")
-        }
-    }
-}
-@Preview
-@Composable
-fun RadioPermissionScreenPreview() {
-    RadioTheme {
-        RadioPermissionScreen(
-            textToShow = """The INTERNET, ACCESS_NETWORK_STATE, and ACCESS_WIFI_STATE 
-                permissions are important. Please grant all of them for the app to function 
-                properly."""
-        ) { }
-    }
-}
 @Composable
 fun RadioMainScreen(
     onStartBroadcastingClicked: () -> Unit,
     onTuneInClicked: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.DarkGray),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = onStartBroadcastingClicked) {
-                Text("Start Broadcasting")
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp), // Add padding to all sides of the column
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Start Broadcasting Button with primary color and fill all available space
+            Button(
+                onClick = onStartBroadcastingClicked,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f) // height equal space in the column
+                    .padding(vertical = 8.dp), // vertical space between buttons
+                elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryBlack,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text("RADIO-ON", style = MaterialTheme.typography.displayLarge)
             }
-            Button(onClick = onTuneInClicked) {
-                Text("Tune in to a station")
+
+            // Tune in Button with secondary color and fill all available space
+            Button(
+                onClick = onTuneInClicked,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 8.dp),
+                elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = secondaryOrange,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("TUNE-IN", style = MaterialTheme.typography.displayLarge)
             }
         }
-    }
-}
-
-@OptIn(ExperimentalPermissionsApi::class)
-private fun getTextToShowGivenPermissions(
-    permissions: List<PermissionState>,
-    shouldShowRationale: Boolean
-): String {
-    val revokedPermissionsSize = permissions.size
-    if (revokedPermissionsSize == 0) return ""
-
-    val textToShow = StringBuilder().apply {
-        append("The ")
-    }
-
-    for (i in permissions.indices) {
-        textToShow.append(permissions[i].permission)
-        when {
-            revokedPermissionsSize > 1 && i == revokedPermissionsSize - 2 -> {
-                textToShow.append(", and ")
-            }
-            i == revokedPermissionsSize - 1 -> {
-                textToShow.append(" ")
-            }
-            else -> {
-                textToShow.append(", ")
-            }
-        }
-    }
-    textToShow.append(if (revokedPermissionsSize == 1) "permission is" else "permissions are")
-    textToShow.append(
-        if (shouldShowRationale) {
-            " important. Please grant all of them for the app to function properly."
-        } else {
-            " denied. The app cannot function without them."
-        }
-    )
-    return textToShow.toString()
-}
-
-@Preview(
-    showBackground = true,
-    widthDp = 320,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-    name = "DefaultPreviewDark"
-)
-@Preview(showBackground = true, widthDp = 320)
-@Composable
-fun RadioAppPreview() {
-    RadioTheme {
-        RadioMainScreen(
-            onStartBroadcastingClicked = { println("Start Broadcasting") },
-            onTuneInClicked = { println("Tune in") }
-        )
     }
 }

@@ -12,21 +12,20 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import java.io.BufferedReader
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import tech.capullo.radio.R
-import java.io.BufferedReader
-import java.util.UUID
 
 class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
     CoroutineWorker(context, parameters) {
     @Synchronized
     fun getUniqueId(context: Context): String {
-        val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
-
         val sharedPrefs = context.getSharedPreferences(
-            PREF_UNIQUE_ID, Context.MODE_PRIVATE
+            PREF_UNIQUE_ID,
+            Context.MODE_PRIVATE
         )
         var uniqueID: String? = sharedPrefs.getString(PREF_UNIQUE_ID, null)
         if (uniqueID == null) {
@@ -133,5 +132,6 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
 
     companion object {
         const val KEY_IP = "KEY_IP"
+        const val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
     }
 }

@@ -15,6 +15,12 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.util.UUID
+import java.util.concurrent.Executors
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -34,18 +40,15 @@ import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionManager
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.util.UUID
-import java.util.concurrent.Executors
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
     @Inject lateinit var repository: RadioRepository
+
     @Inject lateinit var audioFocusManager: AudioFocusManager
+
     @Inject lateinit var espotiSessionManager: EspotiSessionManager
+
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
     val playbackExecutor = Executors.newSingleThreadExecutor()
@@ -79,7 +82,6 @@ class RadioBroadcasterService : Service() {
         }
     }
     private fun startForeground() {
-
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 createChannel()
@@ -94,7 +96,7 @@ class RadioBroadcasterService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 } else {
                     0
-                },
+                }
             )
         } catch (e: Exception) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -102,8 +104,9 @@ class RadioBroadcasterService : Service() {
             ) {
                 // App not in a valid state to start foreground service
                 Log.d(TAG, "Foreground service not allowed")
-            } else
+            } else {
                 Log.d(TAG, "Error starting foreground service")
+            }
         }
     }
     override fun onCreate() {
@@ -124,9 +127,7 @@ class RadioBroadcasterService : Service() {
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return binder
-    }
+    override fun onBind(intent: Intent?): IBinder? = binder
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
@@ -141,7 +142,7 @@ class RadioBroadcasterService : Service() {
     fun startLibrespot() {
         audioFocusManager.requestFocus()
         runOnPlayback {
-            espotiPlayerManager.player().waitReady()
+            espotiPlayerManager.player.waitReady()
         }
     }
 
@@ -149,7 +150,7 @@ class RadioBroadcasterService : Service() {
         filifoFilepath: String,
         cacheDir: String,
         nativeLibraryDir: String,
-        audioManager: AudioManager,
+        audioManager: AudioManager
     ) {
         // Android audio configuration
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
@@ -205,14 +206,17 @@ class RadioBroadcasterService : Service() {
             val dryoutMs = "dryout_ms=2000"
             val librespotSampleFormat = "sampleformat=44100:16:2"
             val pipeArgs = listOf(
-                streamName, pipeMode, dryoutMs, librespotSampleFormat
+                streamName,
+                pipeMode,
+                dryoutMs,
+                librespotSampleFormat
             ).joinToString("&")
             ProcessBuilder()
                 .command(
                     "$nativeLibDir/libsnapserver.so",
                     "--server.datadir=$cacheDir",
                     "--stream.source",
-                    "pipe://$filifoFilepath?$pipeArgs",
+                    "pipe://$filifoFilepath?$pipeArgs"
                 )
                 .redirectErrorStream(true)
         } else {

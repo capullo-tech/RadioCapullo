@@ -13,10 +13,12 @@ spotless {
     kotlin {
         target("**/*.kt")
         ktlint(libs.versions.ktlint.get())
-    }
-    kotlinGradle {
-        target("*.gradle.kts") // default target for kotlinGradle
-        ktlint()
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_code_style" to "android_studio",
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                )
+            )
     }
 }
 

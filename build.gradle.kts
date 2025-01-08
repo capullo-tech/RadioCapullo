@@ -12,7 +12,7 @@ plugins {
 spotless {
     kotlin {
         target("**/*.kt")
-        ktlint(libs.versions.ktlint.get()).userData(mapOf("max_line_length" to "100"))
+        ktlint(libs.versions.ktlint.get())
     }
     kotlinGradle {
         target("*.gradle.kts") // default target for kotlinGradle

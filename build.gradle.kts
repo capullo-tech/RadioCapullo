@@ -15,8 +15,9 @@ spotless {
         ktlint(libs.versions.ktlint.get())
             .editorConfigOverride(
                 mapOf(
-                    "ktlint_code_style" to "android_studio",
                     "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    "ktlint_standard_annotation" to "disabled",
+                    "max_line_length" to 100,
                 )
             )
     }

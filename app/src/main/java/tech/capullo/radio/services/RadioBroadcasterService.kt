@@ -15,12 +15,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.util.UUID
-import java.util.concurrent.Executors
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -40,6 +34,12 @@ import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionManager
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.util.UUID
+import java.util.concurrent.Executors
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
@@ -73,7 +73,7 @@ class RadioBroadcasterService : Service() {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_DEFAULT,
             )
             val notificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as
@@ -96,7 +96,7 @@ class RadioBroadcasterService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 } else {
                     0
-                }
+                },
             )
         } catch (e: Exception) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -121,7 +121,7 @@ class RadioBroadcasterService : Service() {
             pipeFilepath,
             repository.getCacheDirPath(),
             repository.getNativeLibDirPath(),
-            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager,
         )
 
         return START_NOT_STICKY
@@ -150,7 +150,7 @@ class RadioBroadcasterService : Service() {
         filifoFilepath: String,
         cacheDir: String,
         nativeLibraryDir: String,
-        audioManager: AudioManager
+        audioManager: AudioManager,
     ) {
         // Android audio configuration
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
@@ -169,7 +169,7 @@ class RadioBroadcasterService : Service() {
                     androidPlayer,
                     sampleformat,
                     rate,
-                    fpb
+                    fpb,
                 )
             }
             snapclient = async {
@@ -182,7 +182,7 @@ class RadioBroadcasterService : Service() {
                     androidPlayer,
                     sampleformat,
                     rate,
-                    fpb
+                    fpb,
                 )
             }
             awaitAll(snapclient, snapserver)
@@ -198,7 +198,7 @@ class RadioBroadcasterService : Service() {
         player: String,
         sampleFormat: String,
         rate: String?,
-        fpb: String?
+        fpb: String?,
     ) = withContext(Dispatchers.IO) {
         val pb = if (isSnapserver) {
             val streamName = "name=RadioCapullo"
@@ -209,21 +209,21 @@ class RadioBroadcasterService : Service() {
                 streamName,
                 pipeMode,
                 dryoutMs,
-                librespotSampleFormat
+                librespotSampleFormat,
             ).joinToString("&")
             ProcessBuilder()
                 .command(
                     "$nativeLibDir/libsnapserver.so",
                     "--server.datadir=$cacheDir",
                     "--stream.source",
-                    "pipe://$filifoFilepath?$pipeArgs"
+                    "pipe://$filifoFilepath?$pipeArgs",
                 )
                 .redirectErrorStream(true)
         } else {
             ProcessBuilder().command(
                 "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
                 "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
-                "--logfilter", "*:info,Stats:debug"
+                "--logfilter", "*:info,Stats:debug",
             )
         }
         try {
@@ -233,7 +233,7 @@ class RadioBroadcasterService : Service() {
 
             val process = pb.start()
             val bufferedReader = BufferedReader(
-                InputStreamReader(process.inputStream)
+                InputStreamReader(process.inputStream),
             )
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {

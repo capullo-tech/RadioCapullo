@@ -13,10 +13,7 @@ class EspotiNsdManager @Inject constructor(
 ) {
     private lateinit var server: EspotiZeroconfServer
 
-    fun start(
-        advertisingName: String,
-        sessionListener: EspotiZeroconfServer.SessionListener,
-    ) {
+    fun start(advertisingName: String, sessionListener: EspotiZeroconfServer.SessionListener) {
         // the server initializes the runnable inside the executor
         server =
             EspotiZeroconfServer(
@@ -37,7 +34,7 @@ class EspotiNsdManager @Inject constructor(
         nsdManager.registerService(
             serviceInfo,
             NsdManager.PROTOCOL_DNS_SD,
-            registrationListener
+            registrationListener,
         )
     }
 

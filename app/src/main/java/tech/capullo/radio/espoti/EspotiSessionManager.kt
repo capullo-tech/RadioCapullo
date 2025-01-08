@@ -10,15 +10,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EspotiSessionManager @Inject constructor(
-    @ApplicationContext val appContext: Context,
-) {
+class EspotiSessionManager @Inject constructor(@ApplicationContext val appContext: Context) {
     private var _session: Session? = null
     val session get() = _session ?: throw IllegalStateException("Session is not created yet!")
 
     fun createSession(deviceName: String): Session.Builder =
         Session.Builder(createCfg()).setDeviceType(Connect.DeviceType.SPEAKER).setDeviceName(
-            deviceName
+            deviceName,
         ).setDeviceId(null).setPreferredLocale(Locale.getDefault().language)
 
     private fun createCfg() =

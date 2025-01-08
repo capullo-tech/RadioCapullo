@@ -62,7 +62,6 @@ fun SnapclientList(
                 // Do something with the element
                 val listOfsnapclients = mutableListOf<Pair<String, Float>>()
                 if (element.has("clients")) {
-
                     val clients = element.getJSONArray("clients")
                     Log.i("SESSION", "client :${clients::class.java} -- $clients")
                     (0 until clients.length()).forEach { j ->
@@ -98,7 +97,7 @@ fun SnapclientList(
 private fun Greetings(
     modifier: Modifier = Modifier,
     // TODO a list of custom data object
-    names: List<Pair<String, Float>> = listOf(Pair("localhost", 100f), Pair("Pixel 3a", 85f))
+    names: List<Pair<String, Float>> = listOf(Pair("localhost", 100f), Pair("Pixel 3a", 85f)),
 ) {
     LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
         items(items = names) { name ->
@@ -111,11 +110,12 @@ private fun Greetings(
 @Composable
 private fun Greeting(name: String, volume: Float) {
     Card(
-        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
         CardContent(name, volume)
     }
 }
+
 @Composable
 private fun CardContent(name: String, volume: Float) {
     val expanded by remember { mutableStateOf(true) }
@@ -127,20 +127,20 @@ private fun CardContent(name: String, volume: Float) {
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
+                    stiffness = Spring.StiffnessLow,
+                ),
+            ),
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(12.dp)
+                .padding(12.dp),
         ) {
             Text(
                 text = name,
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold
-                )
+                    fontWeight = FontWeight.ExtraBold,
+                ),
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -149,7 +149,7 @@ private fun CardContent(name: String, volume: Float) {
                         stringResource(R.string.app_name)
                     } else {
                         stringResource(R.string.app_name)
-                    }
+                    },
                 )
                 Slider(
                     value = progress,
@@ -158,7 +158,7 @@ private fun CardContent(name: String, volume: Float) {
                     },
                     valueRange = 0f..100f,
                     // steps = 100,
-                    modifier = Modifier.weight(2f)
+                    modifier = Modifier.weight(2f),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 IconButton(onClick = { /*expanded = !expanded */ }) {
@@ -168,7 +168,7 @@ private fun CardContent(name: String, volume: Float) {
                             stringResource(R.string.app_name)
                         } else {
                             stringResource(R.string.app_name)
-                        }
+                        },
                     )
                 }
             }
@@ -180,7 +180,7 @@ private fun CardContent(name: String, volume: Float) {
     showBackground = true,
     widthDp = 320,
     uiMode = UI_MODE_NIGHT_YES,
-    name = "DefaultPreviewDark"
+    name = "DefaultPreviewDark",
 )
 @Preview(showBackground = true, widthDp = 320)
 @Composable

@@ -12,12 +12,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import java.io.BufferedReader
-import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import tech.capullo.radio.R
+import java.io.BufferedReader
+import java.util.UUID
 
 class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
     CoroutineWorker(context, parameters) {
@@ -25,7 +25,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
     fun getUniqueId(context: Context): String {
         val sharedPrefs = context.getSharedPreferences(
             PREF_UNIQUE_ID,
-            Context.MODE_PRIVATE
+            Context.MODE_PRIVATE,
         )
         var uniqueID: String? = sharedPrefs.getString(PREF_UNIQUE_ID, null)
         if (uniqueID == null) {
@@ -63,7 +63,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
                     "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
                     "--hostID", getUniqueId(applicationContext), "--player", androidPlayer,
                     "--sampleformat", sampleFormat,
-                    "--logfilter", "*:info,Stats:debug"
+                    "--logfilter", "*:info,Stats:debug",
                 )
 
             val process = processBuilder.start()
@@ -124,7 +124,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
             val serviceChannel = NotificationChannel(
                 "MyServiceChannel",
                 "My Foreground Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_DEFAULT,
             )
             notificationManager.createNotificationChannel(serviceChannel)
         }

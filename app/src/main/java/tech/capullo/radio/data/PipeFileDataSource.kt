@@ -9,9 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
-class PipeFileDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class PipeFileDataSource @Inject constructor(@ApplicationContext private val context: Context) {
     @Suppress("ktlint:standard:property-naming")
     private val CACHE_DIR = context.cacheDir
 

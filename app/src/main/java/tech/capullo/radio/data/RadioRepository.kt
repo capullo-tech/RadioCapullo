@@ -8,23 +8,13 @@ class RadioRepository @Inject constructor(
     private val pipeFileDataSource: PipeFileDataSource,
     private val radioAdvertisingDataSource: RadioAdvertisingDataSource,
 ) {
-    fun getPipeFilepath(): String? {
-        return pipeFileDataSource.getPipeFilepath()
-    }
+    fun getPipeFilepath(): String? = pipeFileDataSource.getPipeFilepath()
 
-    fun getNativeLibDirPath(): String {
-        return pipeFileDataSource.getNativeLibDirPath()
-    }
+    fun getNativeLibDirPath(): String = pipeFileDataSource.getNativeLibDirPath()
 
-    fun getCacheDirPath(): String {
-        return pipeFileDataSource.getCacheDirPath()
-    }
+    fun getCacheDirPath(): String = pipeFileDataSource.getCacheDirPath()
 
-    fun getInetAddresses(): List<String> {
-        return radioAdvertisingDataSource.getInetAddresses()
-    }
+    fun getInetAddresses(): List<String> = radioAdvertisingDataSource.getInetAddresses()
 
-    fun getDeviceName(): String {
-        return radioAdvertisingDataSource.getDeviceName()
-    }
+    fun getDeviceName(): String = radioAdvertisingDataSource.getDeviceName()
 }

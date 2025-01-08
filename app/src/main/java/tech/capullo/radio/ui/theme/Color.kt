@@ -26,7 +26,7 @@ val lightColors = lightColorScheme(
     surface = surfaceLight,
     onSurface = secondaryOrange,
     error = errorColor,
-    onError = Color.White
+    onError = Color.White,
 )
 
 // Material Dark Theme Colors
@@ -40,5 +40,5 @@ val darkColors = darkColorScheme(
     surface = surfaceLight,
     onSurface = secondaryOrange,
     error = errorColor,
-    onError = Color.White
+    onError = Color.White,
 )

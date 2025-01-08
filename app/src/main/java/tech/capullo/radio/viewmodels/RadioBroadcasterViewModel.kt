@@ -74,7 +74,7 @@ class RadioBroadcasterViewModel @Inject constructor(
                             .setDeviceType(sessionParams.deviceType)
                             .setPreferredLocale(sessionParams.preferredLocale)
                             .blob(sessionParams.username, sessionParams.decrypted)
-                            .create()
+                            .create(),
                     )
                     espotiPlayerManager.createPlayer()
                 } catch (e: Exception) {

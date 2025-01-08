@@ -44,8 +44,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
     @Inject lateinit var repository: RadioRepository
+
     @Inject lateinit var audioFocusManager: AudioFocusManager
+
     @Inject lateinit var espotiSessionManager: EspotiSessionManager
+
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
     val playbackExecutor = Executors.newSingleThreadExecutor()
@@ -70,7 +73,7 @@ class RadioBroadcasterService : Service() {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_DEFAULT,
             )
             val notificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as
@@ -79,7 +82,6 @@ class RadioBroadcasterService : Service() {
         }
     }
     private fun startForeground() {
-
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 createChannel()
@@ -102,8 +104,9 @@ class RadioBroadcasterService : Service() {
             ) {
                 // App not in a valid state to start foreground service
                 Log.d(TAG, "Foreground service not allowed")
-            } else
+            } else {
                 Log.d(TAG, "Error starting foreground service")
+            }
         }
     }
     override fun onCreate() {
@@ -118,15 +121,13 @@ class RadioBroadcasterService : Service() {
             pipeFilepath,
             repository.getCacheDirPath(),
             repository.getNativeLibDirPath(),
-            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager,
         )
 
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return binder
-    }
+    override fun onBind(intent: Intent?): IBinder? = binder
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
@@ -141,7 +142,7 @@ class RadioBroadcasterService : Service() {
     fun startLibrespot() {
         audioFocusManager.requestFocus()
         runOnPlayback {
-            espotiPlayerManager.player().waitReady()
+            espotiPlayerManager.player.waitReady()
         }
     }
 
@@ -168,7 +169,7 @@ class RadioBroadcasterService : Service() {
                     androidPlayer,
                     sampleformat,
                     rate,
-                    fpb
+                    fpb,
                 )
             }
             snapclient = async {
@@ -181,7 +182,7 @@ class RadioBroadcasterService : Service() {
                     androidPlayer,
                     sampleformat,
                     rate,
-                    fpb
+                    fpb,
                 )
             }
             awaitAll(snapclient, snapserver)
@@ -197,7 +198,7 @@ class RadioBroadcasterService : Service() {
         player: String,
         sampleFormat: String,
         rate: String?,
-        fpb: String?
+        fpb: String?,
     ) = withContext(Dispatchers.IO) {
         val pb = if (isSnapserver) {
             val streamName = "name=RadioCapullo"
@@ -205,7 +206,10 @@ class RadioBroadcasterService : Service() {
             val dryoutMs = "dryout_ms=2000"
             val librespotSampleFormat = "sampleformat=44100:16:2"
             val pipeArgs = listOf(
-                streamName, pipeMode, dryoutMs, librespotSampleFormat
+                streamName,
+                pipeMode,
+                dryoutMs,
+                librespotSampleFormat,
             ).joinToString("&")
             ProcessBuilder()
                 .command(
@@ -219,7 +223,7 @@ class RadioBroadcasterService : Service() {
             ProcessBuilder().command(
                 "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
                 "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
-                "--logfilter", "*:info,Stats:debug"
+                "--logfilter", "*:info,Stats:debug",
             )
         }
         try {
@@ -229,7 +233,7 @@ class RadioBroadcasterService : Service() {
 
             val process = pb.start()
             val bufferedReader = BufferedReader(
-                InputStreamReader(process.inputStream)
+                InputStreamReader(process.inputStream),
             )
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {

@@ -83,9 +83,11 @@ class EspotiZeroconfServer(
         synchronized(connectionLock) {
             info.addProperty(
                 "activeUser",
-                if (connectingUsername != null)
+                if (connectingUsername != null) {
                     connectingUsername
-                else ""
+                } else {
+                    ""
+                },
             )
         }
 
@@ -107,7 +109,7 @@ class EspotiZeroconfServer(
     private fun handleAddUser(
         out: OutputStream,
         params: MutableMap<String?, String?>,
-        httpVersion: String
+        httpVersion: String,
     ) {
         val username = params["userName"]
         if (username == null || username.isEmpty()) {
@@ -178,7 +180,7 @@ class EspotiZeroconfServer(
         aes.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(encryptionKey.copyOfRange(0, 16), "AES"),
-            IvParameterSpec(iv)
+            IvParameterSpec(iv),
         )
         val decrypted = aes.doFinal(encrypted)
 
@@ -191,7 +193,7 @@ class EspotiZeroconfServer(
                 TAG,
                 "Accepted new user from " +
                     params["deviceName"] + ". {deviceId: " +
-                    deviceId + "}"
+                    deviceId + "}",
             )
 
             // Sending response
@@ -289,7 +291,7 @@ class EspotiZeroconfServer(
         private val scope = CoroutineScope(Dispatchers.IO + Job())
         private val executorService: ExecutorService =
             Executors.newCachedThreadPool(
-                NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() })
+                NameThreadFactory(Function { r: Runnable? -> "zeroconf-client-" + r.hashCode() }),
             )
 
         @Volatile
@@ -311,14 +313,14 @@ class EspotiZeroconfServer(
                                     Log.d(
                                         TAG,
                                         "Handling request!" +
-                                            " on thread: ${Thread.currentThread().name}"
+                                            " on thread: ${Thread.currentThread().name}",
                                     )
                                     handle(socket)
                                     socket.close()
                                 } catch (ex: IOException) {
                                     Log.d(TAG, "Failed handling request!: $ex")
                                 }
-                            }
+                            },
                         )
                     } catch (ex: IOException) {
                         Log.d(TAG, "Failed handling connection!: $ex")
@@ -333,7 +335,7 @@ class EspotiZeroconfServer(
             out: OutputStream,
             httpVersion: String,
             action: String,
-            params: MutableMap<String?, String?>?
+            params: MutableMap<String?, String?>?,
         ) {
             if (action == "addUser") {
                 requireNotNull(params)
@@ -407,7 +409,7 @@ class EspotiZeroconfServer(
                     val split = Utils.split(pair, '=')
                     params.put(
                         URLDecoder.decode(split[0], "UTF-8"),
-                        URLDecoder.decode(split[1], "UTF-8")
+                        URLDecoder.decode(split[1], "UTF-8"),
                     )
                 }
             } else {

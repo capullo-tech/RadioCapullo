@@ -12,11 +12,11 @@ import tech.capullo.radio.compose.RadioTuneInScreen
 @Composable
 fun RadioCapulloNavHost(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = RadioDestinations.HOME_ROUTE
+    startDestination: String = RadioDestinations.HOME_ROUTE,
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
     ) {
         composable(RadioDestinations.HOME_ROUTE) {
             RadioApp(
@@ -25,7 +25,7 @@ fun RadioCapulloNavHost(
                 },
                 onTuneInClicked = {
                     navController.navigate(RadioDestinations.TUNEIN_ROUTE)
-                }
+                },
             )
         }
         composable(RadioDestinations.BROADCAST_ROUTE) {

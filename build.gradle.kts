@@ -12,11 +12,14 @@ plugins {
 spotless {
     kotlin {
         target("**/*.kt")
-        ktlint(libs.versions.ktlint.get()).userData(mapOf("max_line_length" to "100"))
-    }
-    kotlinGradle {
-        target("*.gradle.kts") // default target for kotlinGradle
-        ktlint()
+        ktlint(libs.versions.ktlint.get())
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    "ktlint_standard_annotation" to "disabled",
+                    "max_line_length" to 100,
+                )
+            )
     }
 }
 

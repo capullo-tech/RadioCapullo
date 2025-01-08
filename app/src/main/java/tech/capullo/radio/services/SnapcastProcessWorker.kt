@@ -23,10 +23,9 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
     CoroutineWorker(context, parameters) {
     @Synchronized
     fun getUniqueId(context: Context): String {
-        val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
-
         val sharedPrefs = context.getSharedPreferences(
-            PREF_UNIQUE_ID, Context.MODE_PRIVATE
+            PREF_UNIQUE_ID,
+            Context.MODE_PRIVATE,
         )
         var uniqueID: String? = sharedPrefs.getString(PREF_UNIQUE_ID, null)
         if (uniqueID == null) {
@@ -64,7 +63,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
                     "$nativeLibDir/libsnapclient.so", "-h", ip, "-p", 1704.toString(),
                     "--hostID", getUniqueId(applicationContext), "--player", androidPlayer,
                     "--sampleformat", sampleFormat,
-                    "--logfilter", "*:info,Stats:debug"
+                    "--logfilter", "*:info,Stats:debug",
                 )
 
             val process = processBuilder.start()
@@ -125,7 +124,7 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
             val serviceChannel = NotificationChannel(
                 "MyServiceChannel",
                 "My Foreground Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_DEFAULT,
             )
             notificationManager.createNotificationChannel(serviceChannel)
         }
@@ -133,5 +132,6 @@ class SnapcastProcessWorker(context: Context, parameters: WorkerParameters) :
 
     companion object {
         const val KEY_IP = "KEY_IP"
+        const val PREF_UNIQUE_ID = "PREF_UNIQUE_ID"
     }
 }

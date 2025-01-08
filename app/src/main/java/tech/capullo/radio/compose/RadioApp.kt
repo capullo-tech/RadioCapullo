@@ -28,24 +28,24 @@ import tech.capullo.radio.ui.theme.secondaryOrange
 fun RadioApp(
     modifier: Modifier = Modifier,
     onStartBroadcastingClicked: () -> Unit,
-    onTuneInClicked: () -> Unit
+    onTuneInClicked: () -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = Color.DarkGray
+        color = Color.DarkGray,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
                 rememberMultiplePermissionsState(
                     permissions = listOf(
                         android.Manifest.permission.NEARBY_WIFI_DEVICES,
-                        android.Manifest.permission.POST_NOTIFICATIONS
-                    )
+                        android.Manifest.permission.POST_NOTIFICATIONS,
+                    ),
                 )
             if (multiplePermissionsState.allPermissionsGranted) {
                 RadioMainScreen(
                     onStartBroadcastingClicked = onStartBroadcastingClicked,
-                    onTuneInClicked = onTuneInClicked
+                    onTuneInClicked = onTuneInClicked,
                 )
             } else {
                 // Launch the permission request
@@ -57,28 +57,25 @@ fun RadioApp(
             // For devices below TIRAMISU, show the main screen directly
             RadioMainScreen(
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
-                onTuneInClicked = onTuneInClicked
+                onTuneInClicked = onTuneInClicked,
             )
         }
     }
 }
 
 @Composable
-fun RadioMainScreen(
-    onStartBroadcastingClicked: () -> Unit,
-    onTuneInClicked: () -> Unit
-) {
+fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.DarkGray),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp), // Add padding to all sides of the column
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Start Broadcasting Button with primary color and fill all available space
             Button(
@@ -90,8 +87,8 @@ fun RadioMainScreen(
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
                     containerColor = primaryBlack,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
-                )
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                ),
             ) {
                 Text("RADIO-ON", style = MaterialTheme.typography.displayLarge)
             }
@@ -106,8 +103,8 @@ fun RadioMainScreen(
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
                     containerColor = secondaryOrange,
-                    contentColor = Color.Black
-                )
+                    contentColor = Color.Black,
+                ),
             ) {
                 Text("TUNE-IN", style = MaterialTheme.typography.displayLarge)
             }

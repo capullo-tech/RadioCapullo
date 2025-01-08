@@ -45,7 +45,7 @@ import tech.capullo.radio.viewmodels.RadioTuneInModel
 @Composable
 fun RadioTuneInScreen(
     radioTuneInModel: RadioTuneInModel = hiltViewModel(),
-    useDarkTheme: Boolean = false // Option to toggle between light and dark themes
+    useDarkTheme: Boolean = false
 ) {
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
 

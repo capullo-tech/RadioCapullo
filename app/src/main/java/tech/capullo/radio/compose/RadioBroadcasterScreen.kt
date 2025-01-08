@@ -29,7 +29,7 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 @Composable
 fun RadioBroadcasterScreen(
     viewModel: RadioBroadcasterViewModel = hiltViewModel(),
-    useDarkTheme: Boolean = false // Option to toggle between light and dark themes
+    useDarkTheme: Boolean = false
 ) {
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
 

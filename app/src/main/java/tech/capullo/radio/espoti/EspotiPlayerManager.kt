@@ -34,9 +34,7 @@ class EspotiPlayerManager @Inject constructor(
         }
     }
 
-    fun player(): Player {
-        return _player ?: error("Player not yet created!")
-    }
+    val player: Player get() = _player ?: error("Player not yet created!")
 
     private fun <T> verifyNotMainThread(block: () -> T): T {
         if (Looper.getMainLooper() == Looper.myLooper())

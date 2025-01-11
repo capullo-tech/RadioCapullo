@@ -18,15 +18,18 @@ class AndroidSinkOutput : SinkOutput {
 
     override fun start(format: OutputAudioFormat): Boolean {
         if (format.sampleSizeInBits != 16) throw SinkException("Unsupported SampleSize", null)
-        if (format.channels < 1 || format.channels > 2)
+        if (format.channels < 1 || format.channels > 2) {
             throw SinkException("Unsupported Number of Channels", null)
+        }
 
         val minBufferSize = AudioTrack.getMinBufferSize(
             format.sampleRate.toInt(),
-            if (format.channels == 1)
+            if (format.channels == 1) {
                 AudioFormat.CHANNEL_OUT_MONO
-            else AudioFormat.CHANNEL_OUT_STEREO,
-            AudioFormat.ENCODING_PCM_16BIT
+            } else {
+                AudioFormat.CHANNEL_OUT_STEREO
+            },
+            AudioFormat.ENCODING_PCM_16BIT,
         )
 
         val audioFormat = AudioFormat.Builder()

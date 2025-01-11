@@ -13,10 +13,7 @@ class SpNsdManager @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
 ) {
 
-    fun start(
-        advertisingName: String,
-        sessionListener: SpZeroconfServer.SessionListener,
-    ) {
+    fun start(advertisingName: String, sessionListener: SpZeroconfServer.SessionListener) {
         // the server initializes the runnable inside the executor
         val server = prepareLibrespotSession(advertisingName)
         server.addSessionListener(sessionListener)
@@ -33,7 +30,7 @@ class SpNsdManager @Inject constructor(
         nsdManager.registerService(
             serviceInfo,
             NsdManager.PROTOCOL_DNS_SD,
-            registrationListener
+            registrationListener,
         )
     }
 
@@ -72,7 +69,7 @@ class SpNsdManager @Inject constructor(
         return SpZeroconfServer(
             deviceType = Connect.DeviceType.SPEAKER,
             deviceName = advertisingName,
-            conf = conf
+            conf = conf,
         )
     }
 }

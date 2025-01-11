@@ -17,7 +17,7 @@ import kotlin.math.min
 class AndroidNativeDecoder(
     audioIn: SeekableInputStream,
     normalizationFactor: Float,
-    duration: Int
+    duration: Int,
 ) : Decoder(audioIn, normalizationFactor, duration) {
     companion object {
         private const val TAG = "AndroidNativeDecoder"
@@ -63,7 +63,10 @@ class AndroidNativeDecoder(
 
         audioFormat = OutputAudioFormat(
             format.getInteger(MediaFormat.KEY_SAMPLE_RATE).toFloat(),
-            sampleSize, format.getInteger(MediaFormat.KEY_CHANNEL_COUNT), true, false
+            sampleSize,
+            format.getInteger(MediaFormat.KEY_CHANNEL_COUNT),
+            true,
+            false,
         )
     }
 
@@ -80,7 +83,7 @@ class AndroidNativeDecoder(
     override fun seek(positionMs: Int) {
         extractor.seekTo(
             TimeUnit.MILLISECONDS.toMicros(positionMs.toLong()),
-            MediaExtractor.SEEK_TO_CLOSEST_SYNC
+            MediaExtractor.SEEK_TO_CLOSEST_SYNC,
         )
     }
 
@@ -102,8 +105,11 @@ class AndroidNativeDecoder(
                     }
 
                     codec.queueInputBuffer(
-                        inputBufferId, inputBuffer.position(), inputBuffer.limit(),
-                        extractor.sampleTime, 0
+                        inputBufferId,
+                        inputBuffer.position(),
+                        inputBuffer.limit(),
+                        extractor.sampleTime,
+                        0,
                     )
                     extractor.advance()
                 }

@@ -14,20 +14,20 @@ class RadioAdvertisingDataSource @Inject constructor(
     fun getInetAddresses(): List<String> =
         Collections.list(NetworkInterface.getNetworkInterfaces()).flatMap { networkInterface ->
             Collections.list(networkInterface.inetAddresses).filter { inetAddress ->
-                inetAddress.hostAddress != null && inetAddress.hostAddress?.takeIf {
-                    it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
-                }?.let { true } ?: false
+                inetAddress.hostAddress != null &&
+                    inetAddress.hostAddress?.takeIf {
+                        it.indexOf(":") < 0 && !inetAddress.isLoopbackAddress
+                    }?.let { true } ?: false
             }.map { it.hostAddress!! }
         }
 
-    fun getDeviceName(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            val deviceName = Settings.Global.getString(
-                applicationContext.contentResolver,
-                Settings.Global.DEVICE_NAME
-            )
-            if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
-        } else {
-            Build.MODEL
-        }
+    fun getDeviceName(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+        val deviceName = Settings.Global.getString(
+            applicationContext.contentResolver,
+            Settings.Global.DEVICE_NAME,
+        )
+        if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"
+    } else {
+        Build.MODEL
+    }
 }

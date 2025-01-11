@@ -45,19 +45,19 @@ import tech.capullo.radio.viewmodels.RadioTuneInModel
 @Composable
 fun RadioTuneInScreen(
     radioTuneInModel: RadioTuneInModel = hiltViewModel(),
-    useDarkTheme: Boolean = false // Option to toggle between light and dark themes
+    useDarkTheme: Boolean = false,
 ) {
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography
+        typography = Typography,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.DarkGray),
-            contentAlignment = Alignment.BottomEnd
+            contentAlignment = Alignment.BottomEnd,
         ) {
             Card(
                 modifier = Modifier
@@ -66,14 +66,14 @@ fun RadioTuneInScreen(
                     .fillMaxHeight(0.5f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = secondaryOrange)
+                colors = CardDefaults.cardColors(containerColor = secondaryOrange),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     // Header Text
                     Text(
                         text = "Tune In to another Radio:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onTertiary
+                        color = MaterialTheme.colorScheme.onTertiary,
                     )
                     var lastServerText by remember {
                         mutableStateOf(radioTuneInModel.getLastServerText())
@@ -93,7 +93,7 @@ fun RadioTuneInScreen(
                             Text(
                                 "Server IP",
                                 style = MaterialTheme.typography.titleLarge,
-                                color = primaryBlack.copy(alpha = 0.7f)
+                                color = primaryBlack.copy(alpha = 0.7f),
                             )
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -103,7 +103,7 @@ fun RadioTuneInScreen(
                             .border(
                                 width = 1.dp,
                                 color = primaryBlack.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
                             )
                             .clip(RoundedCornerShape(12.dp)),
                         colors = TextFieldDefaults.colors(
@@ -113,8 +113,8 @@ fun RadioTuneInScreen(
                             unfocusedContainerColor = secondaryOrange.copy(alpha = 0.7f),
                             cursorColor = primaryBlack,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        )
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
                     )
 
 //                    // DropdownMenu to display suggestions
@@ -140,7 +140,7 @@ fun RadioTuneInScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight()
-                            .wrapContentSize(Alignment.Center) // Centers the Button
+                            .wrapContentSize(Alignment.Center), // Centers the Button
                     ) {
                         Button(
                             onClick = {
@@ -156,9 +156,9 @@ fun RadioTuneInScreen(
                                 .clip(CircleShape),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = primaryBlack,
-                                contentColor = MaterialTheme.colorScheme.onSecondary
+                                contentColor = MaterialTheme.colorScheme.onSecondary,
                             ),
-                            shape = CircleShape
+                            shape = CircleShape,
                         ) {
                             Text("TUNE IN", style = MaterialTheme.typography.titleLarge)
                         }

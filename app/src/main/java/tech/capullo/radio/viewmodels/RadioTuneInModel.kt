@@ -9,7 +9,7 @@ import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import tech.capullo.radio.SnapcastProcessWorker
+import tech.capullo.radio.services.SnapcastProcessWorker
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,9 +17,8 @@ class RadioTuneInModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
 ) : ViewModel() {
 
-    private fun getSharedPreferences(context: Context): SharedPreferences {
-        return context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
-    }
+    private fun getSharedPreferences(context: Context): SharedPreferences =
+        context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
 
     fun saveLastServerText(text: String) {
         val editor = getSharedPreferences(applicationContext).edit()
@@ -27,17 +26,16 @@ class RadioTuneInModel @Inject constructor(
         editor.apply()
     }
 
-    fun getLastServerText(): String {
-        return getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
-    }
+    fun getLastServerText(): String =
+        getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
 
     fun initiateWorker(ip: String) {
         val uploadWorkRequest: WorkRequest =
             OneTimeWorkRequestBuilder<SnapcastProcessWorker>()
                 .setInputData(
                     workDataOf(
-                        "KEY_IP" to ip
-                    )
+                        "KEY_IP" to ip,
+                    ),
                 )
                 .build()
 

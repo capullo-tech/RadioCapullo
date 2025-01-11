@@ -9,10 +9,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
-class PipeFileDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class PipeFileDataSource @Inject constructor(@ApplicationContext private val context: Context) {
+    @Suppress("ktlint:standard:property-naming")
     private val CACHE_DIR = context.cacheDir
+
+    @Suppress("ktlint:standard:property-naming")
     private val NATIVE_LIB_DIR_PATH = context.applicationInfo.nativeLibraryDir
 
     fun getPipeFilepath(): String? {
@@ -33,13 +34,9 @@ class PipeFileDataSource @Inject constructor(
         }
     }
 
-    fun getNativeLibDirPath(): String {
-        return NATIVE_LIB_DIR_PATH
-    }
+    fun getNativeLibDirPath(): String = NATIVE_LIB_DIR_PATH
 
-    fun getCacheDirPath(): String {
-        return CACHE_DIR.absolutePath
-    }
+    fun getCacheDirPath(): String = CACHE_DIR.absolutePath
 
     companion object {
         private const val TAG = "RadioRepository"

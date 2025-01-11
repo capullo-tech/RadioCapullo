@@ -29,19 +29,19 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 @Composable
 fun RadioBroadcasterScreen(
     viewModel: RadioBroadcasterViewModel = hiltViewModel(),
-    useDarkTheme: Boolean = false // Option to toggle between light and dark themes
+    useDarkTheme: Boolean = false,
 ) {
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography
+        typography = Typography,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.DarkGray),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.TopCenter,
         ) {
             Card(
                 modifier = Modifier
@@ -50,30 +50,30 @@ fun RadioBroadcasterScreen(
                     .fillMaxHeight(0.5f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = primaryBlack)
+                colors = CardDefaults.cardColors(containerColor = primaryBlack),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Discoverable on Spotify as:",
                         style = Typography.bodyMedium,
-                        color = Color.White
+                        color = Color.White,
                     )
                     Text(
                         text = viewModel.getDeviceName(),
                         style = Typography.titleLarge,
-                        color = secondaryOrange
+                        color = secondaryOrange,
                     )
                     Text(
                         text = "Host Addresses:",
                         style = Typography.bodyMedium,
-                        color = Color.White
+                        color = Color.White,
                     )
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                         items(items = viewModel.hostAddresses) { name ->
                             Text(
                                 text = name,
                                 style = Typography.titleLarge,
-                                color = secondaryOrange
+                                color = secondaryOrange,
                             )
                         }
                     }

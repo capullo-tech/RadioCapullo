@@ -10,7 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://www.jitpack.io")
+        maven { url = uri("https://www.jitpack.io") }
     }
 }
 
@@ -20,5 +20,3 @@ plugins {
 
 rootProject.name = "Radio"
 include(":app")
-include(":snapcast-deps")
-include(":lib-snapcast-android")

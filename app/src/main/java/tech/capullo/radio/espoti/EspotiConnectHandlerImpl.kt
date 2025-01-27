@@ -33,7 +33,9 @@ class EspotiConnectHandlerImpl(
         val inputStream = DataInputStream(socket.getInputStream())
         val outputStream = socket.getOutputStream()
 
+        println("about to read the line")
         val requestLine = Utils.split(Utils.readLine(inputStream), ' ')
+        println("read the line: $requestLine")
         if (requestLine.size != 3) {
             return@coroutineScope
         }
@@ -44,11 +46,13 @@ class EspotiConnectHandlerImpl(
 
         val headers: MutableMap<String?, String?> = HashMap<String?, String?>()
         var header: String?
+        println("about to read headers")
         while ((Utils.readLine(inputStream).also { header = it }).isNotEmpty()) {
+            println("header: $header")
             val split = Utils.split(header!!, ':')
             headers[split[0]] = split[1].trim { it <= ' ' }
         }
-
+        println("headers: $headers")
         val params: MutableMap<String?, String?>?
         if (method == "POST") {
             val contentType = headers["Content-Type"]
@@ -102,7 +106,7 @@ class EspotiConnectHandlerImpl(
     }
 
     @Throws(IOException::class)
-    private fun handleGetInfo(out: OutputStream, httpVersion: String) {
+    fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
         info.addProperty("deviceID", deviceId)
         info.addProperty("remoteName", deviceName)
@@ -124,7 +128,7 @@ class EspotiConnectHandlerImpl(
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
-    private fun handleAddUser(
+    fun handleAddUser(
         out: OutputStream,
         params: MutableMap<String?, String?>,
         httpVersion: String,

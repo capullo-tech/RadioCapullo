@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.9.3"
-agp = "8.9.0-alpha09"
+agp = "8.10.0-alpha02"
 androidx-junit = "1.2.1"
 # @keep
 compileSdk = "35"
@@ -11,15 +11,18 @@ espressoCore = "3.6.1"
 hiltNavigationCompose = "1.2.0"
 junit = "4.13.2"
 kotlin = "2.1.0"
+kotlinxCoroutinesTest = "1.10.1"
 ktlint = "1.5.0"
 coreKtx = "1.15.0"
 hilt = "2.54"
 ksp = "2.1.0-1.0.29"
+ktor = "3.0.3"
 libSnapcastAndroid = "main-SNAPSHOT"
 lifecycleRuntimeKtx = "2.8.7"
 media = "1.7.0"
 # @keep
 minSdk = "23"
+mockk = "1.13.16"
 navigationCompose = "2.8.5"
 startupRuntime = "1.2.0"
 # @keep
@@ -54,7 +57,10 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" }
 lib-snapcast-android = { group = "com.github.capullo-tech.lib-snapcast-android", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
+mockk = { group= "io.mockk", name = "mockk", version.ref = "mockk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

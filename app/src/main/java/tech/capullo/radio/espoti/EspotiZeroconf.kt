@@ -32,7 +32,14 @@ class EspotiZeroconf(
             val socket = serverSocketAccept()
             launch(dispatcher) {
                 println("[${Thread.currentThread().name}] Serving ${socket.port}")
-                espotiConnectHandler.onConnect(socket)
+                try {
+                    espotiConnectHandler.onConnect(socket)
+                } catch (e: Exception) {
+                    println("Error serving ${socket.port}")
+                    e.printStackTrace()
+                } finally {
+                    socket.close()
+                }
             }
         }
     }

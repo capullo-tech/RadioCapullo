@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.spotify.connectstate.Connect
 import kotlinx.coroutines.coroutineScope
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import tech.capullo.radio.espoti.EspotiZeroconf.EspotiConnectHandler
+import tech.capullo.radio.espoti.EspotiZeroconfServer.EspotiConnectHandler
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.crypto.DiffieHellman
 import java.io.DataInputStream
@@ -253,7 +253,7 @@ class EspotiConnectHandlerImpl(
     }
 
     companion object {
-        private val TAG = EspotiZeroconfServer::class.java.simpleName
+        private val TAG = EspotiConnectHandlerImpl::class.java.simpleName
         private val EOL = byteArrayOf('\r'.code.toByte(), '\n'.code.toByte())
         private val DEFAULT_GET_INFO_FIELDS = JsonObject()
         private val DEFAULT_SUCCESSFUL_ADD_USER = JsonObject()

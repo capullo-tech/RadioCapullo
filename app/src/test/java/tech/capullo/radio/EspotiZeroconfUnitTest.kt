@@ -18,8 +18,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
-import tech.capullo.radio.espoti.EspotiZeroconf
-import tech.capullo.radio.espoti.EspotiZeroconf.EspotiConnectHandler
+import tech.capullo.radio.espoti.EspotiZeroconfServer
+import tech.capullo.radio.espoti.EspotiZeroconfServer.EspotiConnectHandler
 import java.io.DataInputStream
 import java.io.OutputStream
 import java.net.Socket
@@ -33,9 +33,9 @@ class EspotiZeroconfUnitTest {
 
     @Test
     fun clientConnectsToLocalhost_ConnectionIsSuccessful() = runTest {
-        val espotiZeroconf = EspotiZeroconf()
-        val port = espotiZeroconf.initAndGetPort()
-        backgroundScope.launch { espotiZeroconf.listen() }
+        val espotiZeroconfServer = EspotiZeroconfServer()
+        val port = espotiZeroconfServer.initAndGetPort()
+        backgroundScope.launch { espotiZeroconfServer.listen() }
 
         val localhostSocket = testClientSocket("localhost", port)
         assertEquals(localhostSocket.remoteAddress.toJavaAddress().port, port)
@@ -43,9 +43,9 @@ class EspotiZeroconfUnitTest {
 
     @Test
     fun `connect to loopback interface and verify connection`() = runTest {
-        val espotiZeroconf = EspotiZeroconf()
-        val port = espotiZeroconf.initAndGetPort()
-        backgroundScope.launch { espotiZeroconf.listen() }
+        val espotiZeroconfServer = EspotiZeroconfServer()
+        val port = espotiZeroconfServer.initAndGetPort()
+        backgroundScope.launch { espotiZeroconfServer.listen() }
 
         val loopbackSocket = testClientSocket("127.0.0.1", port)
         assertEquals(loopbackSocket.remoteAddress.toJavaAddress().port, port)
@@ -88,9 +88,9 @@ class EspotiZeroconfUnitTest {
 
         every { runBlocking { handler.onConnect(any()) } } throws Exception("Test exception")
 
-        val espotiZeroconf = EspotiZeroconf(espotiConnectHandler = handler)
-        val port = espotiZeroconf.initAndGetPort()
-        backgroundScope.launch { espotiZeroconf.listen() }
+        val espotiZeroconfServer = EspotiZeroconfServer(espotiConnectHandler = handler)
+        val port = espotiZeroconfServer.initAndGetPort()
+        backgroundScope.launch { espotiZeroconfServer.listen() }
 
         // launch 10 different test client connections, ensure the exception is handled
         repeat(10) {

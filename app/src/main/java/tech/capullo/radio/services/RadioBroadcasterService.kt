@@ -20,8 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
@@ -30,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.AudioFocusManager
+import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionManager
 import xyz.gianlu.librespot.core.Session
@@ -52,8 +51,7 @@ class RadioBroadcasterService : Service() {
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
     val playbackExecutor = Executors.newSingleThreadExecutor()
-    private val playbackScope =
-        CoroutineScope(playbackExecutor.asCoroutineDispatcher() + SupervisorJob())
+    val sessionExecutor = Executors.newCachedThreadPool()
     var player: Player? = null
     var session: Session? = null
 
@@ -146,6 +144,26 @@ class RadioBroadcasterService : Service() {
         }
     }
 
+    fun createSessionAndPlayer(
+        sessionParams: EspotiConnectHandlerImpl.SessionParams,
+        deviceName: String,
+    ) {
+        scope.launch {
+            println("Creating session and player")
+            val session = espotiSessionManager.createSession(deviceName)
+                .setDeviceId(sessionParams.deviceId)
+                .setDeviceName(sessionParams.deviceName)
+                .setDeviceType(sessionParams.deviceType)
+                .setPreferredLocale(sessionParams.preferredLocale)
+                .blob(sessionParams.username, sessionParams.decrypted)
+                .create()
+
+            espotiSessionManager.setSession(session)
+            espotiPlayerManager.createPlayer()
+            startLibrespot()
+        }
+    }
+
     private fun startSnapcast(
         filifoFilepath: String,
         cacheDir: String,
@@ -156,7 +174,7 @@ class RadioBroadcasterService : Service() {
         val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
         val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
         val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
-        val sampleformat = "$rate:16:*"
+        val sampleFormat = "$rate:16:*"
 
         scope.launch {
             snapserver = async {
@@ -167,7 +185,7 @@ class RadioBroadcasterService : Service() {
                     true,
                     UUID.randomUUID().toString(),
                     androidPlayer,
-                    sampleformat,
+                    sampleFormat,
                     rate,
                     fpb,
                 )
@@ -180,7 +198,7 @@ class RadioBroadcasterService : Service() {
                     false,
                     UUID.randomUUID().toString(),
                     androidPlayer,
-                    sampleformat,
+                    sampleFormat,
                     rate,
                     fpb,
                 )
@@ -241,7 +259,10 @@ class RadioBroadcasterService : Service() {
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
                 val tag = if (isSnapserver) "SNAPSERVER" else "SNAPCLIENT"
-                Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
+                line?.contains("No Chunks available")?.let {
+                    Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
+                }
+                // Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (e: IOException) {
             Log.e(TAG, "Error starting snapcast process", e)

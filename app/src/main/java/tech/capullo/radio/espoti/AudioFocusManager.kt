@@ -18,7 +18,7 @@ class AudioFocusManager @Inject constructor(
 ) : AudioManager.OnAudioFocusChangeListener {
     private val audioManager = appContext.getSystemService<AudioManager>()!!
 
-    private val audioAttributes = androidx.media.AudioAttributesCompat.Builder().apply {
+    private val audioAttributes = AudioAttributesCompat.Builder().apply {
         setUsage(AudioAttributesCompat.USAGE_MEDIA)
         setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
     }.build()
@@ -31,10 +31,6 @@ class AudioFocusManager @Inject constructor(
 
     fun requestFocus() {
         AudioManagerCompat.requestAudioFocus(audioManager, focusRequest)
-    }
-
-    fun abandonFocus() {
-        AudioManagerCompat.abandonAudioFocusRequest(audioManager, focusRequest)
     }
 
     override fun onAudioFocusChange(focusChange: Int) {

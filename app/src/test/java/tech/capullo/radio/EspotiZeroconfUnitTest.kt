@@ -17,9 +17,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import tech.capullo.radio.espoti.EspotiConnectHandler
 import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
 import tech.capullo.radio.espoti.EspotiZeroconf
+import tech.capullo.radio.espoti.EspotiZeroconf.EspotiConnectHandler
 import java.io.DataInputStream
 import java.io.OutputStream
 import java.net.Socket
@@ -39,6 +39,13 @@ class EspotiZeroconfUnitTest {
 
         val localhostSocket = testClientSocket("localhost", port)
         assertEquals(localhostSocket.remoteAddress.toJavaAddress().port, port)
+    }
+
+    @Test
+    fun `connect to loopback interface and verify connection`() = runTest {
+        val espotiZeroconf = EspotiZeroconf()
+        val port = espotiZeroconf.initAndGetPort()
+        backgroundScope.launch { espotiZeroconf.listen() }
 
         val loopbackSocket = testClientSocket("127.0.0.1", port)
         assertEquals(loopbackSocket.remoteAddress.toJavaAddress().port, port)

@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
+    implementation(libs.ktor.network)
+
     implementation(libs.lib.snapcast.android)
     implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
@@ -87,6 +89,8 @@ dependencies {
     }
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -3,21 +3,22 @@ package tech.capullo.radio.espoti
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tech.capullo.radio.espoti.EspotiConnectHandlerImpl.SessionParams
 import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
-
-interface EspotiConnectHandler {
-    @Throws(Exception::class)
-    suspend fun onConnect(socket: Socket)
-}
 
 class EspotiZeroconf(
     val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     val espotiConnectHandler: EspotiConnectHandler = EspotiConnectHandlerImpl(),
 ) {
+
+    interface EspotiConnectHandler {
+        @Throws(Exception::class)
+        suspend fun onConnect(socket: Socket): SessionParams?
+    }
+
     private lateinit var serverSocket: ServerSocket
 
     @Throws(IOException::class)
@@ -25,22 +26,25 @@ class EspotiZeroconf(
 
     private suspend fun serverSocketAccept() = withContext(dispatcher) { serverSocket.accept() }
 
-    suspend fun listen() = coroutineScope {
+    suspend fun listen(): SessionParams? = coroutineScope {
         println("Server listening at ${serverSocket.inetAddress}")
         while (true) {
             println("[${Thread.currentThread().name}] Awaiting connection")
             val socket = serverSocketAccept()
-            launch(dispatcher) {
-                println("[${Thread.currentThread().name}] Serving ${socket.port}")
-                try {
-                    espotiConnectHandler.onConnect(socket)
-                } catch (e: Exception) {
-                    println("Error serving ${socket.port}")
-                    e.printStackTrace()
-                } finally {
+            println("[${Thread.currentThread().name}] Serving ${socket.port}")
+            try {
+                espotiConnectHandler.onConnect(socket)?.let { sessionParams ->
+                    println("Emitting Session params: $sessionParams")
                     socket.close()
+                    return@coroutineScope sessionParams
                 }
+            } catch (e: Exception) {
+                println("Error serving ${socket.port}")
+                e.printStackTrace()
+            } finally {
+                socket.close()
             }
         }
+        return@coroutineScope null
     }
 }

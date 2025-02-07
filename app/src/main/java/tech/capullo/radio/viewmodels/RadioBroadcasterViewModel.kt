@@ -11,14 +11,13 @@ import android.util.Log
 import androidx.compose.runtime.toMutableStateList
 import androidx.core.os.HandlerCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.EspotiNsdManager
-import tech.capullo.radio.espoti.EspotiPlayerManager
-import tech.capullo.radio.espoti.EspotiSessionManager
-import tech.capullo.radio.espoti.EspotiZeroconfServer
-import tech.capullo.radio.espoti.EspotiZeroconfServer.SessionParams
 import tech.capullo.radio.services.RadioBroadcasterService
 import javax.inject.Inject
 
@@ -27,8 +26,6 @@ class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
-    private val espotiSessionManager: EspotiSessionManager,
-    private val espotiPlayerManager: EspotiPlayerManager,
 ) : ViewModel() {
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
@@ -55,44 +52,22 @@ class RadioBroadcasterViewModel @Inject constructor(
             mBound = false
         }
     }
+
     init {
-        startNsdService()
-    }
-
-    fun startNsdService() {
         startBroadcasterService()
-
-        val sessionListener = object : EspotiZeroconfServer.SessionListener {
-            override fun sessionChanged(sessionParams: SessionParams) {
-                Log.d(TAG, "Session changed on thread: ${Thread.currentThread().name}")
-
-                try {
-                    espotiSessionManager.setSession(
-                        espotiSessionManager.createSession(getDeviceName())
-                            .setDeviceId(sessionParams.deviceId)
-                            .setDeviceName(sessionParams.deviceName)
-                            .setDeviceType(sessionParams.deviceType)
-                            .setPreferredLocale(sessionParams.preferredLocale)
-                            .blob(sessionParams.username, sessionParams.decrypted)
-                            .create(),
-                    )
-                    espotiPlayerManager.createPlayer()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error creating session", e)
-                }
-
+        viewModelScope.launch(Dispatchers.IO) {
+            espotiNsdManager.start()?.let { sessionParams ->
                 mainThreadHandler.post {
-                    espotiNsdManager.stop()
-                    mService.startLibrespot()
+                    if (mBound) {
+                        println("Service is already bound")
+                        mService.createSessionAndPlayer(sessionParams, getDeviceName())
+                    }
                 }
             }
         }
-
-        espotiNsdManager.start(getDeviceName(), sessionListener)
     }
 
     fun startBroadcasterService() {
-        // start the broadcaster service
         val intent = Intent(applicationContext, RadioBroadcasterService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             applicationContext.startForegroundService(intent)

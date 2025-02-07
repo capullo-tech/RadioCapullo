@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.9.3"
-agp = "8.10.0-alpha02"
+agp = "8.10.0-alpha03"
 androidx-junit = "1.2.1"
 # @keep
 compileSdk = "35"

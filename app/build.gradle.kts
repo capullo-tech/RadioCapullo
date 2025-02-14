@@ -80,6 +80,8 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation(libs.ktor.network)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.websockets)
 
     implementation(libs.lib.snapcast.android)
     implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {

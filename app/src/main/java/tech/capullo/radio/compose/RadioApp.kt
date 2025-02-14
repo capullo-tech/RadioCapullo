@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -110,4 +111,13 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RadioAppPreview() {
+    RadioMainScreen(
+        onStartBroadcastingClicked = {},
+        onTuneInClicked = {},
+    )
 }

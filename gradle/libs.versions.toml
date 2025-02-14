@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
 activityCompose = "1.10.0"
-agp = "8.10.0-alpha07"
+agp = "8.10.0-alpha05"
 androidx-junit = "1.2.1"
 # @keep
 compileSdk = "35"
@@ -12,7 +12,6 @@ hiltNavigationCompose = "1.2.0"
 junit = "4.13.2"
 kotlin = "2.1.0"
 kotlinxCoroutinesTest = "1.10.1"
-kotlinxSerializationJson = "1.8.0"
 ktlint = "1.5.0"
 coreKtx = "1.15.0"
 hilt = "2.54"
@@ -59,11 +58,7 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
-ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 lib-snapcast-android = { group = "com.github.capullo-tech.lib-snapcast-android", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
 mockk = { group= "io.mockk", name = "mockk", version.ref = "mockk" }
 
@@ -74,5 +69,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

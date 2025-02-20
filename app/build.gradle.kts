@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -82,6 +83,9 @@ dependencies {
     implementation(libs.ktor.network)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.websockets)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)
     implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {

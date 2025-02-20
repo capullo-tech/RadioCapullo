@@ -15,8 +15,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import tech.capullo.radio.data.Client
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.data.SnapcastControlClient
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.services.RadioBroadcasterService
 import javax.inject.Inject
@@ -27,6 +31,9 @@ class RadioBroadcasterViewModel @Inject constructor(
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
 ) : ViewModel() {
+    private val _snapcastClients = MutableStateFlow<List<Client>>(emptyList())
+    val snapcastClients = _snapcastClients.asStateFlow()
+
     private val _hostAddresses = repository.getInetAddresses().toMutableStateList()
 
     val hostAddresses: List<String>
@@ -63,6 +70,16 @@ class RadioBroadcasterViewModel @Inject constructor(
                         mService.createSessionAndPlayer(sessionParams, getDeviceName())
                     }
                 }
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val snapcastControlClient = SnapcastControlClient("127.0.0.1")
+            snapcastControlClient.initWebsocket()
+            snapcastControlClient.serverStatus.collect { serverStatus ->
+                val clients =
+                    serverStatus?.result?.server?.groups?.flatMap { it.clients } ?: emptyList()
+                _snapcastClients.value = clients
             }
         }
     }

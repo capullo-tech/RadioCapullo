@@ -2,7 +2,6 @@ package tech.capullo.radio.compose
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -36,60 +35,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.json.JSONObject
 import tech.capullo.radio.R
+import tech.capullo.radio.data.Client
 import tech.capullo.radio.ui.theme.RadioTheme
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
-fun SnapclientList(
-    snapclientList: List<String>,
-    // modifier: Modifier = Modifier,
-    // radioViewModel: RadioViewModel = hiltViewModel()
-) {
-    if (snapclientList.isNotEmpty()) {
-        val serverStatus = JSONObject() // snapclientList.first().toJson()
-        Log.i("SESSION", "serverStatus updated:$serverStatus")
-
-        if (serverStatus.has("groups")) {
-            val groups = serverStatus.getJSONArray("groups")
-            Log.i("SESSION", "serverStatus key:${groups::class.java}")
-            (0 until groups.length()).forEach { i ->
-
-                // try {
-                // Access each element in the array
-                val element = groups.getJSONObject(i)
-                Log.i("SESSION", "group :${element::class.java} -- $element")
-                // Do something with the element
-                val listOfsnapclients = mutableListOf<Pair<String, Float>>()
-                if (element.has("clients")) {
-                    val clients = element.getJSONArray("clients")
-                    Log.i("SESSION", "client :${clients::class.java} -- $clients")
-                    (0 until clients.length()).forEach { j ->
-                        val client = clients.getJSONObject(j)
-                        Log.i("SESSION", "each :${client::class.java} -- $client")
-                        val volume =
-                            client
-                                .getJSONObject("config")
-                                .getJSONObject("volume").get("percent")
-                        Log.i("SESSION", "each :${volume::class.java} -- $volume")
-                        // TODO: all this filtering
-                        val name = client.getJSONObject("host").getString("name")
-                        val vol =
-                            client
-                                .getJSONObject("config")
-                                .getJSONObject("volume").getInt("percent")
-
-                        listOfsnapclients.add(Pair(name, vol.toFloat()))
-                        // Text(text = client.getJSONObject("host").getString("name"))
-                    }
-                    println(element.toString())
-                }
-                Greetings(names = listOfsnapclients)
-                // } catch (e: JSONException) {
-                // e.printStackTrace()
-                // }
-            }
+fun SnapclientList(snapclientList: List<Client>) {
+    LazyColumn {
+        items(snapclientList) { client ->
+            SnapcastClientCard(
+                name = client.host.name,
+                volume = client.config.volume.percent.toFloat(),
+            )
         }
     }
 }
@@ -103,22 +61,22 @@ private fun Greetings(
     LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
         items(items = names) { name ->
             name.first
-            Greeting(name = name.first, volume = name.second)
+            SnapcastClientCard(name = name.first, volume = name.second)
         }
     }
 }
 
 @Composable
-private fun Greeting(name: String, volume: Float) {
+private fun SnapcastClientCard(name: String, volume: Float) {
     Card(
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
-        CardContent(name, volume)
+        SnapcastClientContent(name, volume)
     }
 }
 
 @Composable
-private fun CardContent(name: String, volume: Float) {
+private fun SnapcastClientContent(name: String, volume: Float) {
     val expanded by remember { mutableStateOf(true) }
     var progress by remember { mutableFloatStateOf(volume) }
 

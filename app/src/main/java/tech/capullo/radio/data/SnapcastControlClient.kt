@@ -3,16 +3,10 @@ package tech.capullo.radio.data
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.client.plugins.websocket.sendSerialized
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.http.HttpMethod
-import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.aSocket
-import io.ktor.network.sockets.openReadChannel
-import io.ktor.network.sockets.openWriteChannel
-import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.readUTF8Line
-import io.ktor.utils.io.writeStringUtf8
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineDispatcher
@@ -20,9 +14,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 
 class SnapcastControlClient(
@@ -30,34 +25,6 @@ class SnapcastControlClient(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + Job()),
 ) {
-    private var sendChannel: ByteWriteChannel? = null
-
-    suspend fun initSocket() = coroutineScope {
-        delay(10000)
-        println("in SnapcastControlClient.rr()")
-        val selectorManager = SelectorManager(ioDispatcher)
-        println("selectorManager: $selectorManager")
-        val socket = aSocket(selectorManager).tcp().connect(snapserverHostAddress, DEFAULT_PORT)
-        println("socket: $socket")
-
-        val receiveChannel = socket.openReadChannel()
-        sendChannel = socket.openWriteChannel(autoFlush = true)
-
-        launch(ioDispatcher) {
-            while (true) {
-                println("waiting for snapserver socket greeting")
-                val greeting = receiveChannel.readUTF8Line()
-                if (greeting != null) {
-                    println("from snapserver socket: $greeting")
-                } else {
-                    println("Server closed a connection")
-                    socket.close()
-                    selectorManager.close()
-                }
-            }
-        }
-    }
-
     val client = HttpClient(OkHttp) {
         engine {
             config {
@@ -65,12 +32,16 @@ class SnapcastControlClient(
             }
         }
 
-        install(WebSockets)
+        install(WebSockets) {
+            contentConverter = KotlinxWebsocketSerializationConverter(Json)
+        }
     }
 
+    private val _serverStatus = MutableStateFlow<SnapcastServerStatus?>(null)
+    val serverStatus = _serverStatus
+
     suspend fun initWebsocket() = coroutineScope {
-        val session =
-        client.webSocketSession(
+        val session = client.webSocketSession(
             method = HttpMethod.Get,
             host = snapserverHostAddress,
             port = DEFAULT_WS_PORT,
@@ -81,31 +52,24 @@ class SnapcastControlClient(
             while (true) {
                 val frame = session.incoming.receive() as? Frame.Text
                 println("Received frame: ${frame?.readText()}")
+
+                val jsonString = frame?.readText()
+                jsonString?.let {
+                    val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
+                    println(response)
+                    _serverStatus.value = response
+                }
             }
         }
 
-        session.send(Frame.Text("{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"Server.GetStatus\"}"))
-        /*
-        {
-            println("Connected to snapserver websocket")
-            launch { sendCommand("Server.GetStatus") }
-            while (true) {
-                val frame = incoming.receive() as? Frame.Text
-                println("Received frame: ${frame?.readText()}")
-            }
-        }
-         */
+        println("sending frame")
+        // session.send(Frame.Text("{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"Server.GetStatus\"}"))
+        val getStatus = SnapcastGetStatusRequest(1, "2.0", "Server.GetStatus")
+        session.sendSerialized(getStatus)
     }
 
-
-    suspend fun sendCommand(command: String) = withContext(ioDispatcher) {
-        delay(20000)
-        val commandString = "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"$command\"}\n"
-
-        println("aboud to send command: $commandString")
-        sendChannel?.writeStringUtf8(commandString)
-        println("command sent: $commandString")
-    }
+    @Serializable
+    data class SnapcastGetStatusRequest(val id: Int, val jsonrpc: String, val method: String)
 
     companion object {
         private const val TAG = "SnapcastControlClient"

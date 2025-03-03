@@ -23,8 +23,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.ui.theme.primaryBlack
-import tech.capullo.radio.ui.theme.secondaryOrange
+import tech.capullo.radio.ui.theme.onSecondaryLight
+import tech.capullo.radio.ui.theme.primaryGreen
+import tech.capullo.radio.ui.theme.surfaceLight
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 
 @Composable
@@ -50,7 +51,7 @@ fun RadioBroadcasterContent(hostAddresses: List<String>, deviceName: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.DarkGray),
+            .background(surfaceLight),
         contentAlignment = Alignment.TopCenter,
     ) {
         Card(
@@ -60,30 +61,30 @@ fun RadioBroadcasterContent(hostAddresses: List<String>, deviceName: String) {
                 .fillMaxHeight(0.5f),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             shape = MaterialTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = primaryBlack),
+            colors = CardDefaults.cardColors(containerColor = primaryGreen),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Discoverable on Spotify as:",
                     style = Typography.bodyMedium,
-                    color = Color.White,
+                    color = Color.Black,
                 )
                 Text(
                     text = deviceName,
                     style = Typography.titleLarge,
-                    color = secondaryOrange,
+                    color = onSecondaryLight,
                 )
                 Text(
                     text = "Host Addresses:",
                     style = Typography.bodyMedium,
-                    color = Color.White,
+                    color = Color.Black,
                 )
                 LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                     items(items = hostAddresses) { name ->
                         Text(
                             text = name,
                             style = Typography.titleLarge,
-                            color = secondaryOrange,
+                            color = onSecondaryLight,
                         )
                     }
                 }

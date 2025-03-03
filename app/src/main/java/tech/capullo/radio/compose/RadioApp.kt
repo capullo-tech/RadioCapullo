@@ -16,13 +16,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import tech.capullo.radio.ui.theme.primaryBlack
+import tech.capullo.radio.ui.theme.onPrimaryLight
+import tech.capullo.radio.ui.theme.onSecondaryLight
+import tech.capullo.radio.ui.theme.primaryGreen
 import tech.capullo.radio.ui.theme.secondaryOrange
+import tech.capullo.radio.ui.theme.surfaceLight
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -33,7 +35,7 @@ fun RadioApp(
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = Color.DarkGray,
+//        color = Color.DarkGray,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val multiplePermissionsState =
@@ -69,7 +71,7 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.DarkGray),
+            .background(surfaceLight),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -87,8 +89,8 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                     .padding(vertical = 8.dp), // vertical space between buttons
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryBlack,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    containerColor = primaryGreen,
+                    contentColor = onPrimaryLight,
                 ),
             ) {
                 Text("RADIO-ON", style = MaterialTheme.typography.displayLarge)
@@ -104,7 +106,7 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                 elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
                 colors = ButtonDefaults.buttonColors(
                     containerColor = secondaryOrange,
-                    contentColor = Color.Black,
+                    contentColor = onSecondaryLight,
                 ),
             ) {
                 Text("TUNE-IN", style = MaterialTheme.typography.displayLarge)

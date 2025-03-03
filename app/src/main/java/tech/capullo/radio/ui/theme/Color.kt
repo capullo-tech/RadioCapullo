@@ -4,11 +4,11 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-val primaryBlack = Color(0xFF121212) // Deep black (Spotify / Apple Dark Mode)
-val secondaryOrange = Color(0xFFFF5722) // Orange accent
+val primaryGreen = Color(0xFF81C784) // Verde pastel
+val secondaryOrange = Color(0xFFFF7043) // Orange pastel
 
-val backgroundLight = Color(0xFFFFFFFF) // White (Apple background)
-val surfaceLight = Color(0xFFF5F5F5) // Light grey (Apple surface)
+val backgroundLight = Color(0xFFFFFFFF) // White
+val surfaceLight = Color(0xFFF5F5F5) // Light grey
 
 val onPrimaryLight = Color(0xFFFFFFFF)
 val onSecondaryLight = Color(0xFFFFFFFF)
@@ -17,12 +17,12 @@ val errorColor = Color(0xFFB00020)
 
 // Material Light Theme Colors
 val lightColors = lightColorScheme(
-    primary = primaryBlack,
+    primary = primaryGreen,
     onPrimary = onPrimaryLight,
     secondary = secondaryOrange,
     onSecondary = onSecondaryLight,
     background = backgroundLight,
-    onBackground = primaryBlack,
+    onBackground = primaryGreen,
     surface = surfaceLight,
     onSurface = secondaryOrange,
     error = errorColor,
@@ -31,12 +31,12 @@ val lightColors = lightColorScheme(
 
 // Material Dark Theme Colors
 val darkColors = darkColorScheme(
-    primary = primaryBlack,
+    primary = primaryGreen,
     onPrimary = onPrimaryLight,
     secondary = secondaryOrange,
     onSecondary = onSecondaryLight,
     background = backgroundLight,
-    onBackground = primaryBlack,
+    onBackground = primaryGreen,
     surface = surfaceLight,
     onSurface = secondaryOrange,
     error = errorColor,

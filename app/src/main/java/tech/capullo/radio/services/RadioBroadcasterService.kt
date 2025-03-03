@@ -10,7 +10,6 @@ import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.os.Process
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -37,7 +36,9 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -50,8 +51,7 @@ class RadioBroadcasterService : Service() {
 
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
-    val playbackExecutor = Executors.newSingleThreadExecutor()
-    val sessionExecutor = Executors.newCachedThreadPool()
+    val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     var player: Player? = null
     var session: Session? = null
 
@@ -64,7 +64,7 @@ class RadioBroadcasterService : Service() {
         fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
     }
 
-    fun runOnPlayback(func: () -> Unit) = playbackExecutor.submit(func)
+    fun runOnPlayback(func: () -> Unit): Future<*>? = playbackExecutor.submit(func)
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -256,13 +256,14 @@ class RadioBroadcasterService : Service() {
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {
                 ensureActive()
+                /*
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
                 val tag = if (isSnapserver) "SNAPSERVER" else "SNAPCLIENT"
                 line?.contains("No Chunks available")?.let {
-                    Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
+                    Log.d(tag, "Running on: $processId -  $threadName - ${line}")
                 }
-                // Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
+                 */
             }
         } catch (e: IOException) {
             Log.e(TAG, "Error starting snapcast process", e)

@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +38,7 @@ fun RadioBroadcasterScreen(
     useDarkTheme: Boolean = false,
 ) {
     val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
+    val snapcastClients by viewModel.snapcastClients.collectAsState()
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -44,6 +47,7 @@ fun RadioBroadcasterScreen(
         RadioBroadcasterContent(
             hostAddresses = viewModel.hostAddresses,
             deviceName = viewModel.getDeviceName(),
+            snapcastClients,
         )
     }
 }

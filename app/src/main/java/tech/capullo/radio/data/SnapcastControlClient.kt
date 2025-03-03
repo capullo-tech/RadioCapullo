@@ -9,22 +9,15 @@ import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 
-class SnapcastControlClient(
-    private val snapserverHostAddress: String,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + Job()),
-) {
+class SnapcastControlClient(private val snapserverHostAddress: String) {
     val client = HttpClient(OkHttp) {
         engine {
             config {
@@ -37,8 +30,8 @@ class SnapcastControlClient(
         }
     }
 
-    private val _serverStatus = MutableStateFlow<SnapcastServerStatus?>(null)
-    val serverStatus = _serverStatus
+    private val _serverStatus = MutableSharedFlow<SnapcastServerStatus>()
+    val serverStatus: SharedFlow<SnapcastServerStatus> = _serverStatus
 
     suspend fun initWebsocket() = coroutineScope {
         val session = client.webSocketSession(
@@ -55,15 +48,19 @@ class SnapcastControlClient(
 
                 val jsonString = frame?.readText()
                 jsonString?.let {
-                    val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
-                    println(response)
-                    _serverStatus.value = response
+                    try {
+                        val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
+                        println(response)
+                        _serverStatus.emit(response)
+                        println("emmitting server status")
+                    } catch (e: Exception) {
+                        println("Error decoding response: $e")
+                    }
                 }
             }
         }
 
         println("sending frame")
-        // session.send(Frame.Text("{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"Server.GetStatus\"}"))
         val getStatus = SnapcastGetStatusRequest(1, "2.0", "Server.GetStatus")
         session.sendSerialized(getStatus)
     }

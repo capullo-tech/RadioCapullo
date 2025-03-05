@@ -18,12 +18,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import tech.capullo.radio.data.Client
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.data.SnapcastControlClient
 import tech.capullo.radio.espoti.EspotiConnectHandlerImpl.SessionParams
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.services.RadioBroadcasterService
+import tech.capullo.radio.snapcast.Client
+import tech.capullo.radio.snapcast.SnapcastControlClient
 import javax.inject.Inject
 
 @HiltViewModel

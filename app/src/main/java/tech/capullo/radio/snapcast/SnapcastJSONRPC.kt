@@ -1,4 +1,4 @@
-package tech.capullo.radio.data
+package tech.capullo.radio.snapcast
 
 import kotlinx.serialization.Serializable
 

@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.capullo.radio.R
-import tech.capullo.radio.data.Client
+import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.ui.theme.RadioTheme
 
 @SuppressLint("SuspiciousIndentation")

@@ -1,7 +1,8 @@
-package tech.capullo.radio.data
+package tech.capullo.radio.snapcast
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.sendSerialized
 import io.ktor.client.plugins.websocket.webSocketSession
@@ -9,7 +10,10 @@ import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -33,6 +37,9 @@ class SnapcastControlClient(private val snapserverHostAddress: String) {
     private val _serverStatus = MutableSharedFlow<SnapcastServerStatus>()
     val serverStatus: SharedFlow<SnapcastServerStatus> = _serverStatus
 
+    var receiveJob: Job? = null
+    private var session: DefaultClientWebSocketSession? = null
+
     suspend fun initWebsocket() = coroutineScope {
         val session = client.webSocketSession(
             method = HttpMethod.Get,
@@ -41,22 +48,29 @@ class SnapcastControlClient(private val snapserverHostAddress: String) {
             path = "/jsonrpc",
         )
 
-        launch {
-            while (true) {
-                val frame = session.incoming.receive() as? Frame.Text
-                println("Received frame: ${frame?.readText()}")
+        receiveJob = launch {
+            try {
+                while (true) {
+                    ensureActive()
+                    val frame = session.incoming.receive() as? Frame.Text
+                    println("Received frame: ${frame?.readText()}")
 
-                val jsonString = frame?.readText()
-                jsonString?.let {
-                    try {
-                        val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
-                        println(response)
-                        _serverStatus.emit(response)
-                        println("emmitting server status")
-                    } catch (e: Exception) {
-                        println("Error decoding response: $e")
+                    val jsonString = frame?.readText()
+                    jsonString?.let {
+                        try {
+                            val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
+                            println(response)
+                            _serverStatus.emit(response)
+                            println("emmitting server status")
+                        } catch (e: Exception) {
+                            println("Error decoding response: $e")
+                        }
                     }
                 }
+            } catch (e: CancellationException) {
+                println("Websocket receive job cancelled")
+            } catch (e: Exception) {
+                println("Error receiving frame: $e")
             }
         }
 

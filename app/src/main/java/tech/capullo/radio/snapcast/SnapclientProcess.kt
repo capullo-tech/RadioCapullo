@@ -7,6 +7,9 @@ import android.os.Build
 import android.os.Process
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -29,7 +32,7 @@ class SnapclientProcess @Inject constructor(
     val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
     val sampleFormat = "$rate:16:*"
 
-    fun start() {
+    suspend fun start() = coroutineScope {
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
             "-h", snapserverAddress, "-p", snapserverPort.toString(),
@@ -37,21 +40,25 @@ class SnapclientProcess @Inject constructor(
             "--logfilter", "*:info,Stats:debug",
         )
 
-        try {
-            val env = pb.environment()
-            if (rate != null) env["SAMPLE_RATE"] = rate
-            if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
+        val env = pb.environment()
+        if (rate != null) env["SAMPLE_RATE"] = rate
+        if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
 
-            val process = pb.start()
+        val process = pb.start()
+        try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
             )
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {
+                ensureActive()
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
                 println("Running on: $processId -  $threadName - ${line!!}")
             }
+        } catch (e: CancellationException) {
+            println("Snapclient process cancelled")
+            process.destroy()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }

@@ -2,6 +2,9 @@ package tech.capullo.radio.snapcast
 
 import android.os.Process
 import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.services.RadioBroadcasterService.Companion.TAG
 import java.io.BufferedReader
@@ -27,7 +30,7 @@ class SnapserverProcess @Inject constructor(
         sampleFormat,
     ).joinToString("&")
 
-    fun start() {
+    suspend fun start() = coroutineScope {
         val pb = ProcessBuilder()
             .command(
                 "$nativeLibDir/libsnapserver.so",
@@ -37,17 +40,21 @@ class SnapserverProcess @Inject constructor(
             )
             .redirectErrorStream(true)
 
+        val process = pb.start()
         try {
-            val process = pb.start()
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
             )
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {
+                ensureActive()
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
                 println("Running on: $processId -  $threadName - ${line!!}")
             }
+        } catch (e: CancellationException) {
+            println("Snapserver process cancelled")
+            process.destroy()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }

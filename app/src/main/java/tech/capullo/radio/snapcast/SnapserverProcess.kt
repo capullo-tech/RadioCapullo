@@ -6,29 +6,31 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.services.RadioBroadcasterService.Companion.TAG
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import javax.inject.Inject
 
-class SnapserverProcess @Inject constructor(
-    radioRepository: RadioRepository,
-    streamName: String = "name=RadioCapullo",
-    pipeMode: String = "mode=read",
-    dryoutMs: String = "dryout_ms=2000",
-    sampleFormat: String = "sampleformat=44100:16:2",
-) {
+class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
 
-    val nativeLibDir = radioRepository.getNativeLibDirPath()
-    val cacheDir = radioRepository.getCacheDirPath()
-    val pipeFilepath = radioRepository.getPipeFilepath()!!
+    private val nativeLibDir = radioRepository.getNativeLibDirPath()
+    private val cacheDir = radioRepository.getCacheDirPath()
+    private val pipeFilepath = radioRepository.getPipeFilepath()!!
 
-    private val pipeArgs = listOf(
-        streamName,
-        pipeMode,
-        dryoutMs,
-        sampleFormat,
-    ).joinToString("&")
+    companion object {
+        private const val STREAM_NAME: String = "name=RadioCapullo"
+        private const val PIPE_MODE: String = "mode=read"
+        private const val DRYOUT_MS: String = "dryout_ms=2000"
+        private const val SAMPLE_FORMAT: String = "sampleformat=44100:16:2"
+
+        private val pipeArgs = listOf(
+            STREAM_NAME,
+            PIPE_MODE,
+            DRYOUT_MS,
+            SAMPLE_FORMAT,
+        ).joinToString("&")
+
+        private val TAG = SnapclientProcess::class.java.simpleName
+    }
 
     suspend fun start() = coroutineScope {
         val pb = ProcessBuilder()
@@ -58,9 +60,5 @@ class SnapserverProcess @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }
-    }
-
-    companion object {
-        private val TAG = SnapclientProcess::class.java.simpleName
     }
 }

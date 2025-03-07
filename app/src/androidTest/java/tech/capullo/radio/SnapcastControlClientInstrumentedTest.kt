@@ -45,7 +45,7 @@ class SnapcastControlClientInstrumentedTest {
         delay(2000)
 
         // Start a snapclient process
-        val clientJob = launch(Dispatchers.IO) {
+        val snapclientJob = launch(Dispatchers.IO) {
             val snapclientProcess = SnapclientProcess(appContext, radioRepository)
             snapclientProcess.start()
         }
@@ -88,7 +88,7 @@ class SnapcastControlClientInstrumentedTest {
 
         // Clean up
         println("Cleaning up")
-        clientJob.cancel()
+        snapclientJob.cancel()
         serverJob.cancel()
         controlClientJob.cancel()
         println("Cleanup complete")

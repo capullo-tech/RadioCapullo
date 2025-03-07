@@ -19,20 +19,29 @@ import javax.inject.Inject
 class SnapclientProcess @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     radioRepository: RadioRepository,
-    val hostId: String = UUID.randomUUID().toString(),
-    val snapserverAddress: String = "localhost",
-    val snapserverPort: Int = 1704,
 ) {
 
-    val nativeLibDir = radioRepository.getNativeLibDirPath()
-    val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
+    private val nativeLibDir = radioRepository.getNativeLibDirPath()
+    private val androidPlayer = if (Build.VERSION.SDK_INT <
+        Build.VERSION_CODES.O
+    ) {
+        "opensl"
+    } else {
+        "oboe"
+    }
 
-    val audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
-    val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
-    val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
-    val sampleFormat = "$rate:16:*"
+    private val audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+    private val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+    private val fpb: String? = audioManager.getProperty(
+        AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER,
+    )
+    private val sampleFormat = "$rate:16:*"
 
-    suspend fun start() = coroutineScope {
+    suspend fun start(
+        hostId: String = UUID.randomUUID().toString(),
+        snapserverAddress: String = "localhost",
+        snapserverPort: Int = 1704,
+    ) = coroutineScope {
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
             "-h", snapserverAddress, "-p", snapserverPort.toString(),

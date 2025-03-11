@@ -76,8 +76,6 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.startup.runtime)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
     implementation(libs.ktor.network)

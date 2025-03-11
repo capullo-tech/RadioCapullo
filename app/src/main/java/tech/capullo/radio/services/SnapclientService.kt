@@ -20,9 +20,6 @@ import kotlinx.coroutines.launch
 import tech.capullo.radio.snapcast.SnapclientProcess
 import javax.inject.Inject
 
-/**
- * Worker that starts a Snapcast client process
- */
 @AndroidEntryPoint
 class SnapclientService : Service() {
     @Inject lateinit var snapclientProcess: SnapclientProcess
@@ -84,9 +81,7 @@ class SnapclientService : Service() {
     }
 
     private fun startSnapclient(snapserverIp: String) {
-        snapclientJob = scope.launch {
-            snapclientProcess.start(snapserverIp)
-        }
+        snapclientJob = scope.launch { snapclientProcess.start(snapserverAddress = snapserverIp) }
     }
 
     companion object {

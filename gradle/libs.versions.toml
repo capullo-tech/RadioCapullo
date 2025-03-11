@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.35.0-alpha"
-activityCompose = "1.10.0"
-agp = "8.10.0-alpha07"
+activityCompose = "1.10.1"
+agp = "8.10.0-alpha08"
 androidx-junit = "1.2.1"
 # @keep
 compileSdk = "35"
@@ -24,12 +24,11 @@ media = "1.7.0"
 # @keep
 minSdk = "23"
 mockk = "1.13.16"
-navigationCompose = "2.8.7"
+navigationCompose = "2.8.8"
 startupRuntime = "1.2.0"
 # @keep
 targetSdk = "35"
 spotless = "7.0.1"
-workRuntimeKtx = "2.7.0"
 
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -53,8 +52,6 @@ androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "l
 androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-startup-runtime = { group = "androidx.startup", name = "startup-runtime", version.ref = "startupRuntime" }
-androidx-work-multiprocess = { group = "androidx.work", name = "work-multiprocess", version.ref = "workRuntimeKtx" }
-androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

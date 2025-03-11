@@ -144,7 +144,7 @@ fun RadioTuneInScreen(
                     ) {
                         Button(
                             onClick = {
-                                radioTuneInModel.initiateWorker(lastServerText)
+                                radioTuneInModel.startSnapclientService(lastServerText)
                                 isTunedIn = true
                             },
                             enabled = !isTunedIn,

@@ -1,15 +1,14 @@
 package tech.capullo.radio.viewmodels
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkRequest
-import androidx.work.workDataOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import tech.capullo.radio.services.SnapcastProcessWorker
+import tech.capullo.radio.services.SnapclientService
 import javax.inject.Inject
 
 @HiltViewModel
@@ -21,26 +20,23 @@ class RadioTuneInModel @Inject constructor(
         context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
 
     fun saveLastServerText(text: String) {
-        val editor = getSharedPreferences(applicationContext).edit()
-        editor.putString("my_text", text)
-        editor.apply()
+        getSharedPreferences(applicationContext).edit {
+            putString("my_text", text)
+        }
     }
 
     fun getLastServerText(): String =
         getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
 
-    fun initiateWorker(ip: String) {
-        val uploadWorkRequest: WorkRequest =
-            OneTimeWorkRequestBuilder<SnapcastProcessWorker>()
-                .setInputData(
-                    workDataOf(
-                        "KEY_IP" to ip,
-                    ),
-                )
-                .build()
+    fun startSnapclientService(ip: String) {
+        val intent = Intent(applicationContext, SnapclientService::class.java).apply {
+            putExtra(SnapclientService.KEY_IP, ip)
+        }
 
-        WorkManager
-            .getInstance(applicationContext)
-            .enqueue(uploadWorkRequest)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            applicationContext.startForegroundService(intent)
+        } else {
+            applicationContext.startService(intent)
+        }
     }
 }

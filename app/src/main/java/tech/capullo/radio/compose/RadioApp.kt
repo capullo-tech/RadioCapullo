@@ -1,5 +1,6 @@
 package tech.capullo.radio.compose
 
+import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,11 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import tech.capullo.radio.ui.theme.onPrimaryLight
-import tech.capullo.radio.ui.theme.onSecondaryLight
-import tech.capullo.radio.ui.theme.primaryGreen
-import tech.capullo.radio.ui.theme.secondaryOrange
-import tech.capullo.radio.ui.theme.surfaceLight
+import tech.capullo.radio.ui.theme.RadioTheme
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -71,26 +69,25 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(surfaceLight),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp), // Add padding to all sides of the column
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Start Broadcasting Button with primary color and fill all available space
             Button(
                 onClick = onStartBroadcastingClicked,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // height equal space in the column
-                    .padding(vertical = 8.dp), // vertical space between buttons
-                elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
+                    .weight(1f)
+                    .padding(vertical = 8.dp),
+                elevation = ButtonDefaults.buttonElevation(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryGreen,
-                    contentColor = onPrimaryLight,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
             ) {
                 Text("RADIO-ON", style = MaterialTheme.typography.displayLarge)
@@ -103,10 +100,10 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(vertical = 8.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp), // Apply elevation for shadow
+                elevation = ButtonDefaults.buttonElevation(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = secondaryOrange,
-                    contentColor = onSecondaryLight,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 ),
             ) {
                 Text("TUNE-IN", style = MaterialTheme.typography.displayLarge)
@@ -115,11 +112,28 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Light Mode")
 @Composable
 fun RadioAppPreview() {
-    RadioMainScreen(
-        onStartBroadcastingClicked = {},
-        onTuneInClicked = {},
-    )
+    RadioTheme(darkTheme = false) {
+        RadioMainScreen(
+            onStartBroadcastingClicked = {},
+            onTuneInClicked = {},
+        )
+    }
+}
+
+@Preview(
+    showBackground = true,
+    name = "Dark Mode",
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+fun RadioAppDarkPreview() {
+    RadioTheme(darkTheme = true) {
+        RadioMainScreen(
+            onStartBroadcastingClicked = {},
+            onTuneInClicked = {},
+        )
+    }
 }

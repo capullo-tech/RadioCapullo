@@ -49,7 +49,7 @@ import tech.capullo.radio.viewmodels.RadioTuneInModel
 @Composable
 fun RadioTuneInScreen(
     radioTuneInModel: RadioTuneInModel = hiltViewModel(),
-    useDarkTheme: Boolean = false
+    useDarkTheme: Boolean = false,
 ) {
     var lastServerText by remember {
         mutableStateOf(radioTuneInModel.getLastServerText())
@@ -72,7 +72,7 @@ fun RadioTuneInScreen(
             onTuneInClick = {
                 radioTuneInModel.initiateWorker(lastServerText)
                 isTunedIn = true
-            }
+            },
         )
     }
 }
@@ -82,7 +82,7 @@ fun RadioTuneInContent(
     lastServerText: String,
     isTunedIn: Boolean,
     onTextChange: (String) -> Unit,
-    onTuneInClick: () -> Unit
+    onTuneInClick: () -> Unit,
 ) {
     // Add LaunchedEffect to listen for changes in lastServerText
     LaunchedEffect(lastServerText) {
@@ -115,11 +115,14 @@ fun RadioTuneInContent(
                 TextField(
                     value = lastServerText,
                     onValueChange = onTextChange,
-                    textStyle = Typography.titleLarge.copy(color = onSecondaryLight), // Apply style to the input text
+                    textStyle = Typography.titleLarge.copy(color = onSecondaryLight),
                     placeholder = {
                         Text(
                             "Server IP",
-                            style = Typography.titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)) // Style for placeholder text
+                            style =
+                            Typography.titleLarge.copy(
+                                color = onSecondaryLight.copy(alpha = 0.7f),
+                            ),
                         )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -182,6 +185,6 @@ fun PreviewRadioTuneInContent() {
         lastServerText = lastServerText,
         isTunedIn = isTunedIn,
         onTextChange = {},
-        onTuneInClick = {}
+        onTuneInClick = {},
     )
 }

@@ -86,7 +86,7 @@ class RadioBroadcasterService : Service() {
                 .build()
             ServiceCompat.startForeground(
                 this,
-                100,
+                NOTIFICATION_ID,
                 notification,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
@@ -161,6 +161,7 @@ class RadioBroadcasterService : Service() {
     companion object {
         const val CHANNEL_ID = "RadioBroadcasterServiceChannel"
         const val CHANNEL_NAME = "Radio Broadcaster Service Channel"
+        const val NOTIFICATION_ID = 100
         val TAG: String = RadioBroadcasterService::class.java.simpleName
     }
 }

@@ -76,8 +76,6 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.startup.runtime)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
     implementation(libs.ktor.network)
@@ -85,6 +83,7 @@ dependencies {
     implementation(libs.ktor.client.websockets)
     implementation(libs.ktor.serialization.kotlinx.json)
 
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)

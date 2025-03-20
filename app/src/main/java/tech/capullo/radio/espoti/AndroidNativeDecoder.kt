@@ -123,8 +123,6 @@ class AndroidNativeDecoder(
                     return info.size
                 } else if (outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER) {
                     Log.d(TAG, "Timeout")
-                } else if (outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                    Log.d(TAG, "Output buffers changed")
                 } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     Log.d(TAG, "Output format changed: " + codec.outputFormat)
                 } else {

@@ -4,8 +4,8 @@
 ![Latest Release](https://img.shields.io/github/v/release/capullo-tech/RadioCapullo)
 ![Platform](https://img.shields.io/badge/Platform-Android-green.svg)
 ![Minimum Android Version](https://img.shields.io/badge/Min%20Android%20version-6-green)
-![Compiled Android SDK Version](https://img.shields.io/badge/Compiled%20SDK%20version-35-green)
-![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-%237F52FF.svg?logo=kotlin&logoColor=white)
+![Compiled Android SDK Version](https://img.shields.io/badge/Compiled%20SDK%20version-36-green)
+![Kotlin](https://img.shields.io/badge/kotlin-2.1.10-%237F52FF.svg?logo=kotlin&logoColor=white)
 
 **RadioCapullo** is a free, open-source Android application designed for music broadcasting and listening in a synchronized multi-device environment. It leverages a star topology to create an immersive audio experience, allowing multiple Android devices to play music simultaneously, enhancing volume and depth of field.
 
@@ -54,7 +54,7 @@ RadioCapullo integrates [librespot-java](https://github.com/devgianlu/librespot-
 
 ### Server and Client Roles
 
-- **Server**: Broadcasts audio and plays it simultaneously, acting as a Snapclient.
+- **Server**: Broadcasts audio and plays it simultaneously.
 - **Client**: Connects to the server to play the broadcasted audio in sync.
 
 ## Getting Started
@@ -77,8 +77,6 @@ RadioCapullo integrates [librespot-java](https://github.com/devgianlu/librespot-
 ## Contributing
 
 Contributions are welcome! Please fork the repository, make your changes, and submit a pull request.
-
-Clone this repo with `git clone --recurse-submodules` or do `git submodule update --init --recursive` immediately after cloning to initialize all submodules
 
 ## Disclaimers
 ### Fair use of Spotify

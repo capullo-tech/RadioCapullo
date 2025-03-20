@@ -63,7 +63,6 @@ fun RadioBroadcasterContent(
         modifier = Modifier
             .fillMaxSize()
             .background(surfaceLight),
-        contentAlignment = Alignment.TopCenter,
     ) {
         Card(
             modifier = Modifier

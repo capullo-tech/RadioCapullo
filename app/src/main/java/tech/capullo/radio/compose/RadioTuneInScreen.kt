@@ -70,9 +70,9 @@ fun RadioTuneInScreen(
                 radioTuneInModel.saveLastServerText(newServerText)
             },
             onTuneInClick = {
-                radioTuneInModel.initiateWorker(lastServerText)
+                radioTuneInModel.startSnapclientService(lastServerText)
                 isTunedIn = true
-            }
+            },
         )
     }
 }
@@ -82,7 +82,7 @@ fun RadioTuneInContent(
     lastServerText: String,
     isTunedIn: Boolean,
     onTextChange: (String) -> Unit,
-    onTuneInClick: () -> Unit
+    onTuneInClick: () -> Unit,
 ) {
     // Add LaunchedEffect to listen for changes in lastServerText
     LaunchedEffect(lastServerText) {
@@ -115,11 +115,13 @@ fun RadioTuneInContent(
                 TextField(
                     value = lastServerText,
                     onValueChange = onTextChange,
-                    textStyle = Typography.titleLarge.copy(color = onSecondaryLight), // Apply style to the input text
+                    textStyle = Typography.titleLarge.copy(color = onSecondaryLight),
                     placeholder = {
                         Text(
                             "Server IP",
-                            style = Typography.titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)) // Style for placeholder text
+                            style =
+                            Typography
+                                .titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)),
                         )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -182,6 +184,6 @@ fun PreviewRadioTuneInContent() {
         lastServerText = lastServerText,
         isTunedIn = isTunedIn,
         onTextChange = {},
-        onTuneInClick = {}
+        onTuneInClick = {},
     )
 }

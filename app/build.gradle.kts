@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace = "tech.capullo.radio"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "tech.capullo.radio"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk = 23
+        targetSdk = 36
         versionCode = 1
         versionName = "v0.5.2"
 

@@ -2,20 +2,21 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "tech.capullo.radio"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "tech.capullo.radio"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk = 23
+        targetSdk = 36
         versionCode = 1
-        versionName = "v0.5.2"
+        versionName = "v0.5.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,14 +76,18 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.startup.runtime)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.work.multiprocess)
     implementation(libs.accompanist.permissions)
 
     implementation(libs.ktor.network)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.websockets)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)
-    implementation("xyz.gianlu.librespot:librespot-player:1.6.4:thin") {
+    implementation("xyz.gianlu.librespot:librespot-player:1.6.5:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")

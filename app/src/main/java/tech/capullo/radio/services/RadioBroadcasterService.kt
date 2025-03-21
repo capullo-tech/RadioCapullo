@@ -6,16 +6,13 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.os.Process
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -23,21 +20,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.AudioFocusManager
 import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionManager
+import tech.capullo.radio.snapcast.SnapclientProcess
+import tech.capullo.radio.snapcast.SnapserverProcess
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.player.Player
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -50,21 +45,24 @@ class RadioBroadcasterService : Service() {
 
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
-    val playbackExecutor = Executors.newSingleThreadExecutor()
-    val sessionExecutor = Executors.newCachedThreadPool()
-    var player: Player? = null
-    var session: Session? = null
+    @Inject lateinit var snapclientProcess: SnapclientProcess
+
+    @Inject lateinit var snapserverProcess: SnapserverProcess
+
+    private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var player: Player? = null
+    private var session: Session? = null
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
-    private lateinit var snapserver: Deferred<Unit>
-    private lateinit var snapclient: Deferred<Unit>
+    private lateinit var snapserverJob: Deferred<Unit>
+    private lateinit var snapclientJob: Deferred<Unit>
 
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
         fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
     }
 
-    fun runOnPlayback(func: () -> Unit) = playbackExecutor.submit(func)
+    private fun runOnPlayback(func: () -> Unit): Future<*>? = playbackExecutor.submit(func)
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -88,7 +86,7 @@ class RadioBroadcasterService : Service() {
                 .build()
             ServiceCompat.startForeground(
                 this,
-                100,
+                NOTIFICATION_ID,
                 notification,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
@@ -107,25 +105,16 @@ class RadioBroadcasterService : Service() {
             }
         }
     }
-    override fun onCreate() {
-        super.onCreate()
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val pipeFilepath = repository.getPipeFilepath()!!
         startForeground()
 
-        startSnapcast(
-            pipeFilepath,
-            repository.getCacheDirPath(),
-            repository.getNativeLibDirPath(),
-            applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager,
-        )
+        startSnapcast()
 
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? = binder
+    override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
@@ -137,11 +126,9 @@ class RadioBroadcasterService : Service() {
         stopSelf()
     }
 
-    fun startLibrespot() {
+    private fun startLibrespot() {
         audioFocusManager.requestFocus()
-        runOnPlayback {
-            espotiPlayerManager.player.waitReady()
-        }
+        runOnPlayback { espotiPlayerManager.player.waitReady() }
     }
 
     fun createSessionAndPlayer(
@@ -149,7 +136,6 @@ class RadioBroadcasterService : Service() {
         deviceName: String,
     ) {
         scope.launch {
-            println("Creating session and player")
             val session = espotiSessionManager.createSession(deviceName)
                 .setDeviceId(sessionParams.deviceId)
                 .setDeviceName(sessionParams.deviceName)
@@ -164,116 +150,18 @@ class RadioBroadcasterService : Service() {
         }
     }
 
-    private fun startSnapcast(
-        filifoFilepath: String,
-        cacheDir: String,
-        nativeLibraryDir: String,
-        audioManager: AudioManager,
-    ) {
-        // Android audio configuration
-        val androidPlayer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) "opensl" else "oboe"
-        val rate: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
-        val fpb: String? = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)
-        val sampleFormat = "$rate:16:*"
-
+    private fun startSnapcast() {
         scope.launch {
-            snapserver = async {
-                snapcastProcess(
-                    filifoFilepath,
-                    cacheDir,
-                    nativeLibraryDir,
-                    true,
-                    UUID.randomUUID().toString(),
-                    androidPlayer,
-                    sampleFormat,
-                    rate,
-                    fpb,
-                )
-            }
-            snapclient = async {
-                snapcastProcess(
-                    filifoFilepath,
-                    cacheDir,
-                    nativeLibraryDir,
-                    false,
-                    UUID.randomUUID().toString(),
-                    androidPlayer,
-                    sampleFormat,
-                    rate,
-                    fpb,
-                )
-            }
-            awaitAll(snapclient, snapserver)
-        }
-    }
-
-    private suspend fun snapcastProcess(
-        filifoFilepath: String,
-        cacheDir: String,
-        nativeLibDir: String,
-        isSnapserver: Boolean,
-        uniqueId: String,
-        player: String,
-        sampleFormat: String,
-        rate: String?,
-        fpb: String?,
-    ) = withContext(Dispatchers.IO) {
-        val pb = if (isSnapserver) {
-            val streamName = "name=RadioCapullo"
-            val pipeMode = "mode=read"
-            val dryoutMs = "dryout_ms=2000"
-            val librespotSampleFormat = "sampleformat=44100:16:2"
-            val pipeArgs = listOf(
-                streamName,
-                pipeMode,
-                dryoutMs,
-                librespotSampleFormat,
-            ).joinToString("&")
-            ProcessBuilder()
-                .command(
-                    "$nativeLibDir/libsnapserver.so",
-                    "--server.datadir=$cacheDir",
-                    "--stream.source",
-                    "pipe://$filifoFilepath?$pipeArgs",
-                )
-                .redirectErrorStream(true)
-        } else {
-            ProcessBuilder().command(
-                "$nativeLibDir/libsnapclient.so", "-h", "127.0.0.1", "-p", 1704.toString(),
-                "--hostID", uniqueId, "--player", player, "--sampleformat", sampleFormat,
-                "--logfilter", "*:info,Stats:debug",
-            )
-        }
-        try {
-            val env = pb.environment()
-            if (rate != null) env["SAMPLE_RATE"] = rate
-            if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
-
-            val process = pb.start()
-            val bufferedReader = BufferedReader(
-                InputStreamReader(process.inputStream),
-            )
-            var line: String?
-            while (bufferedReader.readLine().also { line = it } != null) {
-                ensureActive()
-                val processId = Process.myPid()
-                val threadName = Thread.currentThread().name
-                val tag = if (isSnapserver) "SNAPSERVER" else "SNAPCLIENT"
-                line?.contains("No Chunks available")?.let {
-                    Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
-                }
-                // Log.d(tag, "Running on: $processId -  $threadName - ${line!!}")
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "Error starting snapcast process", e)
-        } catch (e: CancellationException) {
-            Log.e(TAG, "Worker stopped", e)
+            snapserverJob = async { snapserverProcess.start() }
+            snapclientJob = async { snapclientProcess.start() }
+            awaitAll(snapclientJob, snapserverJob)
         }
     }
 
     companion object {
         const val CHANNEL_ID = "RadioBroadcasterServiceChannel"
         const val CHANNEL_NAME = "Radio Broadcaster Service Channel"
-        const val TAG = "RadioBroadcasterService"
+        const val NOTIFICATION_ID = 100
+        val TAG: String = RadioBroadcasterService::class.java.simpleName
     }
 }

@@ -26,9 +26,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/capullo_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/capullo_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Radio"
         android:usesCleartextTraffic="true"
@@ -45,10 +45,9 @@
             </intent-filter>
         </activity>
         <service
-            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:name=".services.SnapclientService"
             android:foregroundServiceType="mediaPlayback"
-            tools:node="merge"
-            />
+            android:exported="false" />
         <service
             android:name=".services.RadioBroadcasterService"
             android:foregroundServiceType="mediaPlayback"
@@ -60,10 +59,6 @@
             tools:node="merge">
             <meta-data  android:name="tech.capullo.radio.espoti.AndroidNativeDecoderInitializer"
                 android:value="androidx.startup" />
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
         </provider>
     </application>
 

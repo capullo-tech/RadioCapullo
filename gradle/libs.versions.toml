@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.37.2"
 activityCompose = "1.10.1"
-agp = "8.11.0-alpha01"
+agp = "8.11.0-alpha02"
 androidx-junit = "1.2.1"
 composeLatest = "1.7.8"
 composeBom = "2025.03.00"
@@ -27,7 +27,7 @@ spotless = "7.0.2"
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "composeLatest" }
+androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "composeLatest" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }

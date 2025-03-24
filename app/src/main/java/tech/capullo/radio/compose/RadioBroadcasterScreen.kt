@@ -1,26 +1,34 @@
 package tech.capullo.radio.compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tech.capullo.radio.R
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientConfig
 import tech.capullo.radio.snapcast.Host
@@ -36,21 +44,14 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 @Composable
 fun RadioBroadcasterScreen(
     viewModel: RadioBroadcasterViewModel = hiltViewModel(),
-    useDarkTheme: Boolean = false,
 ) {
-    val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
     val snapcastClients by viewModel.snapcastClients.collectAsState()
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-    ) {
-        RadioBroadcasterContent(
-            hostAddresses = viewModel.hostAddresses,
-            deviceName = viewModel.getDeviceName(),
-            snapcastClients,
-        )
-    }
+    RadioBroadcasterContent(
+        hostAddresses = viewModel.hostAddresses,
+        deviceName = viewModel.getDeviceName(),
+        snapcastClients,
+    )
 }
 
 @Composable
@@ -59,6 +60,37 @@ fun RadioBroadcasterContent(
     deviceName: String,
     snapcastClients: List<Client> = emptyList(),
 ) {
+    Scaffold { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = """
+                Connect to this device as a speaker on Spotify
+                """.trimIndent(),
+                style = Typography.headlineMedium,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.padding(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                Icon(
+                    painter = painterResource(R.drawable.google_home_devices_24px ),
+                    contentDescription = "trs"
+                )
+                Text(
+                    text = deviceName,
+                )
+            }
+        }
+    }
+    /*
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -102,6 +134,7 @@ fun RadioBroadcasterContent(
 
         SnapclientList(snapcastClients)
     }
+     */
 }
 
 @Preview(showBackground = true)

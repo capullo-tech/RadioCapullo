@@ -19,8 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl.SessionParams
+import tech.capullo.radio.espoti.EspotiConnectHandler.SessionParams
 import tech.capullo.radio.espoti.EspotiNsdManager
+import tech.capullo.radio.espoti.EspotiSessionManager
 import tech.capullo.radio.services.RadioBroadcasterService
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -31,7 +32,12 @@ class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
+    private val espotiSessionManager: EspotiSessionManager,
 ) : ViewModel() {
+
+    private val _isEspotiSessionConfigured = MutableStateFlow(false)
+    val isEspotiSessionConfigured = _isEspotiSessionConfigured.asStateFlow()
+
     private val _snapcastClients = MutableStateFlow<List<Client>>(emptyList())
     val snapcastClients = _snapcastClients.asStateFlow()
 
@@ -69,7 +75,14 @@ class RadioBroadcasterViewModel @Inject constructor(
     }
 
     init {
-        startBroadcasterService()
+        // startBroadcasterService()
+    }
+
+    fun checkEspotiSessionConfigured() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+            }
+        }
     }
 
     fun startBroadcasterService() {

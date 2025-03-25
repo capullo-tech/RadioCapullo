@@ -17,9 +17,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
+import tech.capullo.radio.espoti.EspotiConnectHandler
 import tech.capullo.radio.espoti.EspotiZeroconfServer
-import tech.capullo.radio.espoti.EspotiZeroconfServer.EspotiConnectHandler
 import java.io.DataInputStream
 import java.io.OutputStream
 import java.net.Socket
@@ -56,7 +55,7 @@ class EspotiZeroconfUnitTest {
         val clientSocket = mockk<Socket>()
         val inputStream = mockk<DataInputStream>()
         val outputStream = mockk<OutputStream>()
-        val handler = spyk(EspotiConnectHandlerImpl())
+        val handler = spyk(EspotiConnectHandler())
 
         every { clientSocket.getInputStream() } returns inputStream
         every { clientSocket.getOutputStream() } returns outputStream

@@ -23,7 +23,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.AudioFocusManager
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
+import tech.capullo.radio.espoti.EspotiConnectHandler
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionManager
 import tech.capullo.radio.snapcast.SnapclientProcess
@@ -132,15 +132,11 @@ class RadioBroadcasterService : Service() {
     }
 
     fun createSessionAndPlayer(
-        sessionParams: EspotiConnectHandlerImpl.SessionParams,
+        sessionParams: EspotiConnectHandler.SessionParams,
         deviceName: String,
     ) {
         scope.launch {
-            val session = espotiSessionManager.createSession(deviceName)
-                .setDeviceId(sessionParams.deviceId)
-                .setDeviceName(sessionParams.deviceName)
-                .setDeviceType(sessionParams.deviceType)
-                .setPreferredLocale(sessionParams.preferredLocale)
+            val session = espotiSessionManager.createSession()
                 .blob(sessionParams.username, sessionParams.decrypted)
                 .create()
 

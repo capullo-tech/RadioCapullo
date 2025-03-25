@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import com.spotify.connectstate.Connect
 import kotlinx.coroutines.coroutineScope
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import tech.capullo.radio.espoti.EspotiZeroconfServer.EspotiConnectHandler
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.crypto.DiffieHellman
 import java.io.DataInputStream
@@ -22,24 +21,20 @@ import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.inject.Inject
 
-class EspotiConnectHandlerImpl(
-    val deviceType: Connect.DeviceType = Connect.DeviceType.SPEAKER,
-    val deviceName: String = "RadioCapullo",
-    val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
-    val keys: DiffieHellman = DiffieHellman(SecureRandom()),
-) : EspotiConnectHandler {
+class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionManager) {
 
+    val deviceType: Connect.DeviceType = sessionManager.espotiDeviceType
+    val deviceName: String = sessionManager.espotiDeviceName
+    val deviceId: String = sessionManager.espotiDeviceId
+    val keys: DiffieHellman = DiffieHellman(SecureRandom())
     data class SessionParams(
         val username: String,
         val decrypted: ByteArray,
-        val deviceId: String,
-        val deviceName: String,
-        val deviceType: Connect.DeviceType,
-        val preferredLocale: String,
     )
 
-    override suspend fun onConnect(socket: Socket): SessionParams? = coroutineScope {
+    suspend fun onConnect(socket: Socket): SessionParams? = coroutineScope {
         val inputStream = DataInputStream(socket.getInputStream())
         val outputStream = socket.getOutputStream()
 
@@ -229,10 +224,6 @@ class EspotiConnectHandlerImpl(
             return SessionParams(
                 username = username,
                 decrypted = decrypted,
-                deviceId = deviceId,
-                deviceName = deviceName,
-                deviceType = deviceType,
-                preferredLocale = Locale.getDefault().language,
             )
         } catch (_: Exception) {
             out.write(httpVersion.toByteArray())
@@ -253,7 +244,7 @@ class EspotiConnectHandlerImpl(
     }
 
     companion object {
-        private val TAG = EspotiConnectHandlerImpl::class.java.simpleName
+        private val TAG = EspotiConnectHandler::class.java.simpleName
         private val EOL = byteArrayOf('\r'.code.toByte(), '\n'.code.toByte())
         private val DEFAULT_GET_INFO_FIELDS = JsonObject()
         private val DEFAULT_SUCCESSFUL_ADD_USER = JsonObject()

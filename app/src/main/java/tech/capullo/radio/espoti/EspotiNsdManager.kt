@@ -9,10 +9,12 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class EspotiNsdManager @Inject constructor(private val nsdManager: NsdManager) {
-    private val server: EspotiZeroconfServer = EspotiZeroconfServer()
+class EspotiNsdManager @Inject constructor(
+    private val nsdManager: NsdManager,
+    val server: EspotiZeroconfServer,
+) {
 
-    suspend fun start(): EspotiConnectHandlerImpl.SessionParams? = coroutineScope {
+    suspend fun start(): EspotiConnectHandler.SessionParams? = coroutineScope {
         val listeningPort = server.initAndGetPort()
 
         val serviceInfo = NsdServiceInfo().apply {

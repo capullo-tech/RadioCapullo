@@ -23,24 +23,21 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 
-class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionManager) {
+class EspotiConnectHandler @Inject constructor(
+    val espotiSessionRepository: EspotiSessionRepository,
+) {
 
-    val deviceType: Connect.DeviceType = sessionManager.espotiDeviceType
-    val deviceName: String = sessionManager.espotiDeviceName
-    val deviceId: String = sessionManager.espotiDeviceId
+    val deviceType: Connect.DeviceType = espotiSessionRepository.espotiDeviceType
+    val deviceName: String = espotiSessionRepository.espotiDeviceName
+    val deviceId: String = espotiSessionRepository.espotiDeviceId
     val keys: DiffieHellman = DiffieHellman(SecureRandom())
-    data class SessionParams(
-        val username: String,
-        val decrypted: ByteArray,
-    )
+    data class SessionParams(val username: String, val decrypted: ByteArray)
 
     suspend fun onConnect(socket: Socket): SessionParams? = coroutineScope {
         val inputStream = DataInputStream(socket.getInputStream())
         val outputStream = socket.getOutputStream()
 
-        println("about to read the line")
         val requestLine = Utils.split(Utils.readLine(inputStream), ' ')
-        println("read the line: $requestLine")
         if (requestLine.size != 3) {
             return@coroutineScope null
         }
@@ -51,13 +48,10 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
 
         val headers: MutableMap<String?, String?> = HashMap<String?, String?>()
         var header: String?
-        println("about to read headers")
         while ((Utils.readLine(inputStream).also { header = it }).isNotEmpty()) {
-            println("header: $header")
             val split = Utils.split(header!!, ':')
             headers[split[0]] = split[1].trim { it <= ' ' }
         }
-        println("headers: $headers")
         val params: MutableMap<String?, String?>?
         if (method == "POST") {
             val contentType = headers["Content-Type"]
@@ -87,7 +81,7 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
         return@coroutineScope handleRequest(outputStream, httpVersion, action, params)
     }
 
-    private fun handleRequest(
+    private suspend fun handleRequest(
         out: OutputStream,
         httpVersion: String,
         action: String,
@@ -113,7 +107,7 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
     }
 
     @Throws(IOException::class)
-    fun handleGetInfo(out: OutputStream, httpVersion: String) {
+    private suspend fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
         info.addProperty("deviceID", deviceId)
         info.addProperty("remoteName", deviceName)
@@ -135,12 +129,11 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
-    fun handleAddUser(
+    private suspend fun handleAddUser(
         out: OutputStream,
         params: MutableMap<String?, String?>,
         httpVersion: String,
     ): SessionParams? {
-        println("handleAddUser")
         val username = params["userName"]
         if (username.isNullOrEmpty()) {
             Log.d(TAG, "Missing userName!")
@@ -182,8 +175,6 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
         hmac.update(encrypted)
         val mac = hmac.doFinal()
 
-        println("mac: ${mac.contentToString()}")
-
         if (!mac.contentEquals(checksum)) {
             Log.d(TAG, "Mac and checksum don't match!")
 
@@ -202,7 +193,6 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
             IvParameterSpec(iv),
         )
         val decrypted = aes.doFinal(encrypted)
-        println("decrypted: ${decrypted.contentToString()}")
 
         try {
             // Sending response
@@ -219,7 +209,7 @@ class EspotiConnectHandler @Inject constructor(sessionManager: EspotiSessionMana
             out.write(resp.toByteArray())
             out.flush()
 
-            println("username: $username")
+            espotiSessionRepository.createAndSetupSession(username, decrypted)
 
             return SessionParams(
                 username = username,

@@ -9,9 +9,7 @@ import java.io.IOException
 import java.net.ServerSocket
 import javax.inject.Inject
 
-class EspotiZeroconfServer @Inject constructor(
-    val espotiConnectHandler: EspotiConnectHandler,
-) {
+class EspotiZeroconfServer @Inject constructor(val espotiConnectHandler: EspotiConnectHandler) {
 
     val dispatcher: CoroutineDispatcher = Dispatchers.IO
     private lateinit var serverSocket: ServerSocket

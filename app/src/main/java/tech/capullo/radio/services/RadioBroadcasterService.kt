@@ -21,11 +21,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.AudioFocusManager
-import tech.capullo.radio.espoti.EspotiConnectHandler
 import tech.capullo.radio.espoti.EspotiPlayerManager
-import tech.capullo.radio.espoti.EspotiSessionManager
+import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
 import xyz.gianlu.librespot.core.Session
@@ -37,11 +35,9 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
-    @Inject lateinit var repository: RadioRepository
-
     @Inject lateinit var audioFocusManager: AudioFocusManager
 
-    @Inject lateinit var espotiSessionManager: EspotiSessionManager
+    @Inject lateinit var espotiSessionRepository: EspotiSessionRepository
 
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
@@ -131,18 +127,21 @@ class RadioBroadcasterService : Service() {
         runOnPlayback { espotiPlayerManager.player.waitReady() }
     }
 
-    fun createSessionAndPlayer(
-        sessionParams: EspotiConnectHandler.SessionParams,
-        deviceName: String,
-    ) {
+    private fun observeSessionState() {
         scope.launch {
-            val session = espotiSessionManager.createSession()
-                .blob(sessionParams.username, sessionParams.decrypted)
-                .create()
-
-            espotiSessionManager.setSession(session)
-            espotiPlayerManager.createPlayer()
-            startLibrespot()
+            espotiSessionRepository.sessionStateFlow.collect { sessionState ->
+                when (sessionState) {
+                    is EspotiSessionRepository.SessionState.Created -> {
+                        session = sessionState.session
+                        espotiPlayerManager.createPlayer()
+                        startLibrespot()
+                    }
+                    is EspotiSessionRepository.SessionState.Error -> {
+                        Log.d(TAG, "Session error: ${sessionState.message}")
+                    }
+                    else -> {}
+                }
+            }
         }
     }
 

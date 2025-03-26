@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.EspotiConnectHandler.SessionParams
 import tech.capullo.radio.espoti.EspotiNsdManager
-import tech.capullo.radio.espoti.EspotiSessionManager
+import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -32,7 +32,7 @@ class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
-    private val espotiSessionManager: EspotiSessionManager,
+    private val espotiSessionRepository: EspotiSessionRepository,
 ) : ViewModel() {
 
     private val _isEspotiSessionConfigured = MutableStateFlow(false)
@@ -52,7 +52,6 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     class RadioServiceWrapper(private val service: RadioBroadcasterService) {
         fun createSessionAndPlayer(sessionParams: SessionParams, deviceName: String) {
-            service.createSessionAndPlayer(sessionParams, deviceName)
         }
     }
 
@@ -75,7 +74,7 @@ class RadioBroadcasterViewModel @Inject constructor(
     }
 
     init {
-        // startBroadcasterService()
+        startBroadcasterService()
     }
 
     fun checkEspotiSessionConfigured() {
@@ -98,12 +97,6 @@ class RadioBroadcasterViewModel @Inject constructor(
     fun startEspotiNsd() {
         viewModelScope.launch(Dispatchers.IO) {
             espotiNsdManager.start()?.let { sessionParams ->
-                mainThreadHandler.post {
-                    if (mBound) {
-                        serviceWrapper?.createSessionAndPlayer(sessionParams, getDeviceName())
-                        startSnapcastControlClient()
-                    }
-                }
             }
         }
     }

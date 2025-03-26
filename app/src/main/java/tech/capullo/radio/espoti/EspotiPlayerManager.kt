@@ -11,7 +11,7 @@ import kotlin.apply
 
 @Singleton
 class EspotiPlayerManager @Inject constructor(
-    private val espotiSessionManager: EspotiSessionManager,
+    private val espotiSessionRepository: EspotiSessionRepository,
     private val radioRepository: RadioRepository,
 ) {
     @Volatile
@@ -29,7 +29,7 @@ class EspotiPlayerManager @Inject constructor(
 
                     setAutoplayEnabled(true)
                 }.build(),
-                espotiSessionManager.session,
+                espotiSessionRepository.session,
             )
         }
     }

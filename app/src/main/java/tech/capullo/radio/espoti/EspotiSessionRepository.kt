@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.core.content.edit
 import com.spotify.connectstate.Connect
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import tech.capullo.radio.data.RadioRepository
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.core.Session
@@ -14,17 +16,29 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EspotiSessionManager @Inject constructor(
+class EspotiSessionRepository @Inject constructor(
     @ApplicationContext val appContext: Context,
     radioRepository: RadioRepository,
 ) {
-    private var _session: Session? = null
-    val session get() = _session ?: throw IllegalStateException("Session is not created yet!")
 
     // Session configuration properties
     val espotiDeviceName: String = "RadioCapullo - ${radioRepository.getDeviceName()}"
     val espotiDeviceType: Connect.DeviceType = Connect.DeviceType.SPEAKER
     val espotiDeviceId: String = loadEspotiDeviceID()
+
+    private var _session: Session? = null
+    val session get() = _session ?: throw IllegalStateException("Session is not created yet!")
+
+    // Session state management
+    private val _sessionStateFlow = MutableStateFlow<SessionState>(SessionState.Idle)
+    val sessionStateFlow = _sessionStateFlow.asStateFlow()
+
+    sealed class SessionState {
+        object Idle : SessionState()
+        object Creating : SessionState()
+        data class Created(val session: Session) : SessionState()
+        data class Error(val message: String) : SessionState()
+    }
 
     fun loadEspotiDeviceID(): String {
         val sharedPreferences = appContext.getSharedPreferences(
@@ -60,6 +74,19 @@ class EspotiSessionManager @Inject constructor(
         .setCacheDir(File(appContext.cacheDir, ESPOTI_CACHE_DIR))
         .setStoredCredentialsFile(File(appContext.filesDir, ESPOTI_CREDENTIALS_FILE))
         .build()
+
+    suspend fun createAndSetupSession(username: String, decryptedBlob: ByteArray) {
+        _sessionStateFlow.value = SessionState.Creating
+
+        try {
+            val newSession = createSession()
+                .blob(username, decryptedBlob)
+                .create()
+            setSession(newSession)
+        } catch (e: Exception) {
+            throw IllegalStateException("Failed to create session", e)
+        }
+    }
 
     fun setSession(s: Session) {
         _session = s

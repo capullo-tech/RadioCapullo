@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import tech.capullo.radio.espoti.EspotiConnectHandler.SessionParams
 import java.io.IOException
 import java.net.ServerSocket
 import javax.inject.Inject
@@ -19,25 +18,19 @@ class EspotiZeroconfServer @Inject constructor(val espotiConnectHandler: EspotiC
 
     private suspend fun serverSocketAccept() = withContext(dispatcher) { serverSocket.accept() }
 
-    suspend fun listen(): SessionParams? = coroutineScope {
-        println("Server listening at ${serverSocket.inetAddress}")
+    suspend fun listen() = coroutineScope {
         while (true) {
-            println("[${Thread.currentThread().name}] Awaiting connection")
             val socket = serverSocketAccept()
-            println("[${Thread.currentThread().name}] Serving ${socket.port}")
             try {
-                espotiConnectHandler.onConnect(socket)?.let { sessionParams ->
-                    println("Emitting Session params: $sessionParams")
+                val sessionConnected = espotiConnectHandler.onConnect(socket)
+                if (sessionConnected) {
                     socket.close()
-                    return@coroutineScope sessionParams
                 }
             } catch (e: Exception) {
-                println("Error serving ${socket.port}")
                 e.printStackTrace()
             } finally {
                 socket.close()
             }
         }
-        return@coroutineScope null
     }
 }

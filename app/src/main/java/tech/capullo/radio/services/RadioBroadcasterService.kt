@@ -104,8 +104,7 @@ class RadioBroadcasterService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
-
-        startSnapcast()
+        observeSessionState()
 
         return START_NOT_STICKY
     }
@@ -133,8 +132,12 @@ class RadioBroadcasterService : Service() {
                 when (sessionState) {
                     is EspotiSessionRepository.SessionState.Created -> {
                         session = sessionState.session
+                        // TODO: might need to handle player session thrown errors
                         espotiPlayerManager.createPlayer()
                         startLibrespot()
+
+                        // Start snapcast processes after we have a valid session
+                        startSnapcast()
                     }
                     is EspotiSessionRepository.SessionState.Error -> {
                         Log.d(TAG, "Session error: ${sessionState.message}")
@@ -145,7 +148,7 @@ class RadioBroadcasterService : Service() {
         }
     }
 
-    private fun startSnapcast() {
+    fun startSnapcast() {
         scope.launch {
             snapserverJob = async { snapserverProcess.start() }
             snapclientJob = async { snapclientProcess.start() }

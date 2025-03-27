@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.espoti.EspotiConnectHandler.SessionParams
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
@@ -48,12 +47,8 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun getDeviceName(): String = repository.getDeviceName()
 
-    val mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper())
+    class RadioServiceWrapper(private val service: RadioBroadcasterService)
 
-    class RadioServiceWrapper(private val service: RadioBroadcasterService) {
-        fun createSessionAndPlayer(sessionParams: SessionParams, deviceName: String) {
-        }
-    }
 
     private var serviceWrapper: RadioServiceWrapper? = null
     private var mBound: Boolean = false
@@ -94,10 +89,10 @@ class RadioBroadcasterViewModel @Inject constructor(
         applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
+    // Started right after the service is bound
     fun startEspotiNsd() {
         viewModelScope.launch(Dispatchers.IO) {
-            espotiNsdManager.start()?.let { sessionParams ->
-            }
+            espotiNsdManager.start()
         }
     }
 

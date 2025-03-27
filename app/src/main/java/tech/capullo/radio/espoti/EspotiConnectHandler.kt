@@ -31,15 +31,16 @@ class EspotiConnectHandler @Inject constructor(
     val deviceName: String = espotiSessionRepository.espotiDeviceName
     val deviceId: String = espotiSessionRepository.espotiDeviceId
     val keys: DiffieHellman = DiffieHellman(SecureRandom())
-    data class SessionParams(val username: String, val decrypted: ByteArray)
 
-    suspend fun onConnect(socket: Socket): SessionParams? = coroutineScope {
+    // Return true if the connection was handled successfully and the espoti connect session
+    // was created, otherwise return false
+    suspend fun onConnect(socket: Socket): Boolean = coroutineScope {
         val inputStream = DataInputStream(socket.getInputStream())
         val outputStream = socket.getOutputStream()
 
         val requestLine = Utils.split(Utils.readLine(inputStream), ' ')
         if (requestLine.size != 3) {
-            return@coroutineScope null
+            return@coroutineScope false
         }
 
         val method: String = requestLine[0]
@@ -56,10 +57,10 @@ class EspotiConnectHandler @Inject constructor(
         if (method == "POST") {
             val contentType = headers["Content-Type"]
             if (contentType != "application/x-www-form-urlencoded") {
-                return@coroutineScope null
+                return@coroutineScope false
             }
 
-            val contentLengthStr = headers["Content-Length"] ?: return@coroutineScope null
+            val contentLengthStr = headers["Content-Length"] ?: return@coroutineScope false
 
             val contentLength = contentLengthStr.toInt()
             val body = ByteArray(contentLength)
@@ -76,17 +77,17 @@ class EspotiConnectHandler @Inject constructor(
             params = parsePath(path)
         }
 
-        val action = params["action"] ?: return@coroutineScope null
+        val action = params["action"] ?: return@coroutineScope false
 
         return@coroutineScope handleRequest(outputStream, httpVersion, action, params)
     }
 
-    private suspend fun handleRequest(
+    private fun handleRequest(
         out: OutputStream,
         httpVersion: String,
         action: String,
         params: MutableMap<String?, String?>?,
-    ): SessionParams? {
+    ): Boolean {
         if (action == "addUser") {
             requireNotNull(params)
 
@@ -103,11 +104,11 @@ class EspotiConnectHandler @Inject constructor(
             }
         }
 
-        return null
+        return false
     }
 
     @Throws(IOException::class)
-    private suspend fun handleGetInfo(out: OutputStream, httpVersion: String) {
+    private fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
         info.addProperty("deviceID", deviceId)
         info.addProperty("remoteName", deviceName)
@@ -129,27 +130,27 @@ class EspotiConnectHandler @Inject constructor(
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
-    private suspend fun handleAddUser(
+    private fun handleAddUser(
         out: OutputStream,
         params: MutableMap<String?, String?>,
         httpVersion: String,
-    ): SessionParams? {
+    ): Boolean {
         val username = params["userName"]
         if (username.isNullOrEmpty()) {
             Log.d(TAG, "Missing userName!")
-            return null
+            return false
         }
 
         val blobStr = params["blob"]
         if (blobStr.isNullOrEmpty()) {
             Log.d(TAG, "Missing blob!")
-            return null
+            return false
         }
 
         val clientKeyStr = params["clientKey"]
         if (clientKeyStr.isNullOrEmpty()) {
             Log.d(TAG, "Missing clientKey!")
-            return null
+            return false
         }
 
         val sharedKey = Utils.toByteArray(keys.computeSharedKey(Utils.fromBase64(clientKeyStr)))
@@ -183,7 +184,7 @@ class EspotiConnectHandler @Inject constructor(
             out.write(EOL)
             out.write(EOL)
             out.flush()
-            return null
+            return false
         }
 
         val aes = Cipher.getInstance("AES/CTR/NoPadding")
@@ -210,11 +211,8 @@ class EspotiConnectHandler @Inject constructor(
             out.flush()
 
             espotiSessionRepository.createAndSetupSession(username, decrypted)
-
-            return SessionParams(
-                username = username,
-                decrypted = decrypted,
-            )
+            // TODO: some sort of retry mechanism if the session creation fails
+            return true
         } catch (_: Exception) {
             out.write(httpVersion.toByteArray())
             out.write(" 500 Internal Server Error".toByteArray())
@@ -222,7 +220,7 @@ class EspotiConnectHandler @Inject constructor(
             out.write(EOL)
             out.flush()
 
-            return null
+            return false
         }
     }
 

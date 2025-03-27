@@ -14,7 +14,7 @@ class EspotiNsdManager @Inject constructor(
     val server: EspotiZeroconfServer,
 ) {
 
-    suspend fun start(): EspotiConnectHandler.SessionParams? = coroutineScope {
+    suspend fun start() = coroutineScope {
         val listeningPort = server.initAndGetPort()
 
         val serviceInfo = NsdServiceInfo().apply {
@@ -25,15 +25,14 @@ class EspotiNsdManager @Inject constructor(
 
         try {
             registerNsdService(serviceInfo)
-            return@coroutineScope server.listen()
+            server.listen()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting server", e)
         }
-        return@coroutineScope null
     }
 
     suspend fun registerNsdService(serviceInfo: NsdServiceInfo) =
-        suspendCancellableCoroutine<Unit> { continuation ->
+        suspendCancellableCoroutine { continuation ->
             val registrationListener = object : NsdManager.RegistrationListener {
                 override fun onServiceRegistered(nsdServiceInfo: NsdServiceInfo) {
                     continuation.resume(Unit)

@@ -75,7 +75,7 @@ class EspotiSessionRepository @Inject constructor(
         .setStoredCredentialsFile(File(appContext.filesDir, ESPOTI_CREDENTIALS_FILE))
         .build()
 
-    suspend fun createAndSetupSession(username: String, decryptedBlob: ByteArray) {
+    fun createAndSetupSession(username: String, decryptedBlob: ByteArray) {
         _sessionStateFlow.value = SessionState.Creating
 
         try {
@@ -83,7 +83,9 @@ class EspotiSessionRepository @Inject constructor(
                 .blob(username, decryptedBlob)
                 .create()
             setSession(newSession)
+            _sessionStateFlow.value = SessionState.Created(newSession)
         } catch (e: Exception) {
+            _sessionStateFlow.value = SessionState.Error(e.message ?: "Failed to create session")
             throw IllegalStateException("Failed to create session", e)
         }
     }

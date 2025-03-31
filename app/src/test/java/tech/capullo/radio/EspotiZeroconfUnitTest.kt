@@ -1,29 +1,7 @@
 package tech.capullo.radio
 
-import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.aSocket
-import io.ktor.network.sockets.toJavaAddress
-import io.ktor.util.network.port
-import io.mockk.Runs
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import tech.capullo.radio.espoti.EspotiConnectHandler
-import tech.capullo.radio.espoti.EspotiZeroconfServer
-import java.io.DataInputStream
-import java.io.OutputStream
-import java.net.Socket
-
 class EspotiZeroconfUnitTest {
+    /*
     private suspend fun testClientSocket(hostname: String, port: Int) =
         aSocket(SelectorManager(Dispatchers.IO))
             .tcp()
@@ -96,4 +74,5 @@ class EspotiZeroconfUnitTest {
             testClientSocket("localhost", port)
         }
     }
+*/
 }

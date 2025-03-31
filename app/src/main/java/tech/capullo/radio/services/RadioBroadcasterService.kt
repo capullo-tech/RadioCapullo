@@ -20,13 +20,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.Range
 import tech.capullo.radio.espoti.AudioFocusManager
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
+import xyz.gianlu.librespot.audio.MetadataWrapper
 import xyz.gianlu.librespot.core.Session
+import xyz.gianlu.librespot.metadata.PlayableId
 import xyz.gianlu.librespot.player.Player
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -48,6 +53,8 @@ class RadioBroadcasterService : Service() {
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
     private var session: Session? = null
+    private val _isPlayerLoading = MutableStateFlow(true)
+    val isPlayerLoading = _isPlayerLoading.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private lateinit var snapserverJob: Deferred<Unit>
@@ -123,7 +130,71 @@ class RadioBroadcasterService : Service() {
 
     private fun startLibrespot() {
         audioFocusManager.requestFocus()
-        runOnPlayback { espotiPlayerManager.player.waitReady() }
+
+        val playerEventsListener = object : Player.EventsListener {
+            override fun onContextChanged(player: Player, newUri: String) {
+            }
+
+            override fun onTrackChanged(
+                player: Player,
+                id: PlayableId,
+                metadata: MetadataWrapper?,
+                userInitiated: Boolean,
+            ) {
+            }
+
+            override fun onPlaybackEnded(player: Player) {
+            }
+
+            override fun onPlaybackPaused(player: Player, trackTime: Long) {
+            }
+
+            override fun onPlaybackResumed(player: Player, trackTime: Long) {
+            }
+
+            override fun onPlaybackFailed(player: Player, e: java.lang.Exception) {
+            }
+
+            override fun onTrackSeeked(player: Player, trackTime: Long) {
+            }
+
+            override fun onMetadataAvailable(player: Player, metadata: MetadataWrapper) {
+            }
+
+            override fun onPlaybackHaltStateChanged(
+                player: Player,
+                halted: Boolean,
+                trackTime: Long,
+            ) {
+            }
+
+            override fun onInactiveSession(player: Player, timeout: Boolean) {
+            }
+
+            override fun onVolumeChanged(
+                player: Player,
+                volume: @Range(
+                    from = 0,
+                    to = 1,
+                ) Float,
+            ) {
+            }
+
+            override fun onPanicState(player: Player) {
+            }
+
+            override fun onStartedLoading(player: Player) {
+                _isPlayerLoading.value = true
+            }
+
+            override fun onFinishedLoading(player: Player) {
+                _isPlayerLoading.value = false
+            }
+        }
+        runOnPlayback {
+            espotiPlayerManager.player.addEventsListener(playerEventsListener)
+            espotiPlayerManager.player.waitReady()
+        }
     }
 
     private fun observeSessionState() {

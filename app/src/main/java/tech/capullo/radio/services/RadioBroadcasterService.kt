@@ -133,6 +133,8 @@ class RadioBroadcasterService : Service() {
 
         val playerEventsListener = object : Player.EventsListener {
             override fun onContextChanged(player: Player, newUri: String) {
+                println("context changed: $newUri")
+                // player.play()
             }
 
             override fun onTrackChanged(
@@ -141,24 +143,37 @@ class RadioBroadcasterService : Service() {
                 metadata: MetadataWrapper?,
                 userInitiated: Boolean,
             ) {
+                if (metadata != null) {
+                    println("track changed: ${metadata.id}")
+                    player.play()
+                } else {
+                    println("track changed: $id")
+                }
             }
 
             override fun onPlaybackEnded(player: Player) {
+                println("playback ended")
             }
 
             override fun onPlaybackPaused(player: Player, trackTime: Long) {
+                println("playback paused")
             }
 
             override fun onPlaybackResumed(player: Player, trackTime: Long) {
+                audioFocusManager.requestFocus()
+                println("playback resumed")
             }
 
             override fun onPlaybackFailed(player: Player, e: java.lang.Exception) {
+                println("playback failed: ${e.message}")
             }
 
             override fun onTrackSeeked(player: Player, trackTime: Long) {
+                println("track seeked: $trackTime")
             }
 
             override fun onMetadataAvailable(player: Player, metadata: MetadataWrapper) {
+                println("metadata available: ${metadata.id}")
             }
 
             override fun onPlaybackHaltStateChanged(
@@ -166,9 +181,15 @@ class RadioBroadcasterService : Service() {
                 halted: Boolean,
                 trackTime: Long,
             ) {
+                if (halted) {
+                    println("playback halted")
+                } else {
+                    println("playback resumed")
+                }
             }
 
             override fun onInactiveSession(player: Player, timeout: Boolean) {
+                println("inactive session")
             }
 
             override fun onVolumeChanged(
@@ -178,22 +199,34 @@ class RadioBroadcasterService : Service() {
                     to = 1,
                 ) Float,
             ) {
+                println("volume changed: $volume")
             }
 
             override fun onPanicState(player: Player) {
+                println("panic state")
             }
 
             override fun onStartedLoading(player: Player) {
                 _isPlayerLoading.value = true
+                println("started loading")
             }
 
             override fun onFinishedLoading(player: Player) {
                 _isPlayerLoading.value = false
+                println("finished loading")
             }
         }
         runOnPlayback {
             espotiPlayerManager.player.addEventsListener(playerEventsListener)
+            println("added events listener")
             espotiPlayerManager.player.waitReady()
+            println("player ready")
+            espotiPlayerManager.player.play()
+            session?.let { ses ->
+                val uri = "spotify:user:${ses.username()}:collection"
+                println("loading uri: $uri")
+                espotiPlayerManager.player.load(uri, true, true)
+            }
         }
     }
 

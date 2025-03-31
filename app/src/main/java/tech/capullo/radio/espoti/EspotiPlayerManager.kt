@@ -26,7 +26,7 @@ class EspotiPlayerManager @Inject constructor(
                 PlayerConfiguration.Builder().apply {
                     setOutput(PlayerConfiguration.AudioOutput.PIPE)
                     setOutputPipe(File(radioRepository.getPipeFilepath()!!))
-
+                    setPreloadEnabled(true)
                     setAutoplayEnabled(true)
                 }.build(),
                 espotiSessionRepository.session,

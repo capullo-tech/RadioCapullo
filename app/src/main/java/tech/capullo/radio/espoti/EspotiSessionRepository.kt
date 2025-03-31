@@ -85,8 +85,33 @@ class EspotiSessionRepository @Inject constructor(
             setSession(newSession)
             _sessionStateFlow.value = SessionState.Created(newSession)
         } catch (e: Exception) {
-            _sessionStateFlow.value = SessionState.Error(e.message ?: "Failed to create session")
-            throw IllegalStateException("Failed to create session", e)
+            val errorMessage = e.message ?: "Failed to create session"
+            _sessionStateFlow.value = SessionState.Error(errorMessage)
+            throw IllegalStateException(errorMessage, e)
+        }
+    }
+
+    sealed class SessionWithStoredCredentialsResult {
+        object Success : SessionWithStoredCredentialsResult()
+        data class Error(val message: String) : SessionWithStoredCredentialsResult()
+    }
+
+    suspend fun createSessionWithStoredCredentials(): SessionWithStoredCredentialsResult {
+        _sessionStateFlow.value = SessionState.Creating
+
+        return try {
+            val storedSession = createSession()
+                .stored()
+                .create()
+            setSession(storedSession)
+            _sessionStateFlow.value = SessionState.Created(storedSession)
+
+            SessionWithStoredCredentialsResult.Success
+        } catch (e: Exception) {
+            val errorMessage = e.message ?: "Failed to create session with stored credentials"
+            _sessionStateFlow.value = SessionState.Error(errorMessage)
+
+            SessionWithStoredCredentialsResult.Error(errorMessage)
         }
     }
 

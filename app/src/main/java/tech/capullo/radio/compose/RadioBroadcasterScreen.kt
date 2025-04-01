@@ -107,7 +107,7 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
             ) {
                 Icon(
                     painter = painterResource(R.drawable.google_home_devices_24px),
-                    contentDescription = "trs",
+                    contentDescription = "Espoti Connect Speaker Device",
                 )
                 Text(
                     text = deviceName,

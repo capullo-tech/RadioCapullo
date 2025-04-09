@@ -20,15 +20,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import tech.capullo.radio.data.RadioRepository
+import org.jetbrains.annotations.Range
 import tech.capullo.radio.espoti.AudioFocusManager
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl
 import tech.capullo.radio.espoti.EspotiPlayerManager
-import tech.capullo.radio.espoti.EspotiSessionManager
+import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
+import xyz.gianlu.librespot.audio.MetadataWrapper
 import xyz.gianlu.librespot.core.Session
+import xyz.gianlu.librespot.metadata.PlayableId
 import xyz.gianlu.librespot.player.Player
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -37,11 +40,9 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class RadioBroadcasterService : Service() {
-    @Inject lateinit var repository: RadioRepository
-
     @Inject lateinit var audioFocusManager: AudioFocusManager
 
-    @Inject lateinit var espotiSessionManager: EspotiSessionManager
+    @Inject lateinit var espotiSessionRepository: EspotiSessionRepository
 
     @Inject lateinit var espotiPlayerManager: EspotiPlayerManager
 
@@ -52,6 +53,8 @@ class RadioBroadcasterService : Service() {
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
     private var session: Session? = null
+    private val _isPlayerLoading = MutableStateFlow(true)
+    val isPlayerLoading = _isPlayerLoading.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private lateinit var snapserverJob: Deferred<Unit>
@@ -108,8 +111,7 @@ class RadioBroadcasterService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
-
-        startSnapcast()
+        observeSessionState()
 
         return START_NOT_STICKY
     }
@@ -128,29 +130,129 @@ class RadioBroadcasterService : Service() {
 
     private fun startLibrespot() {
         audioFocusManager.requestFocus()
-        runOnPlayback { espotiPlayerManager.player.waitReady() }
-    }
 
-    fun createSessionAndPlayer(
-        sessionParams: EspotiConnectHandlerImpl.SessionParams,
-        deviceName: String,
-    ) {
-        scope.launch {
-            val session = espotiSessionManager.createSession(deviceName)
-                .setDeviceId(sessionParams.deviceId)
-                .setDeviceName(sessionParams.deviceName)
-                .setDeviceType(sessionParams.deviceType)
-                .setPreferredLocale(sessionParams.preferredLocale)
-                .blob(sessionParams.username, sessionParams.decrypted)
-                .create()
+        val playerEventsListener = object : Player.EventsListener {
+            override fun onContextChanged(player: Player, newUri: String) {
+                println("context changed: $newUri")
+                // player.play()
+            }
 
-            espotiSessionManager.setSession(session)
-            espotiPlayerManager.createPlayer()
-            startLibrespot()
+            override fun onTrackChanged(
+                player: Player,
+                id: PlayableId,
+                metadata: MetadataWrapper?,
+                userInitiated: Boolean,
+            ) {
+                if (metadata != null) {
+                    println("track changed: ${metadata.id}")
+                    player.play()
+                } else {
+                    println("track changed: $id")
+                }
+            }
+
+            override fun onPlaybackEnded(player: Player) {
+                println("playback ended")
+            }
+
+            override fun onPlaybackPaused(player: Player, trackTime: Long) {
+                println("playback paused")
+            }
+
+            override fun onPlaybackResumed(player: Player, trackTime: Long) {
+                audioFocusManager.requestFocus()
+                println("playback resumed")
+            }
+
+            override fun onPlaybackFailed(player: Player, e: java.lang.Exception) {
+                println("playback failed: ${e.message}")
+            }
+
+            override fun onTrackSeeked(player: Player, trackTime: Long) {
+                println("track seeked: $trackTime")
+            }
+
+            override fun onMetadataAvailable(player: Player, metadata: MetadataWrapper) {
+                println("metadata available: ${metadata.id}")
+            }
+
+            override fun onPlaybackHaltStateChanged(
+                player: Player,
+                halted: Boolean,
+                trackTime: Long,
+            ) {
+                if (halted) {
+                    println("playback halted")
+                } else {
+                    println("playback resumed")
+                }
+            }
+
+            override fun onInactiveSession(player: Player, timeout: Boolean) {
+                println("inactive session")
+            }
+
+            override fun onVolumeChanged(
+                player: Player,
+                volume: @Range(
+                    from = 0,
+                    to = 1,
+                ) Float,
+            ) {
+                println("volume changed: $volume")
+            }
+
+            override fun onPanicState(player: Player) {
+                println("panic state")
+            }
+
+            override fun onStartedLoading(player: Player) {
+                _isPlayerLoading.value = true
+                println("started loading")
+            }
+
+            override fun onFinishedLoading(player: Player) {
+                _isPlayerLoading.value = false
+                println("finished loading")
+            }
+        }
+        runOnPlayback {
+            espotiPlayerManager.player.addEventsListener(playerEventsListener)
+            println("added events listener")
+            espotiPlayerManager.player.waitReady()
+            println("player ready")
+            espotiPlayerManager.player.play()
+            session?.let { ses ->
+                val uri = "spotify:user:${ses.username()}:collection"
+                println("loading uri: $uri")
+                espotiPlayerManager.player.load(uri, true, true)
+            }
         }
     }
 
-    private fun startSnapcast() {
+    private fun observeSessionState() {
+        scope.launch {
+            espotiSessionRepository.sessionStateFlow.collect { sessionState ->
+                when (sessionState) {
+                    is EspotiSessionRepository.SessionState.Created -> {
+                        session = sessionState.session
+                        // TODO: might need to handle player session thrown errors
+                        espotiPlayerManager.createPlayer()
+                        startLibrespot()
+
+                        // Start snapcast processes after we have a valid session
+                        startSnapcast()
+                    }
+                    is EspotiSessionRepository.SessionState.Error -> {
+                        Log.d(TAG, "Session error: ${sessionState.message}")
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    fun startSnapcast() {
         scope.launch {
             snapserverJob = async { snapserverProcess.start() }
             snapclientJob = async { snapclientProcess.start() }

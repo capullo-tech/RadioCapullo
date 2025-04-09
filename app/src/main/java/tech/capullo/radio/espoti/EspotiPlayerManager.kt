@@ -11,7 +11,7 @@ import kotlin.apply
 
 @Singleton
 class EspotiPlayerManager @Inject constructor(
-    private val espotiSessionManager: EspotiSessionManager,
+    private val espotiSessionRepository: EspotiSessionRepository,
     private val radioRepository: RadioRepository,
 ) {
     @Volatile
@@ -26,10 +26,10 @@ class EspotiPlayerManager @Inject constructor(
                 PlayerConfiguration.Builder().apply {
                     setOutput(PlayerConfiguration.AudioOutput.PIPE)
                     setOutputPipe(File(radioRepository.getPipeFilepath()!!))
-
+                    setPreloadEnabled(true)
                     setAutoplayEnabled(true)
                 }.build(),
-                espotiSessionManager.session,
+                espotiSessionRepository.session,
             )
         }
     }

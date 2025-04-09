@@ -6,32 +6,107 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import androidx.compose.runtime.toMutableStateList
-import androidx.core.os.HandlerCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl.SessionParams
 import tech.capullo.radio.espoti.EspotiNsdManager
+import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import javax.inject.Inject
 
+sealed interface RadioBroadcasterUiState {
+
+    data class EspotiPlayerReady(
+        val hostAddresses: List<String>,
+        val snapcastClients: List<Client>,
+    ) : RadioBroadcasterUiState
+
+    data class EspotiConnect(val loadingStoredCredentials: Boolean, val deviceName: String) :
+        RadioBroadcasterUiState
+}
+
+private data class RadioBroadcasterViewModelState(
+    val isEspotiPlayerReady: Boolean = false,
+    val loadingStoredCredentials: Boolean = true,
+    val deviceName: String = "",
+    val snapcastClients: List<Client> = emptyList(),
+    val hostAddresses: List<String> = emptyList(),
+) {
+    /**
+     * Converts this [RadioBroadcasterViewModelState] state into a strongly typed
+     * [RadioBroadcasterUiState] for driving the UI.
+     */
+    fun toUiState(): RadioBroadcasterUiState = if (!isEspotiPlayerReady) {
+        RadioBroadcasterUiState.EspotiConnect(
+            loadingStoredCredentials = loadingStoredCredentials,
+            deviceName = deviceName,
+        )
+    } else {
+        RadioBroadcasterUiState.EspotiPlayerReady(
+            hostAddresses = hostAddresses,
+            snapcastClients = snapcastClients,
+        )
+    }
+}
+
+/**
+ * ViewModel for the RadioBroadcaster screen.
+ *
+ * This ViewModel is responsible for managing the state of the RadioBroadcaster screen and
+ * interacting with the RadioRepository and EspotiNsdManager.
+ *
+ * @param applicationContext The application context.
+ * @param repository The RadioRepository instance.
+ * @param espotiNsdManager The EspotiNsdManager instance.
+ */
 @HiltViewModel
 class RadioBroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
+    private val espotiSessionRepository: EspotiSessionRepository,
 ) : ViewModel() {
+
+    /**
+     * The initial state of the ViewModel.
+     *
+     * Initially check for stored credentials, done by calling `checkEspotiStoredCredentials()`
+     * Display a loading screen while checking for stored credentials.
+     * In case no stored credentials are found, the UI will show a screen to connect to the device.
+     * via Espoti.
+     */
+    private val viewModelState = MutableStateFlow(
+        RadioBroadcasterViewModelState(
+            isEspotiPlayerReady = false,
+            loadingStoredCredentials = true,
+            deviceName = repository.getDeviceName(),
+            snapcastClients = emptyList(),
+            hostAddresses = emptyList(),
+        ),
+    )
+
+    // UI state exposed to the UI
+    val uiState = viewModelState
+        .map(RadioBroadcasterViewModelState::toUiState)
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = viewModelState.value.toUiState(),
+        )
+
     private val _snapcastClients = MutableStateFlow<List<Client>>(emptyList())
     val snapcastClients = _snapcastClients.asStateFlow()
 
@@ -42,12 +117,8 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun getDeviceName(): String = repository.getDeviceName()
 
-    val mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper())
-
-    class RadioServiceWrapper(private val service: RadioBroadcasterService) {
-        fun createSessionAndPlayer(sessionParams: SessionParams, deviceName: String) {
-            service.createSessionAndPlayer(sessionParams, deviceName)
-        }
+    class RadioServiceWrapper(service: RadioBroadcasterService) {
+        val isPlayerLoading = service.isPlayerLoading
     }
 
     private var serviceWrapper: RadioServiceWrapper? = null
@@ -59,7 +130,19 @@ class RadioBroadcasterViewModel @Inject constructor(
             serviceWrapper = RadioServiceWrapper(binder.getService())
             mBound = true
 
-            startEspotiNsd()
+            viewModelScope.launch {
+                serviceWrapper?.isPlayerLoading?.collect { isLoading ->
+                    if (!isLoading) {
+                        val hostAddresses = repository.getInetAddresses()
+                        viewModelState.value =
+                            viewModelState.value.copy(
+                                isEspotiPlayerReady = true,
+                                hostAddresses = hostAddresses,
+                                snapcastClients = _snapcastClients.value,
+                            )
+                    }
+                }
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -70,6 +153,27 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     init {
         startBroadcasterService()
+        checkEspotiStoredCredentials()
+    }
+
+    fun checkEspotiStoredCredentials() {
+        viewModelScope.launch(Dispatchers.IO) {
+            when (espotiSessionRepository.createSessionWithStoredCredentials()) {
+                is EspotiSessionRepository.SessionWithStoredCredentialsResult.Error -> {
+                    startEspotiNsd()
+                    viewModelState.value =
+                        viewModelState.value.copy(
+                            isEspotiPlayerReady = false,
+                            loadingStoredCredentials = false,
+                        )
+                }
+                EspotiSessionRepository.SessionWithStoredCredentialsResult.Success -> {
+                    // In case the session is created successfully, the EspotiSessionRepository
+                    // will send the session information to the RadioBroadcasterService, which will
+                    // start the player and snapcast processes.
+                }
+            }
+        }
     }
 
     fun startBroadcasterService() {
@@ -82,16 +186,10 @@ class RadioBroadcasterViewModel @Inject constructor(
         applicationContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
+    // Started right after the service is bound
     fun startEspotiNsd() {
         viewModelScope.launch(Dispatchers.IO) {
-            espotiNsdManager.start()?.let { sessionParams ->
-                mainThreadHandler.post {
-                    if (mBound) {
-                        serviceWrapper?.createSessionAndPlayer(sessionParams, getDeviceName())
-                        startSnapcastControlClient()
-                    }
-                }
-            }
+            espotiNsdManager.start()
         }
     }
 

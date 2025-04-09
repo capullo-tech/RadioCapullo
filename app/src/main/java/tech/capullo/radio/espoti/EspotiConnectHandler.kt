@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import com.spotify.connectstate.Connect
 import kotlinx.coroutines.coroutineScope
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import tech.capullo.radio.espoti.EspotiZeroconfServer.EspotiConnectHandler
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.crypto.DiffieHellman
 import java.io.DataInputStream
@@ -22,32 +21,26 @@ import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.inject.Inject
 
-class EspotiConnectHandlerImpl(
-    val deviceType: Connect.DeviceType = Connect.DeviceType.SPEAKER,
-    val deviceName: String = "RadioCapullo",
-    val deviceId: String = Utils.randomHexString(SecureRandom(), 40).lowercase(Locale.getDefault()),
-    val keys: DiffieHellman = DiffieHellman(SecureRandom()),
-) : EspotiConnectHandler {
+class EspotiConnectHandler @Inject constructor(
+    val espotiSessionRepository: EspotiSessionRepository,
+) {
 
-    data class SessionParams(
-        val username: String,
-        val decrypted: ByteArray,
-        val deviceId: String,
-        val deviceName: String,
-        val deviceType: Connect.DeviceType,
-        val preferredLocale: String,
-    )
+    val deviceType: Connect.DeviceType = espotiSessionRepository.espotiDeviceType
+    val deviceName: String = espotiSessionRepository.espotiDeviceName
+    val deviceId: String = espotiSessionRepository.espotiDeviceId
+    val keys: DiffieHellman = DiffieHellman(SecureRandom())
 
-    override suspend fun onConnect(socket: Socket): SessionParams? = coroutineScope {
+    // Return true if the connection was handled successfully and the espoti connect session
+    // was created, otherwise return false
+    suspend fun onConnect(socket: Socket): Boolean = coroutineScope {
         val inputStream = DataInputStream(socket.getInputStream())
         val outputStream = socket.getOutputStream()
 
-        println("about to read the line")
         val requestLine = Utils.split(Utils.readLine(inputStream), ' ')
-        println("read the line: $requestLine")
         if (requestLine.size != 3) {
-            return@coroutineScope null
+            return@coroutineScope false
         }
 
         val method: String = requestLine[0]
@@ -56,21 +49,18 @@ class EspotiConnectHandlerImpl(
 
         val headers: MutableMap<String?, String?> = HashMap<String?, String?>()
         var header: String?
-        println("about to read headers")
         while ((Utils.readLine(inputStream).also { header = it }).isNotEmpty()) {
-            println("header: $header")
             val split = Utils.split(header!!, ':')
             headers[split[0]] = split[1].trim { it <= ' ' }
         }
-        println("headers: $headers")
         val params: MutableMap<String?, String?>?
         if (method == "POST") {
             val contentType = headers["Content-Type"]
             if (contentType != "application/x-www-form-urlencoded") {
-                return@coroutineScope null
+                return@coroutineScope false
             }
 
-            val contentLengthStr = headers["Content-Length"] ?: return@coroutineScope null
+            val contentLengthStr = headers["Content-Length"] ?: return@coroutineScope false
 
             val contentLength = contentLengthStr.toInt()
             val body = ByteArray(contentLength)
@@ -87,7 +77,7 @@ class EspotiConnectHandlerImpl(
             params = parsePath(path)
         }
 
-        val action = params["action"] ?: return@coroutineScope null
+        val action = params["action"] ?: return@coroutineScope false
 
         return@coroutineScope handleRequest(outputStream, httpVersion, action, params)
     }
@@ -97,7 +87,7 @@ class EspotiConnectHandlerImpl(
         httpVersion: String,
         action: String,
         params: MutableMap<String?, String?>?,
-    ): SessionParams? {
+    ): Boolean {
         if (action == "addUser") {
             requireNotNull(params)
 
@@ -114,11 +104,11 @@ class EspotiConnectHandlerImpl(
             }
         }
 
-        return null
+        return false
     }
 
     @Throws(IOException::class)
-    fun handleGetInfo(out: OutputStream, httpVersion: String) {
+    private fun handleGetInfo(out: OutputStream, httpVersion: String) {
         val info: JsonObject = DEFAULT_GET_INFO_FIELDS.deepCopy()
         info.addProperty("deviceID", deviceId)
         info.addProperty("remoteName", deviceName)
@@ -140,28 +130,27 @@ class EspotiConnectHandlerImpl(
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
-    fun handleAddUser(
+    private fun handleAddUser(
         out: OutputStream,
         params: MutableMap<String?, String?>,
         httpVersion: String,
-    ): SessionParams? {
-        println("handleAddUser")
+    ): Boolean {
         val username = params["userName"]
         if (username.isNullOrEmpty()) {
             Log.d(TAG, "Missing userName!")
-            return null
+            return false
         }
 
         val blobStr = params["blob"]
         if (blobStr.isNullOrEmpty()) {
             Log.d(TAG, "Missing blob!")
-            return null
+            return false
         }
 
         val clientKeyStr = params["clientKey"]
         if (clientKeyStr.isNullOrEmpty()) {
             Log.d(TAG, "Missing clientKey!")
-            return null
+            return false
         }
 
         val sharedKey = Utils.toByteArray(keys.computeSharedKey(Utils.fromBase64(clientKeyStr)))
@@ -187,8 +176,6 @@ class EspotiConnectHandlerImpl(
         hmac.update(encrypted)
         val mac = hmac.doFinal()
 
-        println("mac: ${mac.contentToString()}")
-
         if (!mac.contentEquals(checksum)) {
             Log.d(TAG, "Mac and checksum don't match!")
 
@@ -197,7 +184,7 @@ class EspotiConnectHandlerImpl(
             out.write(EOL)
             out.write(EOL)
             out.flush()
-            return null
+            return false
         }
 
         val aes = Cipher.getInstance("AES/CTR/NoPadding")
@@ -207,7 +194,6 @@ class EspotiConnectHandlerImpl(
             IvParameterSpec(iv),
         )
         val decrypted = aes.doFinal(encrypted)
-        println("decrypted: ${decrypted.contentToString()}")
 
         try {
             // Sending response
@@ -224,16 +210,9 @@ class EspotiConnectHandlerImpl(
             out.write(resp.toByteArray())
             out.flush()
 
-            println("username: $username")
-
-            return SessionParams(
-                username = username,
-                decrypted = decrypted,
-                deviceId = deviceId,
-                deviceName = deviceName,
-                deviceType = deviceType,
-                preferredLocale = Locale.getDefault().language,
-            )
+            espotiSessionRepository.createAndSetupSession(username, decrypted)
+            // TODO: some sort of retry mechanism if the session creation fails
+            return true
         } catch (_: Exception) {
             out.write(httpVersion.toByteArray())
             out.write(" 500 Internal Server Error".toByteArray())
@@ -241,7 +220,7 @@ class EspotiConnectHandlerImpl(
             out.write(EOL)
             out.flush()
 
-            return null
+            return false
         }
     }
 
@@ -253,7 +232,7 @@ class EspotiConnectHandlerImpl(
     }
 
     companion object {
-        private val TAG = EspotiConnectHandlerImpl::class.java.simpleName
+        private val TAG = EspotiConnectHandler::class.java.simpleName
         private val EOL = byteArrayOf('\r'.code.toByte(), '\n'.code.toByte())
         private val DEFAULT_GET_INFO_FIELDS = JsonObject()
         private val DEFAULT_SUCCESSFUL_ADD_USER = JsonObject()

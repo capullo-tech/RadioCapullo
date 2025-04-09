@@ -4,21 +4,13 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import tech.capullo.radio.espoti.EspotiConnectHandlerImpl.SessionParams
 import java.io.IOException
 import java.net.ServerSocket
-import java.net.Socket
+import javax.inject.Inject
 
-class EspotiZeroconfServer(
-    val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    val espotiConnectHandler: EspotiConnectHandler = EspotiConnectHandlerImpl(),
-) {
+class EspotiZeroconfServer @Inject constructor(val espotiConnectHandler: EspotiConnectHandler) {
 
-    interface EspotiConnectHandler {
-        @Throws(Exception::class)
-        suspend fun onConnect(socket: Socket): SessionParams?
-    }
-
+    val dispatcher: CoroutineDispatcher = Dispatchers.IO
     private lateinit var serverSocket: ServerSocket
 
     @Throws(IOException::class)
@@ -26,25 +18,19 @@ class EspotiZeroconfServer(
 
     private suspend fun serverSocketAccept() = withContext(dispatcher) { serverSocket.accept() }
 
-    suspend fun listen(): SessionParams? = coroutineScope {
-        println("Server listening at ${serverSocket.inetAddress}")
+    suspend fun listen() = coroutineScope {
         while (true) {
-            println("[${Thread.currentThread().name}] Awaiting connection")
             val socket = serverSocketAccept()
-            println("[${Thread.currentThread().name}] Serving ${socket.port}")
             try {
-                espotiConnectHandler.onConnect(socket)?.let { sessionParams ->
-                    println("Emitting Session params: $sessionParams")
+                val sessionConnected = espotiConnectHandler.onConnect(socket)
+                if (sessionConnected) {
                     socket.close()
-                    return@coroutineScope sessionParams
                 }
             } catch (e: Exception) {
-                println("Error serving ${socket.port}")
                 e.printStackTrace()
             } finally {
                 socket.close()
             }
         }
-        return@coroutineScope null
     }
 }

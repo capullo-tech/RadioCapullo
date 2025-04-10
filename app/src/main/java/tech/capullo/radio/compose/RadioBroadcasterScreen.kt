@@ -1,8 +1,8 @@
 package tech.capullo.radio.compose
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +37,7 @@ import tech.capullo.radio.snapcast.Host
 import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
+import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.ui.theme.onSecondaryLight
 import tech.capullo.radio.ui.theme.primaryGreen
@@ -48,16 +49,20 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    when (uiState) {
+    RadioBroadcasterScreenContent(uiState)
+}
+
+@Composable
+fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
+    when (val state = uiState) {
         is RadioBroadcasterUiState.EspotiPlayerReady -> {
-            val state = uiState as RadioBroadcasterUiState.EspotiPlayerReady
             RadioBroadcasterPlayback(
                 hostAddresses = state.hostAddresses,
                 snapcastClients = state.snapcastClients,
             )
         }
-        else -> {
-            val state = uiState as RadioBroadcasterUiState.EspotiConnect
+
+        is RadioBroadcasterUiState.EspotiConnect -> {
             if (state.loadingStoredCredentials) {
                 LoadingIndicator()
             } else {
@@ -71,15 +76,28 @@ fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel(
 
 @Composable
 fun LoadingIndicator() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.width(64.dp),
-            color = MaterialTheme.colorScheme.secondary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
+    Scaffold { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.width(64.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+            Spacer(modifier = Modifier.padding(16.dp))
+
+            Text(
+                text = "Checking for previous playback session...",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp),
+            )
+        }
     }
 }
 
@@ -159,19 +177,38 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
     }
 }
 
+@Preview(
+    showBackground = true,
+    uiMode = UI_MODE_NIGHT_YES,
+    name = "PreviewRadioBroadcasterEspotiConnectDark",
+)
 @Preview(showBackground = true)
 @Composable
 fun PreviewRadioBroadcasterEspotiConnect() {
     val deviceName = "Samsung Galaxy S21 Ultra Max"
-    RadioBroadcasterEspotiConnect(deviceName = deviceName)
+    RadioTheme {
+        RadioBroadcasterEspotiConnect(deviceName = deviceName)
+    }
 }
 
+@Preview(
+    showBackground = true,
+    uiMode = UI_MODE_NIGHT_YES,
+    name = "PreviewLoadingIndicatorDark",
+)
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoadingIndicator() {
-    LoadingIndicator()
+    RadioTheme {
+        LoadingIndicator()
+    }
 }
 
+@Preview(
+    showBackground = true,
+    uiMode = UI_MODE_NIGHT_YES,
+    name = "PreviewRadioBroadcasterPlaybackDark",
+)
 @Preview(showBackground = true)
 @Composable
 fun PreviewRadioBroadcasterPlayback() {
@@ -190,7 +227,7 @@ fun PreviewRadioBroadcasterPlayback() {
                 arch = "x86_64",
                 ip = "192.168.1.100",
                 mac = "00:00:00:00:00:00",
-                name = "Karin's nacatambucho",
+                name = "Nacatambucho",
                 os = "Android 15",
             ),
             id = "client1",
@@ -236,7 +273,7 @@ fun PreviewRadioBroadcasterPlayback() {
                 arch = "x86_64",
                 ip = "192.168.1.101",
                 mac = "00:00:00:00:00:01",
-                name = "mrG's oneplus 3T",
+                name = "¡OnePlus 3T!",
                 os = "Android 15",
             ),
             id = "client2",
@@ -249,8 +286,10 @@ fun PreviewRadioBroadcasterPlayback() {
         ),
     )
 
-    RadioBroadcasterPlayback(
-        hostAddresses = hostAddresses,
-        snapcastClients = sampleClients,
-    )
+    RadioTheme {
+        RadioBroadcasterPlayback(
+            hostAddresses = hostAddresses,
+            snapcastClients = sampleClients,
+        )
+    }
 }

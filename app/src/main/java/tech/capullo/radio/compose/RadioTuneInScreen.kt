@@ -2,8 +2,10 @@ package tech.capullo.radio.compose
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,13 +22,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,24 +40,28 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tech.capullo.radio.snapcast.SnapclientProcess.BalanceState
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.ui.theme.onPrimaryLight
 import tech.capullo.radio.ui.theme.onSecondaryLight
 import tech.capullo.radio.ui.theme.secondaryOrange
 import tech.capullo.radio.ui.theme.surfaceLight
 import tech.capullo.radio.viewmodels.RadioTuneInModel
+import tech.capullo.radio.viewmodels.SnapcastViewModel
 
 @Composable
 fun RadioTuneInScreen(
     radioTuneInModel: RadioTuneInModel = hiltViewModel(),
+    snapcastViewModel: SnapcastViewModel = hiltViewModel(),
     useDarkTheme: Boolean = false,
 ) {
     var lastServerText by remember {
         mutableStateOf(radioTuneInModel.getLastServerText())
     }
     var isTunedIn by remember { mutableStateOf(false) }
+    val balanceState by snapcastViewModel.balanceState.collectAsState()
 
-    val colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()
+    val colorScheme = if (useDarkTheme) MaterialTheme.colorScheme else MaterialTheme.colorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -65,6 +70,7 @@ fun RadioTuneInScreen(
         RadioTuneInContent(
             lastServerText = lastServerText,
             isTunedIn = isTunedIn,
+            balanceState = balanceState,
             onTextChange = { newServerText ->
                 lastServerText = newServerText
                 radioTuneInModel.saveLastServerText(newServerText)
@@ -72,6 +78,9 @@ fun RadioTuneInScreen(
             onTuneInClick = {
                 radioTuneInModel.startSnapclientService(lastServerText)
                 isTunedIn = true
+            },
+            onBalanceChange = { state ->
+                snapcastViewModel.setBalanceState(state)
             },
         )
     }
@@ -81,14 +90,11 @@ fun RadioTuneInScreen(
 fun RadioTuneInContent(
     lastServerText: String,
     isTunedIn: Boolean,
+    balanceState: BalanceState,
     onTextChange: (String) -> Unit,
     onTuneInClick: () -> Unit,
+    onBalanceChange: (BalanceState) -> Unit,
 ) {
-    // Add LaunchedEffect to listen for changes in lastServerText
-    LaunchedEffect(lastServerText) {
-        // Example: radioTuneInModel.saveLastServerText(lastServerText)
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -120,8 +126,8 @@ fun RadioTuneInContent(
                         Text(
                             "Server IP",
                             style =
-                            Typography
-                                .titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)),
+                                Typography
+                                    .titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)),
                         )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -144,6 +150,54 @@ fun RadioTuneInContent(
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
                 )
+
+                Text(
+                    text = "Audio Balance Control:",
+                    style = Typography.bodyMedium,
+                    color = Color.Black,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        RadioButton(
+                            selected = balanceState == BalanceState.LEFT_ONLY,
+                            onClick = { onBalanceChange(BalanceState.LEFT_ONLY) }
+                        )
+                        Text(
+                            "Left Only",
+                            style = Typography.bodySmall,
+                            color = Color.Black
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        RadioButton(
+                            selected = balanceState == BalanceState.RIGHT_ONLY,
+                            onClick = { onBalanceChange(BalanceState.RIGHT_ONLY) }
+                        )
+                        Text(
+                            "Right Only",
+                            style = Typography.bodySmall,
+                            color = Color.Black
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        RadioButton(
+                            selected = balanceState == BalanceState.BALANCED,
+                            onClick = { onBalanceChange(BalanceState.BALANCED) }
+                        )
+                        Text(
+                            "Balanced",
+                            style = Typography.bodySmall,
+                            color = Color.Black
+                        )
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -179,11 +233,14 @@ fun RadioTuneInContent(
 fun PreviewRadioTuneInContent() {
     val lastServerText = "192.168.0.1"
     val isTunedIn = false
+    val balanceState = BalanceState.BALANCED
 
     RadioTuneInContent(
         lastServerText = lastServerText,
         isTunedIn = isTunedIn,
+        balanceState = balanceState,
         onTextChange = {},
         onTuneInClick = {},
+        onBalanceChange = {},
     )
 }

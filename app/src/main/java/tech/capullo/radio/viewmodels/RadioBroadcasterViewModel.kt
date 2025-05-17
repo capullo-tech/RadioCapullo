@@ -155,26 +155,25 @@ class RadioBroadcasterViewModel @Inject constructor(
     init {
         startBroadcasterService()
 
-        loadPreviousSession()
-
         viewModelScope.launch {
-            espotiSessionRepository.sessionState.collect {
-                it?.let { sessionState ->
-                    if (sessionState is EspotiSessionRepository.SessionState.Error) {
-                        startEspotiNsd()
-                        viewModelState.value =
-                            viewModelState.value.copy(
-                                isPlaybackReady = false,
-                                isLoading = false,
-                            )
+            launch {
+                espotiSessionRepository.createSessionWithStoredCredentials()
+            }
+            launch {
+                espotiSessionRepository.sessionState.collect {
+                    it?.let { sessionState ->
+                        if (sessionState is EspotiSessionRepository.SessionState.Error) {
+                            startEspotiNsd()
+                            viewModelState.value =
+                                viewModelState.value.copy(
+                                    isPlaybackReady = false,
+                                    isLoading = false,
+                                )
+                        }
                     }
                 }
             }
         }
-    }
-
-    fun loadPreviousSession() = viewModelScope.launch {
-        espotiSessionRepository.createSessionWithStoredCredentials()
     }
 
     fun startBroadcasterService() {

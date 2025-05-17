@@ -232,7 +232,7 @@ class RadioBroadcasterService : Service() {
 
     private fun observeSessionState() {
         scope.launch {
-            espotiSessionRepository.sessionStateFlow.collect { sessionState ->
+            espotiSessionRepository.sessionState.collect { sessionState ->
                 when (sessionState) {
                     is EspotiSessionRepository.SessionState.Created -> {
                         session = sessionState.session

@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.core.content.edit
 import com.spotify.connectstate.Connect
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import tech.capullo.radio.data.RadioRepository
 import xyz.gianlu.librespot.common.Utils
 import xyz.gianlu.librespot.core.Session
@@ -30,15 +32,14 @@ class EspotiSessionRepository @Inject constructor(
     val session get() = _session ?: throw IllegalStateException("Session is not created yet!")
 
     // Session state management
-    private val _sessionStateFlow = MutableStateFlow<SessionState>(SessionState.Idle)
-    val sessionStateFlow = _sessionStateFlow.asStateFlow()
-
     sealed class SessionState {
-        object Idle : SessionState()
-        object Creating : SessionState()
         data class Created(val session: Session) : SessionState()
         data class Error(val message: String) : SessionState()
     }
+
+    // Listeners to this flow: [RadioBroadcasterService], [RadioBroadcasterViewModel]
+    private val _sessionState = MutableStateFlow<SessionState?>(null)
+    val sessionState = _sessionState.asStateFlow()
 
     fun loadEspotiDeviceID(): String {
         val sharedPreferences = appContext.getSharedPreferences(
@@ -62,13 +63,13 @@ class EspotiSessionRepository @Inject constructor(
         return espotiDeviceId
     }
 
-    fun createSession(): Session.Builder = Session.Builder(createSessionConfig())
+    fun sessionBuilder(): Session.Builder = Session.Builder(defaultSessionConfig())
         .setDeviceType(espotiDeviceType)
         .setDeviceName(espotiDeviceName)
         .setDeviceId(espotiDeviceId)
         .setPreferredLocale(Locale.getDefault().language)
 
-    private fun createSessionConfig() = Session.Configuration.Builder()
+    private fun defaultSessionConfig() = Session.Configuration.Builder()
         .setCacheEnabled(true)
         .setDoCacheCleanUp(true)
         .setCacheDir(File(appContext.cacheDir, ESPOTI_CACHE_DIR))
@@ -76,47 +77,32 @@ class EspotiSessionRepository @Inject constructor(
         .build()
 
     fun createAndSetupSession(username: String, decryptedBlob: ByteArray) {
-        _sessionStateFlow.value = SessionState.Creating
-
         try {
-            val newSession = createSession()
+            val newSession = sessionBuilder()
                 .blob(username, decryptedBlob)
                 .create()
             setSession(newSession)
-            _sessionStateFlow.value = SessionState.Created(newSession)
         } catch (e: Exception) {
             val errorMessage = e.message ?: "Failed to create session"
-            _sessionStateFlow.value = SessionState.Error(errorMessage)
-            throw IllegalStateException(errorMessage, e)
+            _sessionState.value = SessionState.Error(errorMessage)
         }
     }
 
-    sealed class SessionWithStoredCredentialsResult {
-        object Success : SessionWithStoredCredentialsResult()
-        data class Error(val message: String) : SessionWithStoredCredentialsResult()
-    }
-
-    suspend fun createSessionWithStoredCredentials(): SessionWithStoredCredentialsResult {
-        _sessionStateFlow.value = SessionState.Creating
-
-        return try {
-            val storedSession = createSession()
+    suspend fun createSessionWithStoredCredentials() = withContext(Dispatchers.IO) {
+        try {
+            val storedSession = sessionBuilder()
                 .stored()
                 .create()
             setSession(storedSession)
-            _sessionStateFlow.value = SessionState.Created(storedSession)
-
-            SessionWithStoredCredentialsResult.Success
         } catch (e: Exception) {
             val errorMessage = e.message ?: "Failed to create session with stored credentials"
-            _sessionStateFlow.value = SessionState.Error(errorMessage)
-
-            SessionWithStoredCredentialsResult.Error(errorMessage)
+            _sessionState.value = SessionState.Error(errorMessage)
         }
     }
 
     fun setSession(s: Session) {
         _session = s
+        _sessionState.value = SessionState.Created(s)
     }
 
     companion object {

@@ -63,7 +63,7 @@ fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
         }
 
         is RadioBroadcasterUiState.EspotiConnect -> {
-            if (state.loadingStoredCredentials) {
+            if (state.isLoading) {
                 LoadingIndicator()
             } else {
                 RadioBroadcasterEspotiConnect(

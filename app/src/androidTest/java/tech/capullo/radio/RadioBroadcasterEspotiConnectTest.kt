@@ -23,7 +23,7 @@ class RadioBroadcasterEspotiConnectTest {
     fun whenEspotiConnectState_showsEspotiConnectScreen() {
         // Given: UI state is EspotiConnect
         val uiState = RadioBroadcasterUiState.EspotiConnect(
-            loadingStoredCredentials = false,
+            isLoading = false,
             deviceName = "Test Device",
         )
 
@@ -51,7 +51,7 @@ class RadioBroadcasterEspotiConnectTest {
     fun whenLoadingPreviousPlaybackSessionState_showsLoadingIndicator() {
         // Given: UI state is EspotiConnect with loadingStoredCredentials = true
         val uiState = RadioBroadcasterUiState.EspotiConnect(
-            loadingStoredCredentials = true,
+            isLoading = true,
             deviceName = "Test Device",
         )
 

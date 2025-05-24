@@ -2,22 +2,18 @@ package tech.capullo.radio.compose
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -27,12 +23,10 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,15 +39,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -82,7 +76,7 @@ fun RadioTuneInScreen(
         typography = Typography,
     ) {
         Scaffold { innerPadding ->
-            RadioTuneInContent(
+            RadioTuneInScreenContent(
                 modifier = Modifier
                     .padding(innerPadding),
                 lastServerText = lastServerText,
@@ -91,8 +85,8 @@ fun RadioTuneInScreen(
                     lastServerText = newServerText
                     radioTuneInModel.saveLastServerText(newServerText)
                 },
-                onTuneInClick = {
-                    radioTuneInModel.startSnapclientService(lastServerText)
+                onTuneInClick = { channel ->
+                    radioTuneInModel.startSnapclientService(lastServerText, channel)
                     isTunedIn = true
                 },
             )
@@ -100,32 +94,50 @@ fun RadioTuneInScreen(
     }
 }
 
-val options = listOf("Left", "Stereo", "Right")
-val unCheckedIcons =
-    listOf(Icons.Outlined.MoreVert, Icons.Outlined.Notifications, Icons.Outlined.PlayArrow)
-val checkedIcons = listOf(Icons.Filled.MoreVert, Icons.Filled.Notifications, Icons.Filled.PlayArrow)
+enum class AudioChannel(
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val modifierWeight: Float,
+    val label: String,
+    ) {
+    LEFT(
+        selectedIcon = Icons.Filled.MoreVert,
+        unselectedIcon = Icons.Outlined.MoreVert,
+        modifierWeight = 1f,
+        "Left",
+    ),
+    STEREO(
+        selectedIcon = Icons.Filled.Notifications,
+        unselectedIcon = Icons.Outlined.Notifications,
+        modifierWeight = 1.5f,
+        "Stereo"
+    ),
+    RIGHT(
+        selectedIcon = Icons.Filled.PlayArrow,
+        unselectedIcon = Icons.Outlined.PlayArrow,
+        modifierWeight = 1f,
+        "Right"
+    ),
+}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun RadioTuneInContent(
+fun RadioTuneInScreenContent(
     modifier: Modifier = Modifier,
     lastServerText: String,
     isTunedIn: Boolean,
     onTextChange: (String) -> Unit,
-    onTuneInClick: () -> Unit,
+    onTuneInClick: (channel: AudioChannel) -> Unit,
 ) {
     Scaffold { innerPadding ->
         Column(
             modifier = modifier.padding(innerPadding).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            //verticalArrangement = Arrangement.Center,
         ) {
-            // =====================================
             Card(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(),
-                //.fillMaxHeight(0.9f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = secondaryOrange),
@@ -170,39 +182,38 @@ fun RadioTuneInContent(
                         ),
                     )
 
-                    var selectedIndex by remember { mutableIntStateOf(0) }
+                    var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                     ) {
-                        val modifiers =
-                            listOf(Modifier.weight(1f), Modifier.weight(1.5f), Modifier.weight(1f))
-                        options.forEachIndexed { index, label ->
+                        AudioChannel.entries.forEach { channel ->
                             ToggleButton(
-                                checked = selectedIndex == index,
-                                onCheckedChange = { selectedIndex = index },
-                                modifier = modifiers[index],
+                                checked = selectedChannel == channel,
+                                onCheckedChange = { selectedChannel = channel },
+                                modifier = Modifier.weight(channel.modifierWeight),
                                 shapes =
-                                    when (index) {
-                                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                        options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                    when (channel) {
+                                        AudioChannel.LEFT -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                        AudioChannel.RIGHT -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                        AudioChannel.STEREO -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                                     },
                                 contentPadding = PaddingValues(0.dp)
                             ) {
+
                                 Icon(
-                                    if (selectedIndex == index) checkedIcons[index] else unCheckedIcons[index],
-                                    contentDescription = "Localized description",
+                                    if (selectedChannel == channel) channel.selectedIcon else channel.unselectedIcon,
+                                    contentDescription = channel.label,
                                 )
                                 Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
                                 Text(
-                                    text = label,
+                                    text = channel.label
                                 )
                             }
                         }
                     }
 
                     Button(
-                        onClick = onTuneInClick,
+                        onClick = { onTuneInClick(selectedChannel) },
                         enabled = !isTunedIn,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -222,13 +233,6 @@ fun RadioTuneInContent(
             }
         }
     }
-    /*
-    // Add LaunchedEffect to listen for changes in lastServerText
-    LaunchedEffect(lastServerText) {
-        // Example: radioTuneInModel.saveLastServerText(lastServerText)
-    }
-
-     */
 }
 
 @Preview(showBackground = true)
@@ -237,7 +241,7 @@ fun PreviewRadioTuneInContent() {
     val lastServerText = "192.168.0.1"
     val isTunedIn = false
 
-    RadioTuneInContent(
+    RadioTuneInScreenContent(
         lastServerText = lastServerText,
         isTunedIn = isTunedIn,
         onTextChange = {},

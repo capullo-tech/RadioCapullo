@@ -99,7 +99,7 @@ enum class AudioChannel(
     val unselectedIcon: ImageVector,
     val modifierWeight: Float,
     val label: String,
-    ) {
+) {
     LEFT(
         selectedIcon = Icons.Filled.MoreVert,
         unselectedIcon = Icons.Outlined.MoreVert,
@@ -110,13 +110,13 @@ enum class AudioChannel(
         selectedIcon = Icons.Filled.Notifications,
         unselectedIcon = Icons.Outlined.Notifications,
         modifierWeight = 1.5f,
-        "Stereo"
+        "Stereo",
     ),
     RIGHT(
         selectedIcon = Icons.Filled.PlayArrow,
         unselectedIcon = Icons.Outlined.PlayArrow,
         modifierWeight = 1f,
-        "Right"
+        "Right",
     ),
 }
 
@@ -157,8 +157,10 @@ fun RadioTuneInScreenContent(
                             Text(
                                 "Server IP",
                                 style =
-                                    Typography
-                                        .titleLarge.copy(color = onSecondaryLight.copy(alpha = 0.7f)),
+                                Typography
+                                    .titleLarge.copy(
+                                        color = onSecondaryLight.copy(alpha = 0.7f),
+                                    ),
                             )
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -184,7 +186,9 @@ fun RadioTuneInScreenContent(
 
                     var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            ButtonGroupDefaults.ConnectedSpaceBetween,
+                        ),
                     ) {
                         AudioChannel.entries.forEach { channel ->
                             ToggleButton(
@@ -192,21 +196,32 @@ fun RadioTuneInScreenContent(
                                 onCheckedChange = { selectedChannel = channel },
                                 modifier = Modifier.weight(channel.modifierWeight),
                                 shapes =
-                                    when (channel) {
-                                        AudioChannel.LEFT -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                        AudioChannel.RIGHT -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                        AudioChannel.STEREO -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                                    },
-                                contentPadding = PaddingValues(0.dp)
+                                when (channel) {
+                                    AudioChannel.LEFT -> {
+                                        ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    }
+                                    AudioChannel.RIGHT -> {
+                                        ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    }
+                                    AudioChannel.STEREO -> {
+                                        ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                    }
+                                },
+                                contentPadding = PaddingValues(0.dp),
                             ) {
-
                                 Icon(
-                                    if (selectedChannel == channel) channel.selectedIcon else channel.unselectedIcon,
+                                    if (selectedChannel ==
+                                        channel
+                                    ) {
+                                        channel.selectedIcon
+                                    } else {
+                                        channel.unselectedIcon
+                                    },
                                     contentDescription = channel.label,
                                 )
                                 Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
                                 Text(
-                                    text = channel.label
+                                    text = channel.label,
                                 )
                             }
                         }

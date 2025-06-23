@@ -61,7 +61,8 @@ class TuneInScreen {
             )
         }
 
-        AudioChannel.entries.forEach { channel -> // [LEFT, STEREO, RIGHT]
+        AudioChannel.entries.forEach { channel ->
+            // [LEFT, STEREO, RIGHT]
             // i.e. Press LEFT 10 times
             repeat(10) {
                 composeTestRule
@@ -93,7 +94,7 @@ class TuneInScreen {
             )
         }
 
-        repeat (10) {
+        repeat(10) {
             composeTestRule
                 .onNodeWithText(AudioChannel.RIGHT.label)
                 .performClick()

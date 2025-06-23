@@ -4,7 +4,6 @@ import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -82,7 +81,13 @@ class SnapclientService : Service() {
     }
 
     private fun startSnapclient(snapserverIp: String, audioChannel: Int) {
-        snapclientJob = scope.launch { snapclientProcess.start(snapserverAddress = snapserverIp, audioChannel = audioChannel) }
+        snapclientJob =
+            scope.launch {
+                snapclientProcess.start(
+                    snapserverAddress = snapserverIp,
+                    audioChannel = audioChannel,
+                )
+            }
     }
 
     companion object {

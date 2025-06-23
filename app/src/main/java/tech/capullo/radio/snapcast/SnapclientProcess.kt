@@ -42,7 +42,7 @@ class SnapclientProcess @Inject constructor(
         hostId: String = UUID.randomUUID().toString(),
         snapserverAddress: String = "localhost",
         snapserverPort: Int = 1704,
-        audioChannel: Int = AudioChannel.entries.size / 2,
+        audioChannel: Int = AudioChannel.STEREO.ordinal,
     ) = coroutineScope {
         val audioChannel = AudioChannel.entries[audioChannel].label.lowercase()
         val pb = ProcessBuilder().command(
@@ -69,7 +69,7 @@ class SnapclientProcess @Inject constructor(
                 val threadName = Thread.currentThread().name
                 println("Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (e: CancellationException) {
+        } catch (_: CancellationException) {
             println("Snapclient process cancelled")
             process.destroy()
         } catch (e: Exception) {

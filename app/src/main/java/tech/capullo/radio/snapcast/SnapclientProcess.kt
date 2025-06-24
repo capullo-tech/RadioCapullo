@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
+import tech.capullo.radio.compose.AudioChannel
 import tech.capullo.radio.data.RadioRepository
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -41,12 +42,15 @@ class SnapclientProcess @Inject constructor(
         hostId: String = UUID.randomUUID().toString(),
         snapserverAddress: String = "localhost",
         snapserverPort: Int = 1704,
+        audioChannel: Int = AudioChannel.STEREO.ordinal,
     ) = coroutineScope {
+        val audioChannel = AudioChannel.entries[audioChannel].label.lowercase()
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
             "-h", snapserverAddress, "-p", snapserverPort.toString(),
             "--hostID", hostId, "--player", androidPlayer, "--sampleformat", sampleFormat,
             "--logfilter", "*:info,Stats:debug",
+            "--channel", audioChannel,
         )
 
         val env = pb.environment()
@@ -65,7 +69,7 @@ class SnapclientProcess @Inject constructor(
                 val threadName = Thread.currentThread().name
                 println("Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (e: CancellationException) {
+        } catch (_: CancellationException) {
             println("Snapclient process cancelled")
             process.destroy()
         } catch (e: Exception) {

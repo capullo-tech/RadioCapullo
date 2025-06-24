@@ -4,7 +4,6 @@ import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -31,9 +30,10 @@ class SnapclientService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
+        val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, 1)
 
         startForeground()
-        startSnapclient(snapserverIp)
+        startSnapclient(snapserverIp, audioChannel)
 
         return START_NOT_STICKY
     }
@@ -46,7 +46,7 @@ class SnapclientService : Service() {
                 NotificationManager.IMPORTANCE_DEFAULT,
             )
             val notificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(serviceChannel)
         }
     }
@@ -80,12 +80,19 @@ class SnapclientService : Service() {
         }
     }
 
-    private fun startSnapclient(snapserverIp: String) {
-        snapclientJob = scope.launch { snapclientProcess.start(snapserverAddress = snapserverIp) }
+    private fun startSnapclient(snapserverIp: String, audioChannel: Int) {
+        snapclientJob =
+            scope.launch {
+                snapclientProcess.start(
+                    snapserverAddress = snapserverIp,
+                    audioChannel = audioChannel,
+                )
+            }
     }
 
     companion object {
         const val KEY_IP = "KEY_IP"
+        const val KEY_AUDIO_CHANNEL = "KEY_AUDIO_CHANNEL"
         const val CHANNEL_ID = "SnapclientServiceChannel"
         const val CHANNEL_NAME = "Snapclient Service Channel"
         const val NOTIFICATION_ID = 101

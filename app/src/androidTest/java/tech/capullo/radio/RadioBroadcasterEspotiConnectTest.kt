@@ -11,8 +11,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToLog
 import org.junit.Rule
 import org.junit.Test
-import tech.capullo.radio.compose.RadioBroadcasterScreenContent
 import tech.capullo.radio.snapcast.Client
+import tech.capullo.radio.ui.RadioBroadcasterScreenContent
 import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 
 class RadioBroadcasterEspotiConnectTest {

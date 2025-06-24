@@ -8,8 +8,8 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import tech.capullo.radio.compose.AudioChannel
 import tech.capullo.radio.services.SnapclientService
+import tech.capullo.radio.ui.AudioChannel
 import javax.inject.Inject
 
 @HiltViewModel

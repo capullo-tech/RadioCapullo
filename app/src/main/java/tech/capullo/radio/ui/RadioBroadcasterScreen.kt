@@ -1,4 +1,4 @@
-package tech.capullo.radio.compose
+package tech.capullo.radio.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.background
@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -64,7 +65,7 @@ fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
 
         is RadioBroadcasterUiState.EspotiConnect -> {
             if (state.isLoading) {
-                LoadingIndicator()
+                LoadingSessionScreen()
             } else {
                 RadioBroadcasterEspotiConnect(
                     deviceName = state.deviceName,
@@ -74,8 +75,9 @@ fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun LoadingIndicator() {
+fun LoadingSessionScreen() {
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -84,11 +86,10 @@ fun LoadingIndicator() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.width(64.dp),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            LoadingIndicator(
+                modifier = Modifier.size(64.dp),
             )
+
             Spacer(modifier = Modifier.padding(16.dp))
 
             Text(
@@ -200,7 +201,7 @@ fun PreviewRadioBroadcasterEspotiConnect() {
 @Composable
 fun PreviewLoadingIndicator() {
     RadioTheme {
-        LoadingIndicator()
+        LoadingSessionScreen()
     }
 }
 

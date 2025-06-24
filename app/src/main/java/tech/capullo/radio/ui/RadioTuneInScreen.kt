@@ -1,4 +1,4 @@
-package tech.capullo.radio.compose
+package tech.capullo.radio.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement

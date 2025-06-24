@@ -10,8 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
-import tech.capullo.radio.compose.AudioChannel
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.ui.AudioChannel
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.UUID

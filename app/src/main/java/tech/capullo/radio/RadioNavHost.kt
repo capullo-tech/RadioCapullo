@@ -5,9 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import tech.capullo.radio.compose.RadioApp
-import tech.capullo.radio.compose.RadioBroadcasterScreen
-import tech.capullo.radio.compose.RadioTuneInScreen
+import tech.capullo.radio.ui.RadioApp
+import tech.capullo.radio.ui.RadioBroadcasterScreen
+import tech.capullo.radio.ui.RadioTuneInScreen
 
 @Composable
 fun RadioCapulloNavHost(

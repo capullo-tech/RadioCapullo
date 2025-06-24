@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import tech.capullo.radio.snapcast.SnapclientProcess
+import tech.capullo.radio.ui.AudioChannel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -30,7 +31,7 @@ class SnapclientService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
-        val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, 1)
+        val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, AudioChannel.STEREO.ordinal)
 
         startForeground()
         startSnapclient(snapserverIp, audioChannel)

@@ -1,4 +1,4 @@
-package tech.capullo.radio.compose
+package tech.capullo.radio.ui
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration.UI_MODE_NIGHT_YES

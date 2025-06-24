@@ -1,5 +1,6 @@
-package tech.capullo.radio.compose
+package tech.capullo.radio.ui
 
+import android.Manifest
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,8 +42,8 @@ fun RadioApp(
             val multiplePermissionsState =
                 rememberMultiplePermissionsState(
                     permissions = listOf(
-                        android.Manifest.permission.NEARBY_WIFI_DEVICES,
-                        android.Manifest.permission.POST_NOTIFICATIONS,
+                        Manifest.permission.NEARBY_WIFI_DEVICES,
+                        Manifest.permission.POST_NOTIFICATIONS,
                     ),
                 )
             if (multiplePermissionsState.allPermissionsGranted) {

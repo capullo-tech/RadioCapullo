@@ -12,8 +12,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.capullo.radio.compose.AudioChannel
-import tech.capullo.radio.compose.RadioTuneInScreenContent
+import tech.capullo.radio.ui.AudioChannel
+import tech.capullo.radio.ui.RadioTuneInScreenContent
 
 @RunWith(AndroidJUnit4::class)
 class TuneInScreen {

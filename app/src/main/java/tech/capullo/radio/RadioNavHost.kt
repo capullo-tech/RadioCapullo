@@ -24,14 +24,14 @@ fun RadioCapulloNavHost(
                     navController.navigate(RadioDestinations.BROADCAST_ROUTE)
                 },
                 onTuneInClicked = {
-                    navController.navigate(RadioDestinations.TUNEIN_ROUTE)
+                    navController.navigate(RadioDestinations.TUNE_IN_ROUTE)
                 },
             )
         }
         composable(RadioDestinations.BROADCAST_ROUTE) {
             RadioBroadcasterScreen()
         }
-        composable(RadioDestinations.TUNEIN_ROUTE) {
+        composable(RadioDestinations.TUNE_IN_ROUTE) {
             RadioTuneInScreen()
         }
     }
@@ -40,5 +40,5 @@ fun RadioCapulloNavHost(
 object RadioDestinations {
     const val HOME_ROUTE = "home"
     const val BROADCAST_ROUTE = "broadcast"
-    const val TUNEIN_ROUTE = "tunein"
+    const val TUNE_IN_ROUTE = "tune_in"
 }

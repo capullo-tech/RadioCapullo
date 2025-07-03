@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,39 +30,34 @@ import tech.capullo.radio.ui.theme.secondaryOrange
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RadioApp(
-    modifier: Modifier = Modifier,
     onStartBroadcastingClicked: () -> Unit,
     onTuneInClicked: () -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-    ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val multiplePermissionsState =
-                rememberMultiplePermissionsState(
-                    permissions = listOf(
-                        Manifest.permission.NEARBY_WIFI_DEVICES,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                    ),
-                )
-            if (multiplePermissionsState.allPermissionsGranted) {
-                RadioMainScreen(
-                    onStartBroadcastingClicked = onStartBroadcastingClicked,
-                    onTuneInClicked = onTuneInClicked,
-                )
-            } else {
-                // Launch the permission request
-                LaunchedEffect(multiplePermissionsState) {
-                    multiplePermissionsState.launchMultiplePermissionRequest()
-                }
-            }
-        } else {
-            // For devices below TIRAMISU, show the main screen directly
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val multiplePermissionsState =
+            rememberMultiplePermissionsState(
+                permissions = listOf(
+                    Manifest.permission.NEARBY_WIFI_DEVICES,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ),
+            )
+        if (multiplePermissionsState.allPermissionsGranted) {
             RadioMainScreen(
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
                 onTuneInClicked = onTuneInClicked,
             )
+        } else {
+            // Launch the permission request
+            LaunchedEffect(multiplePermissionsState) {
+                multiplePermissionsState.launchMultiplePermissionRequest()
+            }
         }
+    } else {
+        // For devices below TIRAMISU, show the main screen directly
+        RadioMainScreen(
+            onStartBroadcastingClicked = onStartBroadcastingClicked,
+            onTuneInClicked = onTuneInClicked,
+        )
     }
 }
 
@@ -116,8 +110,12 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
     showBackground = true,
     uiMode = UI_MODE_NIGHT_YES,
     name = "PreviewRadioAppDark",
+    showSystemUi = true,
 )
-@Preview(showBackground = true)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+)
 @Composable
 fun RadioAppPreview() {
     RadioTheme {

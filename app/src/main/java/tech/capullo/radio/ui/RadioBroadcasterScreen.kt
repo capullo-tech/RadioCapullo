@@ -209,8 +209,12 @@ fun PreviewLoadingIndicator() {
     showBackground = true,
     uiMode = UI_MODE_NIGHT_YES,
     name = "PreviewRadioBroadcasterPlaybackDark",
+    showSystemUi = true,
 )
-@Preview(showBackground = true)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+)
 @Composable
 fun PreviewRadioBroadcasterPlayback() {
     val hostAddresses = listOf("192.168.0.1", "0.0.0.0", "100.10.14.7")

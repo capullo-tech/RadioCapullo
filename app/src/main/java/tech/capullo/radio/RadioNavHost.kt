@@ -1,7 +1,6 @@
 package tech.capullo.radio
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,14 +11,12 @@ import tech.capullo.radio.ui.RadioTuneInScreen
 
 @Composable
 fun RadioCapulloNavHost(
-    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = RadioDestinations.HOME_ROUTE,
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier,
     ) {
         composable(RadioDestinations.HOME_ROUTE) {
             RadioApp(

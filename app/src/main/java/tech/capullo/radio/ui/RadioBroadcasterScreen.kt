@@ -1,7 +1,6 @@
 package tech.capullo.radio.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +24,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,9 +38,6 @@ import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.ui.theme.onSecondaryLight
-import tech.capullo.radio.ui.theme.primaryGreen
-import tech.capullo.radio.ui.theme.surfaceLight
 import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 
@@ -144,8 +139,7 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .background(surfaceLight),
+                .padding(innerPadding),
         ) {
             Card(
                 modifier = Modifier
@@ -153,20 +147,17 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
                     .fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = primaryGreen),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Host Addresses:",
                         style = Typography.bodyMedium,
-                        color = Color.Black,
                     )
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                         items(items = hostAddresses) { name ->
                             Text(
                                 text = name,
                                 style = Typography.titleLarge,
-                                color = onSecondaryLight,
                             )
                         }
                     }

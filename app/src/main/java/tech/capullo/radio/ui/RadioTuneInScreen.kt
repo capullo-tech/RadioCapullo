@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.RadioTuneInModel
 
@@ -207,6 +209,10 @@ fun RadioTuneInScreenContent(
                         enabled = !isTunedIn,
                         modifier = Modifier
                             .padding(vertical = 16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     ) {
                         Text("TUNE IN", style = Typography.titleLarge)
                     }
@@ -231,7 +237,7 @@ fun PreviewRadioTuneInContent() {
     val lastServerText = "192.168.0.1"
     val isTunedIn = false
 
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
         RadioTuneInScreenContent(
             lastServerText = lastServerText,
             isTunedIn = isTunedIn,

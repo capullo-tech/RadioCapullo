@@ -8,6 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import tech.capullo.radio.ui.RadioApp
 import tech.capullo.radio.ui.RadioBroadcasterScreen
 import tech.capullo.radio.ui.RadioTuneInScreen
+import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 
 @Composable
 fun RadioCapulloNavHost(
@@ -29,10 +31,18 @@ fun RadioCapulloNavHost(
             )
         }
         composable(RadioDestinations.BROADCAST_ROUTE) {
-            RadioBroadcasterScreen()
+            RadioTheme(
+                schemeChoice = SchemeChoice.GREEN,
+            ) {
+                RadioBroadcasterScreen()
+            }
         }
         composable(RadioDestinations.TUNE_IN_ROUTE) {
-            RadioTuneInScreen()
+            RadioTheme(
+                schemeChoice = SchemeChoice.ORANGE,
+            ) {
+                RadioTuneInScreen()
+            }
         }
     }
 }

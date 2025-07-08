@@ -2,6 +2,7 @@ package tech.capullo.radio.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -32,11 +33,54 @@ private val LightColorScheme = lightColorScheme(
      */
 )
 
+private val GreenDarkColorScheme = darkColorScheme(
+    primary = GreenPrimaryDark,
+    onPrimary = GreenOnPrimaryDark,
+    secondary = GreenSecondaryDark,
+    secondaryContainer = GreenSecondaryContainerDark,
+    onSecondaryContainer = GreenOnSecondaryContainerDark,
+    tertiary = GreenTertiaryDark,
+)
+
+private val GreenLightColorScheme = lightColorScheme(
+    primary = GreenPrimaryLight,
+    onPrimary = GreenOnPrimaryLight,
+    secondary = GreenSecondaryLight,
+    secondaryContainer = GreenSecondaryContainerLight,
+    onSecondaryContainer = GreenOnSecondaryContainerLight,
+    tertiary = GreenTertiaryLight,
+)
+
+private val OrangeDarkColorScheme = darkColorScheme(
+    primary = OrangePrimaryDark,
+    onPrimary = OrangeOnPrimaryDark,
+    secondary = OrangeSecondaryDark,
+    secondaryContainer = OrangeSecondaryContainerDark,
+    onSecondaryContainer = OrangeOnSecondaryContainerDark,
+    tertiary = OrangeTertiaryDark,
+)
+
+private val OrangeLightColorScheme = lightColorScheme(
+    primary = OrangePrimaryLight,
+    onPrimary = OrangeOnPrimaryLight,
+    secondary = OrangeSecondaryLight,
+    secondaryContainer = OrangeSecondaryContainerLight,
+    onSecondaryContainer = OrangeOnSecondaryContainerLight,
+    tertiary = OrangeTertiaryLight,
+)
+
+enum class SchemeChoice(val darkColorScheme: ColorScheme, val lightColorScheme: ColorScheme) {
+    GREEN(GreenDarkColorScheme, GreenLightColorScheme),
+    ORANGE(OrangeDarkColorScheme, OrangeLightColorScheme),
+    DEFAULT(DarkColorScheme, LightColorScheme),
+}
+
 @Composable
 fun RadioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
+    schemeChoice: SchemeChoice = SchemeChoice.DEFAULT,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -45,8 +89,8 @@ fun RadioTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> schemeChoice.darkColorScheme
+        else -> schemeChoice.lightColorScheme
     }
 
     MaterialTheme(

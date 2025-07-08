@@ -15,6 +15,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -37,6 +38,7 @@ import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
@@ -97,6 +99,7 @@ fun LoadingSessionScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RadioBroadcasterEspotiConnect(deviceName: String) {
     Scaffold { innerPadding ->
@@ -127,6 +130,8 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
                     text = deviceName,
                 )
             }
+            Spacer(modifier = Modifier.padding(8.dp))
+            LinearWavyProgressIndicator()
         }
     }
 }
@@ -178,7 +183,7 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
 @Composable
 fun PreviewRadioBroadcasterEspotiConnect() {
     val deviceName = "Samsung Galaxy S21 Ultra Max"
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         RadioBroadcasterEspotiConnect(deviceName = deviceName)
     }
 }
@@ -191,7 +196,7 @@ fun PreviewRadioBroadcasterEspotiConnect() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoadingIndicator() {
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         LoadingSessionScreen()
     }
 }
@@ -282,7 +287,7 @@ fun PreviewRadioBroadcasterPlayback() {
         ),
     )
 
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         RadioBroadcasterPlayback(
             hostAddresses = hostAddresses,
             snapcastClients = sampleClients,

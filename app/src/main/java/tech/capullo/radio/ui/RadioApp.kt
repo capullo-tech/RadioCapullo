@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -17,12 +17,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -63,34 +65,47 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                 .fillMaxSize()
                 .padding(innerPadding),
             verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Button(
-                onClick = onStartBroadcastingClicked,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp),
+            RadioTheme(
+                schemeChoice = SchemeChoice.GREEN,
             ) {
-                Text(
-                    "RADIO-ON",
-                    style = MaterialTheme.typography.displayLarge,
-                    modifier = Modifier.padding(vertical = 24.dp),
-                )
+                Button(
+                    onClick = onStartBroadcastingClicked,
+                    modifier = Modifier.width(320.dp),
+                    elevation = ButtonDefaults.buttonElevation(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Text(
+                        "RADIO-ON",
+                        style = MaterialTheme.typography.displayLarge,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(64.dp))
-            Button(
-                onClick = onTuneInClicked,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp),
+            RadioTheme(
+                schemeChoice = SchemeChoice.ORANGE,
             ) {
-                Text(
-                    "TUNE-IN",
-                    style = MaterialTheme.typography.displayLarge,
-                    modifier = Modifier.padding(vertical = 24.dp),
-                )
+                Button(
+                    onClick = onTuneInClicked,
+                    modifier = Modifier.width(320.dp),
+                    elevation = ButtonDefaults.buttonElevation(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Text(
+                        "TUNE-IN",
+                        style = MaterialTheme.typography.displayLarge,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
             }
         }
     }

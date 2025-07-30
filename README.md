@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Android-green.svg)
 ![Minimum Android Version](https://img.shields.io/badge/Min%20Android%20version-6-green)
 ![Compiled Android SDK Version](https://img.shields.io/badge/Compiled%20SDK%20version-36-green)
-![Kotlin](https://img.shields.io/badge/kotlin-2.1.10-%237F52FF.svg?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-%237F52FF.svg?logo=kotlin&logoColor=white)
 
 **RadioCapullo** is a free, open-source Android application designed for music broadcasting and listening in a synchronized multi-device environment. It leverages a star topology to create an immersive audio experience, allowing multiple Android devices to play music simultaneously, enhancing volume and depth of field.
 

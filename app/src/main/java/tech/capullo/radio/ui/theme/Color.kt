@@ -1,44 +1,43 @@
 package tech.capullo.radio.ui.theme
 
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-val primaryGreen = Color(0xFF81C784) // Verde pastel
-val secondaryOrange = Color(0xFFFF7043) // Orange pastel
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
 
-val backgroundLight = Color(0xFFFFFFFF) // White
-val surfaceLight = Color(0xFFF5F5F5) // Light grey
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
 
-val onPrimaryLight = Color(0xFFFFFFFF)
-val onSecondaryLight = Color(0xFFFFFFFF)
+// Material Theme Builder: https://material-foundation.github.io/material-theme-builder/
 
-val errorColor = Color(0xFFB00020)
+/* GREEN */
+val GreenPrimaryLight = Color(0xFF4C662B)
+val GreenOnPrimaryLight = Color(0xFFFFFFFF)
+val GreenSecondaryLight = Color(0xFF586249)
+val GreenSecondaryContainerLight = Color(0xFFDCE7C8)
+val GreenOnSecondaryContainerLight = Color(0xFF404A33)
+val GreenTertiaryLight = Color(0xFF386663)
 
-// Material Light Theme Colors
-val lightColors = lightColorScheme(
-    primary = primaryGreen,
-    onPrimary = onPrimaryLight,
-    secondary = secondaryOrange,
-    onSecondary = onSecondaryLight,
-    background = backgroundLight,
-    onBackground = primaryGreen,
-    surface = surfaceLight,
-    onSurface = secondaryOrange,
-    error = errorColor,
-    onError = Color.White,
-)
+val GreenPrimaryDark = Color(0xFFB1D18A)
+val GreenOnPrimaryDark = Color(0xFF1F3701)
+val GreenSecondaryDark = Color(0xFFBFCBAD)
+val GreenSecondaryContainerDark = Color(0xFF404A33)
+val GreenOnSecondaryContainerDark = Color(0xFFDCE7C8)
+val GreenTertiaryDark = Color(0xFFA0D0CB)
 
-// Material Dark Theme Colors
-val darkColors = darkColorScheme(
-    primary = primaryGreen,
-    onPrimary = onPrimaryLight,
-    secondary = secondaryOrange,
-    onSecondary = onSecondaryLight,
-    background = backgroundLight,
-    onBackground = primaryGreen,
-    surface = surfaceLight,
-    onSurface = secondaryOrange,
-    error = errorColor,
-    onError = Color.White,
-)
+/* ORANGE */
+val OrangePrimaryLight = Color(0xFF8F4C38)
+val OrangeOnPrimaryLight = Color(0xFFFFFFFF)
+val OrangeSecondaryLight = Color(0xFF77574E)
+val OrangeSecondaryContainerLight = Color(0xFFFFDBD1)
+val OrangeOnSecondaryContainerLight = Color(0xFF5D4037)
+val OrangeTertiaryLight = Color(0xFF6C5D2F)
+
+val OrangePrimaryDark = Color(0xFFFFB5A0)
+val OrangeOnPrimaryDark = Color(0xFF561F0F)
+val OrangeSecondaryDark = Color(0xFFE7BDB2)
+val OrangeSecondaryContainerDark = Color(0xFF5D4037)
+val OrangeOnSecondaryContainerDark = Color(0xFFFFDBD1)
+val OrangeTertiaryDark = Color(0xFFD8C58D)

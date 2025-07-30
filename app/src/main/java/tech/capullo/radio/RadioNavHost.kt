@@ -8,6 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import tech.capullo.radio.ui.RadioApp
 import tech.capullo.radio.ui.RadioBroadcasterScreen
 import tech.capullo.radio.ui.RadioTuneInScreen
+import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 
 @Composable
 fun RadioCapulloNavHost(
@@ -24,15 +26,23 @@ fun RadioCapulloNavHost(
                     navController.navigate(RadioDestinations.BROADCAST_ROUTE)
                 },
                 onTuneInClicked = {
-                    navController.navigate(RadioDestinations.TUNEIN_ROUTE)
+                    navController.navigate(RadioDestinations.TUNE_IN_ROUTE)
                 },
             )
         }
         composable(RadioDestinations.BROADCAST_ROUTE) {
-            RadioBroadcasterScreen()
+            RadioTheme(
+                schemeChoice = SchemeChoice.GREEN,
+            ) {
+                RadioBroadcasterScreen()
+            }
         }
-        composable(RadioDestinations.TUNEIN_ROUTE) {
-            RadioTuneInScreen()
+        composable(RadioDestinations.TUNE_IN_ROUTE) {
+            RadioTheme(
+                schemeChoice = SchemeChoice.ORANGE,
+            ) {
+                RadioTuneInScreen()
+            }
         }
     }
 }
@@ -40,5 +50,5 @@ fun RadioCapulloNavHost(
 object RadioDestinations {
     const val HOME_ROUTE = "home"
     const val BROADCAST_ROUTE = "broadcast"
-    const val TUNEIN_ROUTE = "tunein"
+    const val TUNE_IN_ROUTE = "tune_in"
 }

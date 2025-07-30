@@ -1,7 +1,6 @@
 package tech.capullo.radio.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,10 +38,8 @@ import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.ui.theme.onSecondaryLight
-import tech.capullo.radio.ui.theme.primaryGreen
-import tech.capullo.radio.ui.theme.surfaceLight
 import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 
@@ -102,6 +99,7 @@ fun LoadingSessionScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RadioBroadcasterEspotiConnect(deviceName: String) {
     Scaffold { innerPadding ->
@@ -132,6 +130,8 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
                     text = deviceName,
                 )
             }
+            Spacer(modifier = Modifier.padding(8.dp))
+            LinearWavyProgressIndicator()
         }
     }
 }
@@ -144,8 +144,7 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .background(surfaceLight),
+                .padding(innerPadding),
         ) {
             Card(
                 modifier = Modifier
@@ -153,20 +152,17 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
                     .fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = primaryGreen),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Host Addresses:",
                         style = Typography.bodyMedium,
-                        color = Color.Black,
                     )
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                         items(items = hostAddresses) { name ->
                             Text(
                                 text = name,
                                 style = Typography.titleLarge,
-                                color = onSecondaryLight,
                             )
                         }
                     }
@@ -187,7 +183,7 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
 @Composable
 fun PreviewRadioBroadcasterEspotiConnect() {
     val deviceName = "Samsung Galaxy S21 Ultra Max"
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         RadioBroadcasterEspotiConnect(deviceName = deviceName)
     }
 }
@@ -200,7 +196,7 @@ fun PreviewRadioBroadcasterEspotiConnect() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoadingIndicator() {
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         LoadingSessionScreen()
     }
 }
@@ -209,8 +205,12 @@ fun PreviewLoadingIndicator() {
     showBackground = true,
     uiMode = UI_MODE_NIGHT_YES,
     name = "PreviewRadioBroadcasterPlaybackDark",
+    showSystemUi = true,
 )
-@Preview(showBackground = true)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+)
 @Composable
 fun PreviewRadioBroadcasterPlayback() {
     val hostAddresses = listOf("192.168.0.1", "0.0.0.0", "100.10.14.7")
@@ -287,7 +287,7 @@ fun PreviewRadioBroadcasterPlayback() {
         ),
     )
 
-    RadioTheme {
+    RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         RadioBroadcasterPlayback(
             hostAddresses = hostAddresses,
             snapcastClients = sampleClients,

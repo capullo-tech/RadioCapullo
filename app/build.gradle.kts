@@ -90,7 +90,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)
-    implementation("xyz.gianlu.librespot:librespot-player:1.6.5:thin") {
+    implementation("com.github.gsalinaslopez.librespot-java:librespot-player:776ec50:thin") {
         exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")

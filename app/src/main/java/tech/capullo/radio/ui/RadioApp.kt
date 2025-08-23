@@ -17,6 +17,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,7 +63,17 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
 
 @Composable
 fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
-    Scaffold { innerPadding ->
+    var showAudioChannelDialog by remember { mutableStateOf(false) }
+    var selectedAudioChannel by remember { mutableStateOf(AudioChannel.STEREO) }
+
+    Scaffold(
+        topBar = {
+            RadioTopBar(
+                title = "Radio Capullo",
+                onSettingsClick = { showAudioChannelDialog = true },
+            )
+        },
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,6 +122,14 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                 }
             }
         }
+    }
+
+    if (showAudioChannelDialog) {
+        AudioChannelDialog(
+            selectedChannel = selectedAudioChannel,
+            onChannelSelected = { selectedAudioChannel = it },
+            onDismiss = { showAudioChannelDialog = false },
+        )
     }
 }
 

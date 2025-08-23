@@ -89,12 +89,22 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
     val isDiscovering by radioTuneInModel.isDiscovering.collectAsState()
     val selectedServer by radioTuneInModel.selectedServer.collectAsState()
     var isTunedIn by remember { mutableStateOf(false) }
-    
+
     // For manual IP entry (fallback)
     var manualIpVisible by remember { mutableStateOf(false) }
     var manualIpText by remember { mutableStateOf(radioTuneInModel.getLastServerText()) }
 
+    // Audio channel dialog state
+    var showAudioChannelDialog by remember { mutableStateOf(false) }
+    var selectedAudioChannel by remember { mutableStateOf(AudioChannel.STEREO) }
+
     Scaffold(
+        topBar = {
+            RadioTopBar(
+                title = "Tune In",
+                onSettingsClick = { showAudioChannelDialog = true }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { radioTuneInModel.startDiscovery() },
@@ -116,9 +126,10 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             isTunedIn = isTunedIn,
             manualIpVisible = manualIpVisible,
             manualIpText = manualIpText,
+            selectedAudioChannel = selectedAudioChannel,
             onManualIpVisibilityChange = { manualIpVisible = it },
-            onManualIpTextChange = { 
-                manualIpText = it 
+            onManualIpTextChange = {
+                manualIpText = it
                 radioTuneInModel.saveLastServerText(it)
             },
             onServerSelected = { server ->
@@ -135,6 +146,14 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
                     }
                 }
             },
+        )
+    }
+
+    if (showAudioChannelDialog) {
+        AudioChannelDialog(
+            selectedChannel = selectedAudioChannel,
+            onChannelSelected = { selectedAudioChannel = it },
+            onDismiss = { showAudioChannelDialog = false }
         )
     }
 }
@@ -175,6 +194,7 @@ fun RadioTuneInScreenContent(
     isTunedIn: Boolean,
     manualIpVisible: Boolean,
     manualIpText: String,
+    selectedAudioChannel: AudioChannel,
     onManualIpVisibilityChange: (Boolean) -> Unit,
     onManualIpTextChange: (String) -> Unit,
     onServerSelected: (SnapcastServer) -> Unit,
@@ -298,7 +318,7 @@ fun RadioTuneInScreenContent(
             }
         }
         
-        // Audio channel selection and tune-in button
+        // Tune-in button
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -311,48 +331,16 @@ fun RadioTuneInScreenContent(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
-                
                 Text(
-                    text = "Audio Channel",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Selected Channel: ${selectedAudioChannel.label}",
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(
-                        ButtonGroupDefaults.ConnectedSpaceBetween,
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    AudioChannel.entries.forEach { channel ->
-                        ToggleButton(
-                            checked = selectedChannel == channel,
-                            onCheckedChange = { selectedChannel = channel },
-                            modifier = Modifier.weight(channel.modifierWeight),
-                            shapes = when (channel) {
-                                AudioChannel.LEFT -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                AudioChannel.RIGHT -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                AudioChannel.STEREO -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                            },
-                            contentPadding = PaddingValues(0.dp),
-                        ) {
-                            Icon(
-                                if (selectedChannel == channel) channel.selectedIcon else channel.unselectedIcon,
-                                contentDescription = channel.label,
-                            )
-                            Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                            Text(text = channel.label)
-                        }
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                
                 val tuneInEnabled = !isTunedIn && (selectedServer != null || (manualIpVisible && manualIpText.isNotEmpty()))
-                
+
                 Button(
-                    onClick = { onTuneInClick(selectedChannel) },
+                    onClick = { onTuneInClick(selectedAudioChannel) },
                     enabled = tuneInEnabled,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
@@ -564,10 +552,11 @@ fun PreviewRadioTuneInContent() {
             isTunedIn = false,
             manualIpVisible = false,
             manualIpText = "192.168.0.1",
+            selectedAudioChannel = AudioChannel.STEREO,
             onManualIpVisibilityChange = {},
             onManualIpTextChange = {},
             onServerSelected = {},
-            onTuneInClick = {}
+            onTuneInClick = { _ -> }
         )
     }
 }

@@ -23,6 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -46,26 +49,50 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 @Composable
 fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    var showAudioChannelDialog by remember { mutableStateOf(false) }
+    var selectedAudioChannel by remember { mutableStateOf(AudioChannel.STEREO) }
 
-    RadioBroadcasterScreenContent(uiState)
+    Scaffold(
+        topBar = {
+            RadioTopBar(
+                title = "Radio On",
+                onSettingsClick = { showAudioChannelDialog = true },
+            )
+        },
+    ) { innerPadding ->
+        RadioBroadcasterScreenContent(
+            uiState = uiState,
+            modifier = Modifier.padding(innerPadding),
+        )
+    }
+
+    if (showAudioChannelDialog) {
+        AudioChannelDialog(
+            selectedChannel = selectedAudioChannel,
+            onChannelSelected = { selectedAudioChannel = it },
+            onDismiss = { showAudioChannelDialog = false },
+        )
+    }
 }
 
 @Composable
-fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
+fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState, modifier: Modifier = Modifier) {
     when (val state = uiState) {
         is RadioBroadcasterUiState.EspotiPlayerReady -> {
             RadioBroadcasterPlayback(
                 hostAddresses = state.hostAddresses,
                 snapcastClients = state.snapcastClients,
+                modifier = modifier,
             )
         }
 
         is RadioBroadcasterUiState.EspotiConnect -> {
             if (state.isLoading) {
-                LoadingSessionScreen()
+                LoadingSessionScreen(modifier = modifier)
             } else {
                 RadioBroadcasterEspotiConnect(
                     deviceName = state.deviceName,
+                    modifier = modifier,
                 )
             }
         }
@@ -74,10 +101,10 @@ fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun LoadingSessionScreen() {
+fun LoadingSessionScreen(modifier: Modifier = Modifier) {
     Scaffold { innerPadding ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -101,10 +128,10 @@ fun LoadingSessionScreen() {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun RadioBroadcasterEspotiConnect(deviceName: String) {
+fun RadioBroadcasterEspotiConnect(deviceName: String, modifier: Modifier = Modifier) {
     Scaffold { innerPadding ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -139,10 +166,11 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
 @Composable fun RadioBroadcasterPlayback(
     hostAddresses: List<String>,
     snapcastClients: List<Client> = emptyList(),
+    modifier: Modifier = Modifier,
 ) {
     Scaffold { innerPadding ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {

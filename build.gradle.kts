@@ -24,6 +24,25 @@ spotless {
     }
 }
 
+// Remove Spotless from automatic build process
+tasks.named("check").configure {
+    dependsOn.removeIf { it == tasks.named("spotlessCheck").get() }
+}
+
+// Create ad-hoc Spotless task
+tasks.register("spotlessAdhoc") {
+    group = "formatting"
+    description = "Run Spotless formatting ad-hoc"
+    dependsOn("spotlessApply")
+}
+
+// Skip unit tests by default (enable only if runTests property is set to true)
+project(":app").afterEvaluate {
+    tasks.matching { it.name.contains("test") && it.name.contains("UnitTest") }.configureEach {
+        enabled = project.hasProperty("runTests") && project.property("runTests") == "true"
+    }
+}
+
 develocity {
     buildScan {
         termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")

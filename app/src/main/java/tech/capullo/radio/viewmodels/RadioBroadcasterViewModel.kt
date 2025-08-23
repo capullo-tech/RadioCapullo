@@ -4,9 +4,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,8 +24,11 @@ import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
+import tech.capullo.radio.services.SnapclientService
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.SnapcastControlClient
+import tech.capullo.radio.ui.AudioChannel
+import tech.capullo.radio.ui.AudioSettings
 import javax.inject.Inject
 
 sealed interface RadioBroadcasterUiState {
@@ -107,6 +112,58 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     private val _snapcastClients = MutableStateFlow<List<Client>>(emptyList())
     val snapcastClients = _snapcastClients.asStateFlow()
+
+    private fun getSharedPreferences(context: Context): SharedPreferences =
+        context.getSharedPreferences("RadioBroadcaster", Context.MODE_PRIVATE)
+
+    fun saveAudioSettings(settings: AudioSettings) {
+        getSharedPreferences(applicationContext).edit {
+            putInt("audio_channel", settings.audioChannel.ordinal)
+            putInt("audio_latency", settings.latency)
+            putFloat("audio_volume", settings.volume)
+            putBoolean("persist_audio_settings", settings.persistSettings)
+        }
+    }
+
+    fun getAudioSettings(): AudioSettings {
+        val prefs = getSharedPreferences(applicationContext)
+        val persistSettings = prefs.getBoolean("persist_audio_settings", false)
+
+        return if (persistSettings) {
+            AudioSettings(
+                audioChannel = AudioChannel.entries.getOrElse(
+                    prefs.getInt("audio_channel", AudioChannel.STEREO.ordinal),
+                ) { AudioChannel.STEREO },
+                latency = prefs.getInt("audio_latency", 0),
+                volume = prefs.getFloat("audio_volume", 1.0f),
+                persistSettings = persistSettings,
+            )
+        } else {
+            AudioSettings() // Default settings
+        }
+    }
+
+    fun startSnapclientService(audioChannel: AudioChannel) {
+        val intent = Intent(applicationContext, SnapclientService::class.java).apply {
+            putExtra(SnapclientService.KEY_IP, "127.0.0.1") // Local snapserver
+            putExtra(SnapclientService.KEY_AUDIO_CHANNEL, audioChannel.ordinal)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            applicationContext.startForegroundService(intent)
+        } else {
+            applicationContext.startService(intent)
+        }
+    }
+
+    fun restartSnapclientService(audioChannel: AudioChannel) {
+        // Stop the current service
+        val stopIntent = Intent(applicationContext, SnapclientService::class.java)
+        applicationContext.stopService(stopIntent)
+
+        // Start with new audio channel
+        startSnapclientService(audioChannel)
+    }
 
     class RadioServiceWrapper(service: RadioBroadcasterService) {
         val isPlayerLoading = service.isPlayerLoading

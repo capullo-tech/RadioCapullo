@@ -17,7 +17,7 @@ import kotlin.coroutines.resumeWithException
 
 class SnapserverProcess @Inject constructor(
     private val nsdManager: NsdManager,
-    radioRepository: RadioRepository
+    radioRepository: RadioRepository,
 ) {
 
     private val nativeLibDir = radioRepository.getNativeLibDirPath()
@@ -71,7 +71,7 @@ class SnapserverProcess @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error registering NSD service", e)
         }
-        
+
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -90,7 +90,7 @@ class SnapserverProcess @Inject constructor(
             Log.e(TAG, "Error starting snapcast process", e)
         }
     }
-    
+
     private suspend fun registerNsdService(serviceInfo: NsdServiceInfo) =
         suspendCancellableCoroutine { continuation ->
             val registrationListener = object : NsdManager.RegistrationListener {

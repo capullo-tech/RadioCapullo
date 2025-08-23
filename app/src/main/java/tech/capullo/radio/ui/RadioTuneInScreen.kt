@@ -1,5 +1,4 @@
 package tech.capullo.radio.ui
-
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -36,13 +35,11 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-//import androidx.compose.material.icons.filled.SignalWifi4Bar
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,14 +52,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,29 +88,33 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
     var manualIpVisible by remember { mutableStateOf(false) }
     var manualIpText by remember { mutableStateOf(radioTuneInModel.getLastServerText()) }
 
-    // Audio channel dialog state
-    var showAudioChannelDialog by remember { mutableStateOf(false) }
-    var selectedAudioChannel by remember { mutableStateOf(AudioChannel.STEREO) }
+    // Audio settings dialog state
+    var showAudioSettingsDialog by remember { mutableStateOf(false) }
+    var audioSettings by remember {
+        mutableStateOf(
+            radioTuneInModel.getAudioSettings(),
+        )
+    }
 
     Scaffold(
         topBar = {
             RadioTopBar(
                 title = "Tune In",
-                onSettingsClick = { showAudioChannelDialog = true }
+                onSettingsClick = { showAudioSettingsDialog = true },
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { radioTuneInModel.startDiscovery() },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
-        }
+        },
     ) { innerPadding ->
         RadioTuneInScreenContent(
             modifier = Modifier.padding(innerPadding),
@@ -126,7 +124,7 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             isTunedIn = isTunedIn,
             manualIpVisible = manualIpVisible,
             manualIpText = manualIpText,
-            selectedAudioChannel = selectedAudioChannel,
+            selectedAudioChannel = audioSettings.audioChannel,
             onManualIpVisibilityChange = { manualIpVisible = it },
             onManualIpTextChange = {
                 manualIpText = it
@@ -135,13 +133,16 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             onServerSelected = { server ->
                 radioTuneInModel.selectServer(server)
             },
-            onTuneInClick = { channel ->
+            onTuneInClick = {
                 selectedServer?.let { server ->
-                    radioTuneInModel.startSnapclientService(server, channel)
+                    radioTuneInModel.startSnapclientService(server, audioSettings.audioChannel)
                     isTunedIn = true
                 } ?: run {
                     if (manualIpVisible && manualIpText.isNotEmpty()) {
-                        radioTuneInModel.startSnapclientService(manualIpText, channel)
+                        radioTuneInModel.startSnapclientService(
+                            manualIpText,
+                            audioSettings.audioChannel,
+                        )
                         isTunedIn = true
                     }
                 }
@@ -149,11 +150,22 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
         )
     }
 
-    if (showAudioChannelDialog) {
-        AudioChannelDialog(
-            selectedChannel = selectedAudioChannel,
-            onChannelSelected = { selectedAudioChannel = it },
-            onDismiss = { showAudioChannelDialog = false }
+    if (showAudioSettingsDialog) {
+        AudioSettingsDialog(
+            currentSettings = audioSettings,
+            onSettingsChanged = { newSettings ->
+                val oldChannel = audioSettings.audioChannel
+                audioSettings = newSettings
+                radioTuneInModel.saveAudioSettings(newSettings)
+
+                // Restart Snapclient if channel changed and we're currently tuned in
+                if (newSettings.audioChannel != oldChannel && isTunedIn) {
+                    selectedServer?.let { server ->
+                        radioTuneInModel.restartSnapclientService(server, newSettings.audioChannel)
+                    }
+                }
+            },
+            onDismiss = { showAudioSettingsDialog = false },
         )
     }
 }
@@ -202,35 +214,39 @@ fun RadioTuneInScreenContent(
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
-            tonalElevation = 4.dp
+            tonalElevation = 4.dp,
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "Discover Snapcast Servers",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
-                    text = if (isDiscovering) "Scanning for servers..." else "${discoveredServers.size} servers found",
+                    text = if (isDiscovering) {
+                        "Scanning for servers..."
+                    } else {
+                        "${discoveredServers.size} servers found"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                 )
             }
         }
-        
+
         // Server list
         if (discoveredServers.isEmpty()) {
             EmptyServerList(isDiscovering, onManualIpVisibilityChange)
@@ -241,45 +257,45 @@ fun RadioTuneInScreenContent(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                contentPadding = PaddingValues(vertical = 16.dp),
             ) {
                 items(discoveredServers) { server ->
                     ServerListItem(
                         server = server,
                         isSelected = selectedServer == server,
-                        onClick = { onServerSelected(server) }
+                        onClick = { onServerSelected(server) },
                     )
                 }
-                
+
                 item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                             .clickable { onManualIpVisibilityChange(!manualIpVisible) },
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Manual IP",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Enter IP manually",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
             }
         }
-        
+
         // Manual IP input
         AnimatedVisibility(
             visible = manualIpVisible,
             enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            exit = fadeOut() + shrinkVertically(),
         ) {
             Card(
                 modifier = Modifier
@@ -293,11 +309,11 @@ fun RadioTuneInScreenContent(
                 ) {
                     Text(
                         text = "Manual IP Address",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     TextField(
                         value = manualIpText,
                         onValueChange = onManualIpTextChange,
@@ -317,7 +333,7 @@ fun RadioTuneInScreenContent(
                 }
             }
         }
-        
+
         // Tune-in button
         Card(
             modifier = Modifier
@@ -334,10 +350,12 @@ fun RadioTuneInScreenContent(
                 Text(
                     text = "Selected Channel: ${selectedAudioChannel.label}",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
 
-                val tuneInEnabled = !isTunedIn && (selectedServer != null || (manualIpVisible && manualIpText.isNotEmpty()))
+                val tuneInEnabled =
+                    !isTunedIn &&
+                        (selectedServer != null || (manualIpVisible && manualIpText.isNotEmpty()))
 
                 Button(
                     onClick = { onTuneInClick(selectedAudioChannel) },
@@ -356,17 +374,13 @@ fun RadioTuneInScreenContent(
 }
 
 @Composable
-fun ServerListItem(
-    server: SnapcastServer,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+fun ServerListItem(server: SnapcastServer, isSelected: Boolean, onClick: () -> Unit) {
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.03f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "scale"
+        label = "scale",
     )
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -374,69 +388,71 @@ fun ServerListItem(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) 
-                MaterialTheme.colorScheme.secondaryContainer 
-            else 
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
                 MaterialTheme.colorScheme.surfaceVariant
+            },
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 6.dp else 2.dp
-        )
+            defaultElevation = if (isSelected) 6.dp else 2.dp,
+        ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Signal icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
-                        color = if (isSelected) 
-                            MaterialTheme.colorScheme.primary 
-                        else 
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                        shape = CircleShape
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        },
+                        shape = CircleShape,
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Server",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // Server info
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(
                     text = server.serviceName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
-                
+
                 Text(
                     text = server.host,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
-                
+
                 Text(
                     text = "Port: ${server.port}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
             }
-            
+
             // Selection indicator
             if (isSelected) {
                 Box(
@@ -444,15 +460,15 @@ fun ServerListItem(
                         .size(32.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
+                            shape = CircleShape,
                         ),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Selected",
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
@@ -461,64 +477,61 @@ fun ServerListItem(
 }
 
 @Composable
-fun EmptyServerList(
-    isDiscovering: Boolean,
-    onManualIpVisibilityChange: (Boolean) -> Unit
-) {
+fun EmptyServerList(isDiscovering: Boolean, onManualIpVisibilityChange: (Boolean) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(32.dp),
-            //.weight(1f),
+        // .weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         if (isDiscovering) {
             CircularProgressIndicator(
                 modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Searching for Snapcast servers...",
                 style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "No servers found",
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "No Snapcast servers found",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "Make sure Snapcast servers are running on your network",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = { onManualIpVisibilityChange(true) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
             ) {
                 Text("Enter IP Manually")
             }
@@ -541,7 +554,7 @@ fun PreviewRadioTuneInContent() {
     val sampleServers = listOf(
         SnapcastServer("Living Room Snapcast", "192.168.0.10", 1704),
         SnapcastServer("Kitchen Audio", "192.168.0.15", 1704),
-        SnapcastServer("Bedroom Speaker", "192.168.0.20", 1704)
+        SnapcastServer("Bedroom Speaker", "192.168.0.20", 1704),
     )
 
     RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
@@ -556,7 +569,7 @@ fun PreviewRadioTuneInContent() {
             onManualIpVisibilityChange = {},
             onManualIpTextChange = {},
             onServerSelected = {},
-            onTuneInClick = { _ -> }
+            onTuneInClick = { _ -> },
         )
     }
 }
@@ -570,7 +583,7 @@ fun PreviewEmptyServerList() {
     RadioTheme(schemeChoice = SchemeChoice.GREEN) {
         EmptyServerList(
             isDiscovering = false,
-            onManualIpVisibilityChange = {}
+            onManualIpVisibilityChange = {},
         )
     }
 }
@@ -585,7 +598,7 @@ fun PreviewServerListItem() {
         ServerListItem(
             server = SnapcastServer("Living Room Snapcast", "192.168.0.10", 1704),
             isSelected = true,
-            onClick = {}
+            onClick = {},
         )
     }
 }

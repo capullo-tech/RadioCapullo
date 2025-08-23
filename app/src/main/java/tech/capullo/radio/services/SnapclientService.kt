@@ -82,6 +82,9 @@ class SnapclientService : Service() {
     }
 
     private fun startSnapclient(snapserverIp: String, audioChannel: Int) {
+        // Cancel any existing job
+        snapclientJob?.cancel()
+
         snapclientJob =
             scope.launch {
                 snapclientProcess.start(
@@ -89,6 +92,11 @@ class SnapclientService : Service() {
                     audioChannel = audioChannel,
                 )
             }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        snapclientJob?.cancel()
     }
 
     companion object {

@@ -49,14 +49,14 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 @Composable
 fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    var showAudioChannelDialog by remember { mutableStateOf(false) }
-    var selectedAudioChannel by remember { mutableStateOf(AudioChannel.STEREO) }
+    var showAudioSettingsDialog by remember { mutableStateOf(false) }
+    var audioSettings by remember { mutableStateOf(AudioSettings()) }
 
     Scaffold(
         topBar = {
             RadioTopBar(
                 title = "Radio On",
-                onSettingsClick = { showAudioChannelDialog = true },
+                onSettingsClick = { showAudioSettingsDialog = true },
             )
         },
     ) { innerPadding ->
@@ -66,11 +66,11 @@ fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel(
         )
     }
 
-    if (showAudioChannelDialog) {
-        AudioChannelDialog(
-            selectedChannel = selectedAudioChannel,
-            onChannelSelected = { selectedAudioChannel = it },
-            onDismiss = { showAudioChannelDialog = false },
+    if (showAudioSettingsDialog) {
+        AudioSettingsDialog(
+            currentSettings = audioSettings,
+            onSettingsChanged = { audioSettings = it },
+            onDismiss = { showAudioSettingsDialog = false },
         )
     }
 }

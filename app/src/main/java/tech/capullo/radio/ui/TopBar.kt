@@ -22,7 +22,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -66,13 +65,6 @@ fun RadioTopBar(title: String, onSettingsClick: () -> Unit, modifier: Modifier =
         modifier = modifier,
     )
 }
-
-data class AudioSettings(
-    val audioChannel: AudioChannel = AudioChannel.STEREO,
-    val latency: Int = 0,
-    val volume: Float = 1.0f,
-    val persistSettings: Boolean = false,
-)
 
 @Composable
 fun AudioSettingsDialog(
@@ -118,18 +110,9 @@ fun AudioSettingsDialog(
                         ToggleButton(
                             checked = selectedChannel == channel,
                             onCheckedChange = { if (it) selectedChannel = channel },
-                            modifier = Modifier.weight(channel.modifierWeight),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
                         ) {
-                            Icon(
-                                if (selectedChannel == channel) {
-                                    channel.selectedIcon
-                                } else {
-                                    channel.unselectedIcon
-                                },
-                                contentDescription = channel.label,
-                            )
-                            Spacer(Modifier.width(ToggleButtonDefaults.IconSpacing))
                             Text(text = channel.label)
                         }
                     }

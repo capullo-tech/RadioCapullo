@@ -47,10 +47,13 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 
 @Composable
-fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
+fun RadioBroadcasterScreen(
+    audioSettings: AudioSettings,
+    onAudioSettingsChanged: (AudioSettings) -> Unit,
+    viewModel: RadioBroadcasterViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     var showAudioSettingsDialog by remember { mutableStateOf(false) }
-    var audioSettings by remember { mutableStateOf(viewModel.getAudioSettings()) }
 
     Scaffold(
         topBar = {
@@ -71,8 +74,7 @@ fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel(
             currentSettings = audioSettings,
             onSettingsChanged = { newSettings ->
                 val oldChannel = audioSettings.audioChannel
-                audioSettings = newSettings
-                viewModel.saveAudioSettings(newSettings)
+                onAudioSettingsChanged(newSettings)
 
                 // Restart Snapclient if channel changed
                 if (newSettings.audioChannel != oldChannel) {

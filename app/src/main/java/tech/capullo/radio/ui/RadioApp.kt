@@ -1,6 +1,7 @@
 package tech.capullo.radio.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -32,7 +34,12 @@ import tech.capullo.radio.ui.theme.SchemeChoice
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
+fun RadioApp(
+    audioSettings: AudioSettings,
+    onAudioSettingsChanged: (AudioSettings) -> Unit,
+    onStartBroadcastingClicked: () -> Unit,
+    onTuneInClicked: () -> Unit,
+) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val multiplePermissionsState =
             rememberMultiplePermissionsState(
@@ -43,6 +50,8 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
             )
         if (multiplePermissionsState.allPermissionsGranted) {
             RadioMainScreen(
+                audioSettings = audioSettings,
+                onAudioSettingsChanged = onAudioSettingsChanged,
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
                 onTuneInClicked = onTuneInClicked,
             )
@@ -55,6 +64,8 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
     } else {
         // For devices below TIRAMISU, show the main screen directly
         RadioMainScreen(
+            audioSettings = audioSettings,
+            onAudioSettingsChanged = onAudioSettingsChanged,
             onStartBroadcastingClicked = onStartBroadcastingClicked,
             onTuneInClicked = onTuneInClicked,
         )
@@ -62,9 +73,13 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
 }
 
 @Composable
-fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
+fun RadioMainScreen(
+    audioSettings: AudioSettings,
+    onAudioSettingsChanged: (AudioSettings) -> Unit,
+    onStartBroadcastingClicked: () -> Unit,
+    onTuneInClicked: () -> Unit,
+) {
     var showAudioSettingsDialog by remember { mutableStateOf(false) }
-    var audioSettings by remember { mutableStateOf(AudioSettings()) }
 
     Scaffold(
         topBar = {
@@ -124,10 +139,27 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
         }
     }
 
+    val context = LocalContext.current
+
     if (showAudioSettingsDialog) {
         AudioSettingsDialog(
             currentSettings = audioSettings,
-            onSettingsChanged = { audioSettings = it },
+            onSettingsChanged = { newSettings ->
+                val oldChannel = audioSettings.audioChannel
+                onAudioSettingsChanged(newSettings)
+
+                // Restart snapclient if audio channel changed and it's running
+                if (oldChannel != newSettings.audioChannel) {
+                    val intent = Intent(
+                        context,
+                        tech.capullo.radio.services.SnapclientService::class.java,
+                    ).apply {
+                        action = "RESTART_SNAPCLIENT"
+                        putExtra("NEW_AUDIO_CHANNEL", newSettings.audioChannel.ordinal)
+                    }
+                    context.startService(intent)
+                }
+            },
             onDismiss = { showAudioSettingsDialog = false },
         )
     }
@@ -147,6 +179,8 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
 fun RadioAppPreview() {
     RadioTheme {
         RadioMainScreen(
+            audioSettings = AudioSettings(),
+            onAudioSettingsChanged = {},
             onStartBroadcastingClicked = {},
             onTuneInClicked = {},
         )

@@ -17,6 +17,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -29,6 +30,19 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+enum class AudioChannel(val label: String) {
+    LEFT("Left"),
+    STEREO("Stereo"),
+    RIGHT("Right"),
+}
+
+data class AudioSettings(
+    val audioChannel: AudioChannel = AudioChannel.STEREO,
+    val latency: Int = 0,
+    val volume: Float = 1.0f,
+    val persistSettings: Boolean = true,
+)
+
 @Composable
 fun AudioSettingsDialog(
     currentSettings: AudioSettings,
@@ -39,6 +53,14 @@ fun AudioSettingsDialog(
     var latency by remember { mutableIntStateOf(currentSettings.latency) }
     var volume by remember { mutableFloatStateOf(currentSettings.volume) }
     var persistSettings by remember { mutableStateOf(currentSettings.persistSettings) }
+
+    // Update local state when currentSettings changes
+    LaunchedEffect(currentSettings) {
+        audioChannel = currentSettings.audioChannel
+        latency = currentSettings.latency
+        volume = currentSettings.volume
+        persistSettings = currentSettings.persistSettings
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -70,7 +92,17 @@ fun AudioSettingsDialog(
                                 .fillMaxWidth()
                                 .selectable(
                                     selected = (audioChannel == channel),
-                                    onClick = { audioChannel = channel },
+                                    onClick = {
+                                        val newChannel = channel
+                                        audioChannel = newChannel
+                                        val newSettings = AudioSettings(
+                                            audioChannel = newChannel,
+                                            latency = latency,
+                                            volume = volume,
+                                            persistSettings = persistSettings,
+                                        )
+                                        onSettingsChanged(newSettings)
+                                    },
                                     role = Role.RadioButton,
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
@@ -96,7 +128,15 @@ fun AudioSettingsDialog(
                 OutlinedTextField(
                     value = latency.toString(),
                     onValueChange = { newValue ->
-                        latency = newValue.toIntOrNull() ?: 0
+                        val newLatency = newValue.toIntOrNull() ?: 0
+                        latency = newLatency
+                        val newSettings = AudioSettings(
+                            audioChannel = audioChannel,
+                            latency = newLatency,
+                            volume = volume,
+                            persistSettings = persistSettings,
+                        )
+                        onSettingsChanged(newSettings)
                     },
                     label = { Text("Latency") },
                     modifier = Modifier.fillMaxWidth(),
@@ -109,7 +149,16 @@ fun AudioSettingsDialog(
                 )
                 Slider(
                     value = volume,
-                    onValueChange = { volume = it },
+                    onValueChange = { newVolume ->
+                        volume = newVolume
+                        val newSettings = AudioSettings(
+                            audioChannel = audioChannel,
+                            latency = latency,
+                            volume = newVolume,
+                            persistSettings = persistSettings,
+                        )
+                        onSettingsChanged(newSettings)
+                    },
                     valueRange = 0f..1f,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -126,30 +175,23 @@ fun AudioSettingsDialog(
                     )
                     Switch(
                         checked = persistSettings,
-                        onCheckedChange = { persistSettings = it },
+                        onCheckedChange = { newPersistSettings ->
+                            persistSettings = newPersistSettings
+                            val newSettings = AudioSettings(
+                                audioChannel = audioChannel,
+                                latency = latency,
+                                volume = volume,
+                                persistSettings = newPersistSettings,
+                            )
+                            onSettingsChanged(newSettings)
+                        },
                     )
                 }
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    val newSettings = AudioSettings(
-                        audioChannel = audioChannel,
-                        latency = latency,
-                        volume = volume,
-                        persistSettings = persistSettings,
-                    )
-                    onSettingsChanged(newSettings)
-                    onDismiss()
-                },
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
             Button(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Close")
             }
         },
     )

@@ -30,14 +30,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,7 +57,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -78,7 +71,11 @@ import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.RadioTuneInModel
 
 @Composable
-fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
+fun RadioTuneInScreen(
+    audioSettings: AudioSettings,
+    onAudioSettingsChanged: (AudioSettings) -> Unit,
+    radioTuneInModel: RadioTuneInModel = hiltViewModel(),
+) {
     val discoveredServers by radioTuneInModel.discoveredServers.collectAsState()
     val isDiscovering by radioTuneInModel.isDiscovering.collectAsState()
     val selectedServer by radioTuneInModel.selectedServer.collectAsState()
@@ -90,11 +87,6 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
 
     // Audio settings dialog state
     var showAudioSettingsDialog by remember { mutableStateOf(false) }
-    var audioSettings by remember {
-        mutableStateOf(
-            radioTuneInModel.getAudioSettings(),
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -155,8 +147,7 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             currentSettings = audioSettings,
             onSettingsChanged = { newSettings ->
                 val oldChannel = audioSettings.audioChannel
-                audioSettings = newSettings
-                radioTuneInModel.saveAudioSettings(newSettings)
+                onAudioSettingsChanged(newSettings)
 
                 // Restart Snapclient if channel changed and we're currently tuned in
                 if (newSettings.audioChannel != oldChannel && isTunedIn) {
@@ -168,32 +159,6 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             onDismiss = { showAudioSettingsDialog = false },
         )
     }
-}
-
-enum class AudioChannel(
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
-    val modifierWeight: Float,
-    val label: String,
-) {
-    LEFT(
-        selectedIcon = Icons.Filled.MoreVert,
-        unselectedIcon = Icons.Outlined.MoreVert,
-        modifierWeight = 1f,
-        "Left",
-    ),
-    STEREO(
-        selectedIcon = Icons.Filled.Notifications,
-        unselectedIcon = Icons.Outlined.Notifications,
-        modifierWeight = 1.5f,
-        "Stereo",
-    ),
-    RIGHT(
-        selectedIcon = Icons.Filled.PlayArrow,
-        unselectedIcon = Icons.Outlined.PlayArrow,
-        modifierWeight = 1f,
-        "Right",
-    ),
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)

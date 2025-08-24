@@ -26,15 +26,31 @@ class SnapclientService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var snapclientJob: Job? = null
+    private var currentSnapserverIp: String? = null
+    private var currentAudioChannel: Int = AudioChannel.STEREO.ordinal
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
-        val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, AudioChannel.STEREO.ordinal)
+        when (intent?.action) {
+            "RESTART_SNAPCLIENT" -> {
+                val newAudioChannel = intent.getIntExtra(
+                    "NEW_AUDIO_CHANNEL",
+                    AudioChannel.STEREO.ordinal,
+                )
+                restartSnapclient(newAudioChannel)
+            }
+            else -> {
+                val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
+                val audioChannel = intent.getIntExtra(
+                    KEY_AUDIO_CHANNEL,
+                    AudioChannel.STEREO.ordinal,
+                )
 
-        startForeground()
-        startSnapclient(snapserverIp, audioChannel)
+                startForeground()
+                startSnapclient(snapserverIp, audioChannel)
+            }
+        }
 
         return START_NOT_STICKY
     }
@@ -85,6 +101,9 @@ class SnapclientService : Service() {
         // Cancel any existing job
         snapclientJob?.cancel()
 
+        currentSnapserverIp = snapserverIp
+        currentAudioChannel = audioChannel
+
         snapclientJob =
             scope.launch {
                 snapclientProcess.start(
@@ -93,6 +112,14 @@ class SnapclientService : Service() {
                 )
             }
     }
+
+    fun restartSnapclient(newAudioChannel: Int) {
+        currentSnapserverIp?.let { ip ->
+            startSnapclient(ip, newAudioChannel)
+        }
+    }
+
+    fun isSnapclientRunning(): Boolean = snapclientJob?.isActive == true
 
     override fun onDestroy() {
         super.onDestroy()

@@ -176,12 +176,16 @@ fun HelpTooltip() {
     val tooltipState = rememberTooltipState(isPersistent = true)
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-            positioning = TooltipAnchorPosition.Above, // Better for mobile
-            spacingBetweenTooltipAndAnchor = 8.dp, // Add some breathing room
+            positioning = TooltipAnchorPosition.Above,
+            spacingBetweenTooltipAndAnchor = 8.dp,
         ),
         tooltip = {
             RichTooltip(
-                title = { Text("How to Use Radio Capullo") },
+                title = {
+                    Text(
+                        "How to Use Radio Capullo",
+                    )
+                },
                 action = {
                     TextButton(
                         onClick = {
@@ -203,11 +207,12 @@ fun HelpTooltip() {
     ) {
         IconButton(
             onClick = { scope.launch { tooltipState.show() } },
-            modifier = Modifier.size(48.dp) // Larger touch target
+            modifier = Modifier.size(56.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Info,
                 contentDescription = "Help information",
+                modifier = Modifier.size(32.dp)
             )
         }
     }

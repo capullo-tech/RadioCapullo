@@ -5,34 +5,22 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Filled
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.twotone.MailOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,14 +34,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.launch
-import tech.capullo.radio.R
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 
@@ -88,32 +74,32 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
         ) {
-                Text(
-                    "Radio Capullo",
-                    style = MaterialTheme.typography.displayMediumEmphasized,
-                    modifier = Modifier.padding(start = 24.dp),
-                )
-                Text(
-                    "Broadcast music to other phones",
-                    fontSize = 28.sp,
-                    modifier = Modifier.padding(start = 24.dp),
-                )
+            Text(
+                "Radio Capullo",
+                style = MaterialTheme.typography.displayMediumEmphasized,
+                modifier = Modifier.padding(start = 24.dp),
+            )
+            Text(
+                "Broadcast music to other phones",
+                fontSize = 28.sp,
+                modifier = Modifier.padding(start = 24.dp),
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 RadioTheme(
                     schemeChoice = SchemeChoice.GREEN,
@@ -139,7 +125,7 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
 
                 Column(
                     horizontalAlignment = Alignment.End,
-                    modifier = Modifier.width(320.dp)
+                    modifier = Modifier.width(320.dp),
                 ) {
                     RadioTheme(
                         schemeChoice = SchemeChoice.ORANGE,
@@ -182,9 +168,7 @@ fun HelpTooltip() {
         tooltip = {
             RichTooltip(
                 title = {
-                    Text(
-                        "How to Use Radio Capullo",
-                    )
+                    Text("How to Use Radio Capullo")
                 },
                 action = {
                     TextButton(
@@ -192,9 +176,11 @@ fun HelpTooltip() {
                             scope.launch {
                                 tooltipState.dismiss()
                             }
-                        }
-                    ) { Text("Got it") }
-                }
+                        },
+                    ) {
+                        Text("Got it")
+                    }
+                },
             ) {
                 Column {
                     Text("• Start broadcasting: Tap RADIO-ON to share your music")
@@ -203,16 +189,16 @@ fun HelpTooltip() {
                 }
             }
         },
-        state = tooltipState
+        state = tooltipState,
     ) {
         IconButton(
             onClick = { scope.launch { tooltipState.show() } },
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(56.dp),
         ) {
             Icon(
-                imageVector = Icons.Filled.Info,
+                imageVector = Filled.Info,
                 contentDescription = "Help information",
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             )
         }
     }

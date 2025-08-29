@@ -16,15 +16,13 @@ data object Broadcast
 data object TuneIn
 
 @Composable
-fun RadioCapulloNavHost(
-) {
-
+fun RadioCapulloNavHost() {
     val backStack = remember { mutableStateListOf<Any>(Home) }
 
     NavDisplay(
         backStack = backStack,
         entryProvider = { key ->
-            when(key) {
+            when (key) {
                 is Home -> NavEntry(key) {
                     RadioApp(
                         onStartBroadcastingClicked = { backStack.add(Broadcast) },
@@ -50,6 +48,6 @@ fun RadioCapulloNavHost(
 
                 else -> NavEntry(Unit) {}
             }
-        }
+        },
     )
 }

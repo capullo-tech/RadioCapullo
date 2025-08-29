@@ -93,87 +93,10 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
 fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
     Scaffold { innerPadding ->
         Column(
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            Text(
-                "Radio Capullo",
-                style = MaterialTheme.typography.displayMediumEmphasized,
-                modifier = Modifier.padding(start = 24.dp),
-            )
-            Text(
-                "Broadcast music to other phones",
-                fontSize = 28.sp,
-                modifier = Modifier.padding(start = 24.dp),
-            )
-        }
-        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(innerPadding)
         ) {
-            RadioTheme(
-                schemeChoice = SchemeChoice.GREEN,
-            ) {
-                Button(
-                    onClick = onStartBroadcastingClicked,
-                    modifier = Modifier.width(320.dp),
-                    elevation = ButtonDefaults.buttonElevation(2.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                ) {
-                    Text(
-                        "RADIO-ON",
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(vertical = 24.dp),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(64.dp))
-            Column(
-                horizontalAlignment = Alignment.End,
-                modifier = Modifier.width(320.dp)
-            ) {
-                RadioTheme(
-                    schemeChoice = SchemeChoice.ORANGE,
-                ) {
-                    Button(
-                        onClick = onTuneInClicked,
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = ButtonDefaults.buttonElevation(4.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        ),
-                    ) {
-                        Text(
-                            "TUNE-IN",
-                            style = MaterialTheme.typography.displayLarge,
-                            modifier = Modifier.padding(vertical = 24.dp),
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                HelpTooltip()
-            }
-        }
-    }
-    /*
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            //verticalArrangement = Arrangement.Center,
-            //horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Column(
-                //modifier = Modifier.weight(1f)
-            ) {
                 Text(
                     "Radio Capullo",
                     style = MaterialTheme.typography.displayMediumEmphasized,
@@ -184,83 +107,66 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                     fontSize = 28.sp,
                     modifier = Modifier.padding(start = 24.dp),
                 )
-            }
+
+            Spacer(modifier = Modifier.weight(1f))
 
             Column(
-                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Button(
-                    onClick = {},
-                    //contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                ) {
-                    Icon(
-                        imageVector = Filled.Settings,
-                        contentDescription = "somm",
-                        modifier = Modifier.size(ButtonDefaults.IconSize)
-                    )
-                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text(
-                        "RADIO-ON",
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.End
+                RadioTheme(
+                    schemeChoice = SchemeChoice.GREEN,
                 ) {
                     Button(
-                        onClick = {},
-                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                        onClick = onStartBroadcastingClicked,
+                        modifier = Modifier.width(320.dp),
+                        elevation = ButtonDefaults.buttonElevation(2.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = "somm",
-                            modifier = Modifier.size(ButtonDefaults.IconSize)
-                        )
-                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                         Text(
-                            "Radio-on",
+                            "RADIO-ON",
+                            style = MaterialTheme.typography.displayLarge,
+                            modifier = Modifier.padding(vertical = 24.dp),
                         )
                     }
+                }
 
-                    val scope = rememberCoroutineScope()
-                    val plainTooltipText = "how to use Radio Capullo"
-                    val tooltipState = rememberTooltipState(isPersistent = true)
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                            positioning = TooltipAnchorPosition.Below,
-                        ),
-                        tooltip = {
-                            RichTooltip(
-                                title = { Text("Title of the tooltip") },
-                                action = {
-                                    TextButton(
-                                        onClick = {
-                                            scope.launch {
-                                                tooltipState.dismiss()
-                                            }
-                                        }
-                                    ) { Text("Dismiss") }
-                                }
-                            ) { Text(plainTooltipText) }
-                        },
-                        state = tooltipState
+                Spacer(modifier = Modifier.height(64.dp))
+
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.width(320.dp)
+                ) {
+                    RadioTheme(
+                        schemeChoice = SchemeChoice.ORANGE,
                     ) {
-                        IconButton(
-                            onClick = { scope.launch { tooltipState.show() } },
+                        Button(
+                            onClick = onTuneInClicked,
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = ButtonDefaults.buttonElevation(4.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = "Localized Description",
+                            Text(
+                                "TUNE-IN",
+                                style = MaterialTheme.typography.displayLarge,
+                                modifier = Modifier.padding(vertical = 24.dp),
                             )
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HelpTooltip()
                 }
             }
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
-     */
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

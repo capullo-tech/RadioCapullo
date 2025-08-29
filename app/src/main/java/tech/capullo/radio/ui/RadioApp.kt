@@ -5,6 +5,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,7 +119,7 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                 Button(
                     onClick = onStartBroadcastingClicked,
                     modifier = Modifier.width(320.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp),
+                    elevation = ButtonDefaults.buttonElevation(2.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -133,27 +134,32 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
             }
 
             Spacer(modifier = Modifier.height(64.dp))
-            RadioTheme(
-                schemeChoice = SchemeChoice.ORANGE,
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.width(320.dp)
             ) {
-                Button(
-                    onClick = onTuneInClicked,
-                    modifier = Modifier.width(320.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                RadioTheme(
+                    schemeChoice = SchemeChoice.ORANGE,
                 ) {
-                    Text(
-                        "TUNE-IN",
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(vertical = 24.dp),
-                    )
+                    Button(
+                        onClick = onTuneInClicked,
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = ButtonDefaults.buttonElevation(4.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) {
+                        Text(
+                            "TUNE-IN",
+                            style = MaterialTheme.typography.displayLarge,
+                            modifier = Modifier.padding(vertical = 24.dp),
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                HelpTooltip()
             }
-            // =====================================================================================
-            HelpTooltip()
         }
     }
     /*

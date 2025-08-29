@@ -36,6 +36,7 @@ import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
@@ -71,7 +72,6 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
                 onTuneInClicked = onTuneInClicked,
             )
-            //PlainTooltipExample()
         } else {
             // Launch the permission request
             LaunchedEffect(multiplePermissionsState) {
@@ -87,84 +87,76 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PlainTooltipExample(
-    modifier: Modifier = Modifier,
-    plainTooltipText: String = "Add to favorites"
-) {
-    val tooltipState = rememberTooltipState()
-    val scope = rememberCoroutineScope()
-    Scaffold { innerPadding ->
-        Column(
-                    modifier = Modifier
-                    .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            Text(plainTooltipText)
-            TooltipBox(
-                modifier = modifier,
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = {
-                    PlainTooltip { Text(plainTooltipText) }
-                },
-                state = tooltipState
-            ) {
-                IconButton(onClick = { /* Do something... */ }) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = "Add to favorites"
-                    )
-                }
-            }
-            Spacer(Modifier.requiredHeight(30.dp))
-            OutlinedButton(
-                onClick = { scope.launch { tooltipState.show() } }
-            ) {
-                Text("Display tooltip")
-            }
-
-
-
-            val tooltipState2 = rememberTooltipState(
-                isPersistent = true,
-            )
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-                tooltip = {
-                    RichTooltip(
-                        title = { Text(plainTooltipText) },
-                        action = {
-                            TextButton(
-                                onClick = {
-                                    scope.launch {
-                                        tooltipState2.dismiss()
-                                    }
-                                }
-                            ) { Text(plainTooltipText) }
-                        }
-                    ) { Text(plainTooltipText) }
-                },
-                state = tooltipState2
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = "Localized Description"
-                )
-            }
-            Spacer(Modifier.requiredHeight(30.dp))
-            OutlinedButton(
-                onClick = { scope.launch { tooltipState2.show() } }
-            ) {
-                Text("Display tooltip")
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
+    Scaffold { innerPadding ->
+        Column(
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            Text(
+                "Radio Capullo",
+                style = MaterialTheme.typography.displayMediumEmphasized,
+                modifier = Modifier.padding(start = 24.dp),
+            )
+            Text(
+                "Broadcast music to other phones",
+                fontSize = 28.sp,
+                modifier = Modifier.padding(start = 24.dp),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            RadioTheme(
+                schemeChoice = SchemeChoice.GREEN,
+            ) {
+                Button(
+                    onClick = onStartBroadcastingClicked,
+                    modifier = Modifier.width(320.dp),
+                    elevation = ButtonDefaults.buttonElevation(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Text(
+                        "RADIO-ON",
+                        style = MaterialTheme.typography.displayLarge,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(64.dp))
+            RadioTheme(
+                schemeChoice = SchemeChoice.ORANGE,
+            ) {
+                Button(
+                    onClick = onTuneInClicked,
+                    modifier = Modifier.width(320.dp),
+                    elevation = ButtonDefaults.buttonElevation(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Text(
+                        "TUNE-IN",
+                        style = MaterialTheme.typography.displayLarge,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
+            }
+            // =====================================================================================
+            HelpTooltip()
+        }
+    }
+    /*
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -228,29 +220,29 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
 
                     val scope = rememberCoroutineScope()
                     val plainTooltipText = "how to use Radio Capullo"
-                    val tooltipState2 = rememberTooltipState(
-                        isPersistent = true,
-                    )
+                    val tooltipState = rememberTooltipState(isPersistent = true)
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = TooltipAnchorPosition.Below,
+                        ),
                         tooltip = {
                             RichTooltip(
-                                title = { Text(plainTooltipText) },
+                                title = { Text("Title of the tooltip") },
                                 action = {
                                     TextButton(
                                         onClick = {
                                             scope.launch {
-                                                tooltipState2.dismiss()
+                                                tooltipState.dismiss()
                                             }
                                         }
-                                    ) { Text(plainTooltipText) }
+                                    ) { Text("Dismiss") }
                                 }
                             ) { Text(plainTooltipText) }
                         },
-                        state = tooltipState2
+                        state = tooltipState
                     ) {
                         IconButton(
-                            onClick = { scope.launch { tooltipState2.show() } },
+                            onClick = { scope.launch { tooltipState.show() } },
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Info,
@@ -260,48 +252,44 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
                     }
                 }
             }
-            /*
-            RadioTheme(
-                schemeChoice = SchemeChoice.GREEN,
-            ) {
-                Button(
-                    onClick = onStartBroadcastingClicked,
-                    modifier = Modifier.width(320.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                ) {
-                    Text(
-                        "RADIO-ON",
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(vertical = 24.dp),
-                    )
-                }
-            }
+        }
+    }
+     */
+}
 
-            Spacer(modifier = Modifier.height(64.dp))
-            RadioTheme(
-                schemeChoice = SchemeChoice.ORANGE,
-            ) {
-                Button(
-                    onClick = onTuneInClicked,
-                    modifier = Modifier.width(320.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                ) {
-                    Text(
-                        "TUNE-IN",
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(vertical = 24.dp),
-                    )
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HelpTooltip() {
+    val scope = rememberCoroutineScope()
+    val plainTooltipText = "how to use Radio Capullo"
+    val tooltipState = rememberTooltipState(isPersistent = true)
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            positioning = TooltipAnchorPosition.Below,
+        ),
+        tooltip = {
+            RichTooltip(
+                title = { Text("Title of the tooltip") },
+                action = {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                tooltipState.dismiss()
+                            }
+                        }
+                    ) { Text("Dismiss") }
                 }
-            }
-             */
+            ) { Text(plainTooltipText) }
+        },
+        state = tooltipState
+    ) {
+        IconButton(
+            onClick = { scope.launch { tooltipState.show() } },
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = "Localized Description",
+            )
         }
     }
 }
@@ -324,10 +312,4 @@ fun RadioAppPreview() {
             onTuneInClicked = {},
         )
     }
-}
-
-@Preview
-@Composable
-fun PP() {
-    RadioTheme { PlainTooltipExample() }
 }

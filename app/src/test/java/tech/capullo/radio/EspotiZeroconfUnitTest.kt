@@ -1,6 +1,12 @@
 package tech.capullo.radio
 
+import org.junit.Test
+
 class EspotiZeroconfUnitTest {
+    @Test
+    fun ss() {
+        println("something")
+    }
     /*
     private suspend fun testClientSocket(hostname: String, port: Int) =
         aSocket(SelectorManager(Dispatchers.IO))

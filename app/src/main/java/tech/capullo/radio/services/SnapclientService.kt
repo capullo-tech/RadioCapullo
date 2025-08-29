@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -15,10 +16,16 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.ui.AudioChannel
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @AndroidEntryPoint
 class SnapclientService : Service() {
@@ -27,7 +34,13 @@ class SnapclientService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var snapclientJob: Job? = null
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    private val binder = LocalBinder()
+    inner class LocalBinder : Binder() {
+        fun launchSnapclient(snapserverIp: String, audioChannel: Int) =
+            startSnapclient(snapserverIp, audioChannel)
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
@@ -82,6 +95,7 @@ class SnapclientService : Service() {
     }
 
     private fun startSnapclient(snapserverIp: String, audioChannel: Int) {
+        snapclientJob?.cancel()
         snapclientJob =
             scope.launch {
                 snapclientProcess.start(
@@ -89,6 +103,16 @@ class SnapclientService : Service() {
                     audioChannel = audioChannel,
                 )
             }
+    }
+
+    suspend fun ss() {
+        snapclientJob?.cancel()
+        try {
+            snapclientJob?.join()
+        } catch (_: CancellationException) {
+            currentCoroutineContext().ensureActive() // throws if the current coroutine was cancelled
+        }
+        snapclientJob = scope.launch { snapclientProcess.start() }
     }
 
     companion object {

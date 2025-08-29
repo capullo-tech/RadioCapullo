@@ -31,6 +31,7 @@ class TuneInScreen {
                 isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                onChannelChanged = {},
             )
         }
 
@@ -58,6 +59,7 @@ class TuneInScreen {
                 isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                onChannelChanged = {},
             )
         }
 
@@ -91,6 +93,7 @@ class TuneInScreen {
                 isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                onChannelChanged = {},
             )
         }
 

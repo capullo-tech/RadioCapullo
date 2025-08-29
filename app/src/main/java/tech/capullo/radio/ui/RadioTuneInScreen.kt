@@ -74,6 +74,9 @@ fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
                 radioTuneInModel.startSnapclientService(lastServerText, channel)
                 isTunedIn = true
             },
+            onChannelChanged = { channel ->
+                radioTuneInModel.launchSnapclient(channel)
+            }
         )
     }
 }
@@ -112,6 +115,7 @@ fun RadioTuneInScreenContent(
     isTunedIn: Boolean,
     onTextChange: (String) -> Unit,
     onTuneInClick: (channel: AudioChannel) -> Unit,
+    onChannelChanged: (channel: AudioChannel) -> Unit,
 ) {
     Scaffold { innerPadding ->
         Column(
@@ -162,44 +166,51 @@ fun RadioTuneInScreenContent(
                     )
 
                     var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(
-                            ButtonGroupDefaults.ConnectedSpaceBetween,
-                        ),
-                    ) {
-                        AudioChannel.entries.forEach { channel ->
-                            ToggleButton(
-                                checked = selectedChannel == channel,
-                                onCheckedChange = { selectedChannel = channel },
-                                modifier = Modifier.weight(channel.modifierWeight),
-                                shapes =
-                                when (channel) {
-                                    AudioChannel.LEFT -> {
-                                        ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                    }
-                                    AudioChannel.RIGHT -> {
-                                        ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                    }
-                                    AudioChannel.STEREO -> {
-                                        ButtonGroupDefaults.connectedMiddleButtonShapes()
-                                    }
-                                },
-                                contentPadding = PaddingValues(0.dp),
-                            ) {
-                                Icon(
-                                    if (selectedChannel ==
-                                        channel
-                                    ) {
-                                        channel.selectedIcon
-                                    } else {
-                                        channel.unselectedIcon
+                    if (isTunedIn) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(
+                                ButtonGroupDefaults.ConnectedSpaceBetween,
+                            ),
+                        ) {
+                            AudioChannel.entries.forEach { channel ->
+                                ToggleButton(
+                                    checked = selectedChannel == channel,
+                                    onCheckedChange = {
+                                        selectedChannel = channel
+                                        onChannelChanged(selectedChannel)
                                     },
-                                    contentDescription = channel.label,
-                                )
-                                Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                                Text(
-                                    text = channel.label,
-                                )
+                                    modifier = Modifier.weight(channel.modifierWeight),
+                                    shapes =
+                                        when (channel) {
+                                            AudioChannel.LEFT -> {
+                                                ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                            }
+
+                                            AudioChannel.RIGHT -> {
+                                                ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                            }
+
+                                            AudioChannel.STEREO -> {
+                                                ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                            }
+                                        },
+                                    contentPadding = PaddingValues(0.dp),
+                                ) {
+                                    Icon(
+                                        if (selectedChannel ==
+                                            channel
+                                        ) {
+                                            channel.selectedIcon
+                                        } else {
+                                            channel.unselectedIcon
+                                        },
+                                        contentDescription = channel.label,
+                                    )
+                                    Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
+                                    Text(
+                                        text = channel.label,
+                                    )
+                                }
                             }
                         }
                     }
@@ -243,6 +254,7 @@ fun PreviewRadioTuneInContent() {
             isTunedIn = isTunedIn,
             onTextChange = {},
             onTuneInClick = {},
+            onChannelChanged = {},
         )
     }
 }

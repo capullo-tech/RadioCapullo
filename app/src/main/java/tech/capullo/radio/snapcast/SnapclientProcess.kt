@@ -38,6 +38,7 @@ class SnapclientProcess @Inject constructor(
     )
     private val sampleFormat = "$rate:16:*"
 
+    private lateinit var process: java.lang.Process
     suspend fun start(
         hostId: String = UUID.randomUUID().toString(),
         snapserverAddress: String = "localhost",
@@ -57,7 +58,8 @@ class SnapclientProcess @Inject constructor(
         if (rate != null) env["SAMPLE_RATE"] = rate
         if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
 
-        val process = pb.start()
+        //val process = pb.start()
+        process = pb.start()
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -72,10 +74,14 @@ class SnapclientProcess @Inject constructor(
         } catch (_: CancellationException) {
             println("Snapclient process cancelled")
             process.destroy()
+            process.waitFor()
+            println("Snapclient process destroyed")
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }
+        println("after try")
     }
+
 
     companion object {
         private val TAG = SnapclientProcess::class.java.simpleName

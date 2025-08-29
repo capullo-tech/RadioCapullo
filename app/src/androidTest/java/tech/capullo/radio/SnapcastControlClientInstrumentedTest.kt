@@ -3,7 +3,10 @@ package tech.capullo.radio
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -18,6 +21,7 @@ import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
+import kotlin.coroutines.cancellation.CancellationException
 
 @RunWith(AndroidJUnit4::class)
 class SnapcastControlClientInstrumentedTest {
@@ -92,5 +96,47 @@ class SnapcastControlClientInstrumentedTest {
         serverJob.cancel()
         controlClientJob.cancel()
         println("Cleanup complete")
+    }
+
+    @Test
+    fun testSnapclientStop() = runBlocking {
+        // Start a snapserver process
+        val serverJob = launch(Dispatchers.IO) {
+            val snapserverProcess = SnapserverProcess(radioRepository)
+            snapserverProcess.start()
+        }
+
+        // Give server time to start
+        delay(2000)
+
+        // Start a snapclient process
+        /*
+        var snapclientJob = launch(Dispatchers.IO) {
+            val snapclientProcess = SnapclientProcess(appContext, radioRepository)
+            snapclientProcess.start()
+            println("after process launched")
+        }
+         */
+
+        var snapclientJob = launch(Dispatchers.IO) {
+            val snapclientProcess = SnapclientProcess(appContext, radioRepository)
+            snapclientProcess.start()
+            println("after process launched")
+        }
+
+        delay(5000)
+        println("Cleaning up")
+        snapclientJob.cancel()
+        try {
+            snapclientJob.join()
+        } catch (e: CancellationException) {
+            currentCoroutineContext().ensureActive() // throws if the current coroutine was cancelled
+        }
+        println("await done")
+        snapclientJob = async(Dispatchers.IO) {
+            println("starting new process")
+            val snapclientProcess = SnapclientProcess(appContext, radioRepository)
+            snapclientProcess.start()
+        }
     }
 }

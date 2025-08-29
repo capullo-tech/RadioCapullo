@@ -173,15 +173,15 @@ fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () 
 @Composable
 fun HelpTooltip() {
     val scope = rememberCoroutineScope()
-    val plainTooltipText = "how to use Radio Capullo"
     val tooltipState = rememberTooltipState(isPersistent = true)
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-            positioning = TooltipAnchorPosition.Below,
+            positioning = TooltipAnchorPosition.Above, // Better for mobile
+            spacingBetweenTooltipAndAnchor = 8.dp, // Add some breathing room
         ),
         tooltip = {
             RichTooltip(
-                title = { Text("Title of the tooltip") },
+                title = { Text("How to Use Radio Capullo") },
                 action = {
                     TextButton(
                         onClick = {
@@ -189,18 +189,25 @@ fun HelpTooltip() {
                                 tooltipState.dismiss()
                             }
                         }
-                    ) { Text("Dismiss") }
+                    ) { Text("Got it") }
                 }
-            ) { Text(plainTooltipText) }
+            ) {
+                Column {
+                    Text("• Start broadcasting: Tap RADIO-ON to share your music")
+                    Text("• Listen to broadcasts: Tap TUNE-IN to discover broadcasts from others")
+                    Text("• Network: Ensure devices are on the same network")
+                }
+            }
         },
         state = tooltipState
     ) {
         IconButton(
             onClick = { scope.launch { tooltipState.show() } },
+            modifier = Modifier.size(48.dp) // Larger touch target
         ) {
             Icon(
                 imageVector = Icons.Filled.Info,
-                contentDescription = "Localized Description",
+                contentDescription = "Help information",
             )
         }
     }

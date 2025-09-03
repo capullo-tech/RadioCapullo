@@ -72,6 +72,8 @@ class SnapclientProcess @Inject constructor(
         } catch (_: CancellationException) {
             println("Snapclient process cancelled")
             process.destroy()
+            process.waitFor()
+            println("Snapclient process destroyed")
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }

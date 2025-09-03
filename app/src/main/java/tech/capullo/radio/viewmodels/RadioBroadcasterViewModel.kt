@@ -178,11 +178,13 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     fun startBroadcasterService() {
         val intent = Intent(applicationContext, RadioBroadcasterService::class.java)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             applicationContext.startForegroundService(intent)
         } else {
             applicationContext.startService(intent)
         }
+
         applicationContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 

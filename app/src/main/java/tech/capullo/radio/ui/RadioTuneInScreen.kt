@@ -34,6 +34,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,25 +55,42 @@ import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.RadioTuneInModel
 
 @Composable
-fun RadioTuneInScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
+fun RadioTuneInScreen(
+    radioTuneInModel: RadioTuneInModel = hiltViewModel(),
+    onConnected: (serverIp: String, channel: AudioChannel) -> Unit = { _, _ -> },
+) {
     var lastServerText by remember {
         mutableStateOf(radioTuneInModel.getLastServerText())
     }
-    var isTunedIn by remember { mutableStateOf(false) }
+    var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
+
+    // Collect connection state from ViewModel
+    val connectionState by radioTuneInModel.connectionState.collectAsState()
+
+    // Navigate when service is connected and running
+    if (connectionState.isConnected &&
+        connectionState.serverIp.isNotEmpty()
+    ) {
+        onConnected(connectionState.serverIp, connectionState.channel)
+    }
 
     Scaffold { innerPadding ->
         RadioTuneInScreenContent(
             modifier = Modifier
                 .padding(innerPadding),
             lastServerText = lastServerText,
-            isTunedIn = isTunedIn,
+            isButtonEnabled = !connectionState.isConnected,
+            selectedChannel = selectedChannel,
             onTextChange = { newServerText ->
                 lastServerText = newServerText
                 radioTuneInModel.saveLastServerText(newServerText)
             },
             onTuneInClick = { channel ->
+                selectedChannel = channel
                 radioTuneInModel.startSnapclientService(lastServerText, channel)
-                isTunedIn = true
+            },
+            onChannelChange = { channel ->
+                selectedChannel = channel
             },
         )
     }
@@ -109,9 +127,11 @@ enum class AudioChannel(
 fun RadioTuneInScreenContent(
     modifier: Modifier = Modifier,
     lastServerText: String,
-    isTunedIn: Boolean,
+    isButtonEnabled: Boolean,
+    selectedChannel: AudioChannel,
     onTextChange: (String) -> Unit,
     onTuneInClick: (channel: AudioChannel) -> Unit,
+    onChannelChange: (AudioChannel) -> Unit,
 ) {
     Scaffold { innerPadding ->
         Column(
@@ -161,7 +181,6 @@ fun RadioTuneInScreenContent(
                             .clip(RoundedCornerShape(12.dp)),
                     )
 
-                    var selectedChannel by rememberSaveable { mutableStateOf(AudioChannel.STEREO) }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(
                             ButtonGroupDefaults.ConnectedSpaceBetween,
@@ -170,7 +189,7 @@ fun RadioTuneInScreenContent(
                         AudioChannel.entries.forEach { channel ->
                             ToggleButton(
                                 checked = selectedChannel == channel,
-                                onCheckedChange = { selectedChannel = channel },
+                                onCheckedChange = { onChannelChange(channel) },
                                 modifier = Modifier.weight(channel.modifierWeight),
                                 shapes =
                                 when (channel) {
@@ -187,9 +206,7 @@ fun RadioTuneInScreenContent(
                                 contentPadding = PaddingValues(0.dp),
                             ) {
                                 Icon(
-                                    if (selectedChannel ==
-                                        channel
-                                    ) {
+                                    if (selectedChannel == channel) {
                                         channel.selectedIcon
                                     } else {
                                         channel.unselectedIcon
@@ -206,7 +223,7 @@ fun RadioTuneInScreenContent(
 
                     Button(
                         onClick = { onTuneInClick(selectedChannel) },
-                        enabled = !isTunedIn,
+                        enabled = isButtonEnabled,
                         modifier = Modifier
                             .padding(vertical = 16.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -235,14 +252,17 @@ fun RadioTuneInScreenContent(
 @Composable
 fun PreviewRadioTuneInContent() {
     val lastServerText = "192.168.0.1"
-    val isTunedIn = false
+    val isButtonEnabled = true
+    val selectedChannel = AudioChannel.STEREO
 
     RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
         RadioTuneInScreenContent(
             lastServerText = lastServerText,
-            isTunedIn = isTunedIn,
+            isButtonEnabled = isButtonEnabled,
+            selectedChannel = selectedChannel,
             onTextChange = {},
             onTuneInClick = {},
+            onChannelChange = {},
         )
     }
 }

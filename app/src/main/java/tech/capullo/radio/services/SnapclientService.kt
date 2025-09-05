@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -15,6 +16,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.ui.AudioChannel
@@ -27,13 +31,24 @@ class SnapclientService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var snapclientJob: Job? = null
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    private val _snapserverIpFlow = MutableStateFlow("")
+    val snapserverIpFlow: StateFlow<String> = _snapserverIpFlow.asStateFlow()
+
+    private val _audioChannelFlow = MutableStateFlow(AudioChannel.STEREO)
+    val audioChannelFlow: StateFlow<AudioChannel> = _audioChannelFlow.asStateFlow()
+
+    private val binder = SnapclientBinder()
+
+    override fun onBind(intent: Intent?): IBinder = binder
+
+    override fun onUnbind(intent: Intent?): Boolean = true
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
         val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, AudioChannel.STEREO.ordinal)
 
         startForeground()
+
         startSnapclient(snapserverIp, audioChannel)
 
         return START_NOT_STICKY
@@ -82,6 +97,8 @@ class SnapclientService : Service() {
     }
 
     private fun startSnapclient(snapserverIp: String, audioChannel: Int) {
+        snapclientJob?.cancel()
+
         snapclientJob =
             scope.launch {
                 snapclientProcess.start(
@@ -89,6 +106,20 @@ class SnapclientService : Service() {
                     audioChannel = audioChannel,
                 )
             }
+
+        _snapserverIpFlow.value = snapserverIp
+        _audioChannelFlow.value = AudioChannel.entries[audioChannel]
+    }
+
+    fun updateAudioChannel(channel: AudioChannel) {
+        startSnapclient(snapserverIpFlow.value, channel.ordinal)
+    }
+
+    inner class SnapclientBinder : Binder() {
+        fun updateAudioChannel(channel: AudioChannel) =
+            this@SnapclientService.updateAudioChannel(channel)
+        fun getSnapserverIpFlow(): StateFlow<String> = this@SnapclientService.snapserverIpFlow
+        fun getAudioChannelFlow(): StateFlow<AudioChannel> = this@SnapclientService.audioChannelFlow
     }
 
     companion object {

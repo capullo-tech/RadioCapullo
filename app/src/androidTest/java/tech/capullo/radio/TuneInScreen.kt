@@ -12,8 +12,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.capullo.radio.ui.AudioChannel
-import tech.capullo.radio.ui.RadioTuneInScreenContent
+import tech.capullo.radio.ui.TuneInScreenContent
+import tech.capullo.radio.ui.model.AudioChannel
 
 @RunWith(AndroidJUnit4::class)
 class TuneInScreen {
@@ -24,13 +24,14 @@ class TuneInScreen {
     @Test
     fun testDefaultChannelSelection() {
         val lastServerText = "192.168.0.1"
-        val isTunedIn = false
         composeTestRule.setContent {
-            RadioTuneInScreenContent(
+            TuneInScreenContent(
                 lastServerText = lastServerText,
-                isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                isButtonEnabled = true,
+                selectedChannel = AudioChannel.STEREO,
+                onChannelChange = {},
             )
         }
 
@@ -51,13 +52,14 @@ class TuneInScreen {
     @Test
     fun testSameChannelSelection() {
         val lastServerText = "192.168.0.1"
-        val isTunedIn = false
         composeTestRule.setContent {
-            RadioTuneInScreenContent(
+            TuneInScreenContent(
                 lastServerText = lastServerText,
-                isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                isButtonEnabled = false,
+                selectedChannel = AudioChannel.STEREO,
+                onChannelChange = { },
             )
         }
 
@@ -82,15 +84,16 @@ class TuneInScreen {
     @Test
     fun testChannelSelectionRestoration() {
         val lastServerText = "192.168.0.1"
-        val isTunedIn = false
 
         val restorationTester = StateRestorationTester(composeTestRule)
         restorationTester.setContent {
-            RadioTuneInScreenContent(
+            TuneInScreenContent(
                 lastServerText = lastServerText,
-                isTunedIn = isTunedIn,
                 onTextChange = {},
                 onTuneInClick = {},
+                isButtonEnabled = false,
+                selectedChannel = AudioChannel.RIGHT,
+                onChannelChange = { },
             )
         }
 

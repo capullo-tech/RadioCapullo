@@ -45,7 +45,7 @@ import tech.capullo.radio.ui.theme.SchemeChoice
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
+fun RadioHomeScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val multiplePermissionsState =
             rememberMultiplePermissionsState(
@@ -55,7 +55,7 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
                 ),
             )
         if (multiplePermissionsState.allPermissionsGranted) {
-            RadioMainScreen(
+            RadioHomeScreenContent(
                 onStartBroadcastingClicked = onStartBroadcastingClicked,
                 onTuneInClicked = onTuneInClicked,
             )
@@ -67,7 +67,7 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
         }
     } else {
         // For devices below TIRAMISU, show the main screen directly
-        RadioMainScreen(
+        RadioHomeScreenContent(
             onStartBroadcastingClicked = onStartBroadcastingClicked,
             onTuneInClicked = onTuneInClicked,
         )
@@ -76,7 +76,7 @@ fun RadioApp(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun RadioMainScreen(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
+fun RadioHomeScreenContent(onStartBroadcastingClicked: () -> Unit, onTuneInClicked: () -> Unit) {
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -215,9 +215,9 @@ fun HelpTooltip() {
     showSystemUi = true,
 )
 @Composable
-fun RadioAppPreview() {
+fun RadioHomeScreenPreview() {
     RadioTheme {
-        RadioMainScreen(
+        RadioHomeScreenContent(
             onStartBroadcastingClicked = {},
             onTuneInClicked = {},
         )

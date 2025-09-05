@@ -2,28 +2,18 @@ package tech.capullo.radio.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.RadioTuneInModel
 
@@ -121,7 +112,7 @@ fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             AudioSettingsDialog(
                 onDismissRequest = { showChannelDialog = false },
                 selectedChannel = selectedChannel,
-                onCheckedChanged = { isChecked, audioChannel ->
+                onCheckedChanged = { isChecked: Boolean, audioChannel: AudioChannel ->
                     if (isChecked && selectedChannel != audioChannel) {
                         selectedChannel = audioChannel
                         radioTuneInModel.updateAudioChannel(audioChannel)
@@ -130,63 +121,4 @@ fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun AudioSettingsDialog(
-    onDismissRequest: () -> Unit,
-    selectedChannel: AudioChannel,
-    onCheckedChanged: (Boolean, AudioChannel) -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Audio Channel Settings") },
-        text = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(
-                    ButtonGroupDefaults.ConnectedSpaceBetween,
-                ),
-            ) {
-                AudioChannel.entries.forEach { channel ->
-                    ToggleButton(
-                        checked = selectedChannel == channel,
-                        onCheckedChange = { isChecked -> onCheckedChanged(isChecked, channel) },
-                        modifier = Modifier.weight(channel.modifierWeight),
-                        shapes =
-                        when (channel) {
-                            AudioChannel.LEFT -> {
-                                ButtonGroupDefaults.connectedLeadingButtonShapes()
-                            }
-                            AudioChannel.RIGHT -> {
-                                ButtonGroupDefaults.connectedTrailingButtonShapes()
-                            }
-                            AudioChannel.STEREO -> {
-                                ButtonGroupDefaults.connectedMiddleButtonShapes()
-                            }
-                        },
-                        contentPadding = PaddingValues(0.dp),
-                    ) {
-                        Icon(
-                            if (selectedChannel == channel) {
-                                channel.selectedIcon
-                            } else {
-                                channel.unselectedIcon
-                            },
-                            contentDescription = channel.label,
-                        )
-                        Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                        Text(
-                            text = channel.label,
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("Dismiss")
-            }
-        },
-    )
 }

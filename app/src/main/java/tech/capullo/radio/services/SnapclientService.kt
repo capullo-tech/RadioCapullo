@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.snapcast.SnapclientProcess
-import tech.capullo.radio.ui.AudioChannel
+import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
 
 @AndroidEntryPoint

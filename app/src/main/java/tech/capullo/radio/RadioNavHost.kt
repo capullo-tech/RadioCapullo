@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import tech.capullo.radio.ui.BroadcasterScreen
 import tech.capullo.radio.ui.NowPlayingScreen
-import tech.capullo.radio.ui.RadioApp
-import tech.capullo.radio.ui.RadioBroadcasterScreen
-import tech.capullo.radio.ui.RadioTuneInScreen
+import tech.capullo.radio.ui.RadioHomeScreen
+import tech.capullo.radio.ui.TuneInScreen
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 
@@ -26,7 +26,7 @@ fun RadioCapulloNavHost() {
         entryProvider = { key ->
             when (key) {
                 is Home -> NavEntry(key) {
-                    RadioApp(
+                    RadioHomeScreen(
                         onStartBroadcastingClicked = { backStack.add(Broadcast) },
                         onTuneInClicked = { backStack.add(TuneIn) },
                     )
@@ -36,7 +36,7 @@ fun RadioCapulloNavHost() {
                     RadioTheme(
                         schemeChoice = SchemeChoice.GREEN,
                     ) {
-                        RadioBroadcasterScreen()
+                        BroadcasterScreen()
                     }
                 }
 
@@ -44,10 +44,8 @@ fun RadioCapulloNavHost() {
                     RadioTheme(
                         schemeChoice = SchemeChoice.ORANGE,
                     ) {
-                        RadioTuneInScreen(
-                            onConnected = { serverIp, channel ->
-                                backStack.add(NowPlaying)
-                            },
+                        TuneInScreen(
+                            onConnected = { backStack.add(NowPlaying) },
                         )
                     }
                 }

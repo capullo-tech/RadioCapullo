@@ -14,11 +14,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +26,7 @@ import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
+import tech.capullo.radio.ui.model.AudioChannel
 import xyz.gianlu.librespot.audio.MetadataWrapper
 import xyz.gianlu.librespot.core.Session
 import xyz.gianlu.librespot.metadata.PlayableId
@@ -53,16 +51,21 @@ class RadioBroadcasterService : Service() {
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
     private var session: Session? = null
-    private val _isPlayerLoading = MutableStateFlow(true)
-    val isPlayerLoading = _isPlayerLoading.asStateFlow()
+    private val _isPlayerLoadingFlow = MutableStateFlow(true)
+    val isPlayerLoadingFlow = _isPlayerLoadingFlow.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
-    private lateinit var snapserverJob: Deferred<Unit>
-    private lateinit var snapclientJob: Deferred<Unit>
+
+    private var snapserverJob: Job? = null
+    private var snapclientJob: Job? = null
+
+    private var currentAudioChannel = AudioChannel.STEREO
 
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
-        fun getService(): RadioBroadcasterService = this@RadioBroadcasterService
+        fun getIsPlayerLoadingFlow() = this@RadioBroadcasterService.isPlayerLoadingFlow
+        fun updateAudioChannel(channel: AudioChannel) =
+            this@RadioBroadcasterService.updateAudioChannel(channel)
     }
 
     private fun runOnPlayback(func: () -> Unit): Future<*>? = playbackExecutor.submit(func)
@@ -207,12 +210,12 @@ class RadioBroadcasterService : Service() {
             }
 
             override fun onStartedLoading(player: Player) {
-                _isPlayerLoading.value = true
+                _isPlayerLoadingFlow.value = true
                 println("started loading")
             }
 
             override fun onFinishedLoading(player: Player) {
-                _isPlayerLoading.value = false
+                _isPlayerLoadingFlow.value = false
                 println("finished loading")
             }
         }
@@ -253,11 +256,16 @@ class RadioBroadcasterService : Service() {
     }
 
     fun startSnapcast() {
-        scope.launch {
-            snapserverJob = async { snapserverProcess.start() }
-            snapclientJob = async { snapclientProcess.start() }
-            awaitAll(snapclientJob, snapserverJob)
-        }
+        snapserverJob = scope.launch { snapserverProcess.start() }
+        snapclientJob = scope.launch { snapclientProcess.start() }
+    }
+
+    fun updateAudioChannel(channel: AudioChannel) {
+        currentAudioChannel = channel
+        // Restart snapclient with new channel
+        snapclientJob?.cancel()
+        snapclientJob =
+            scope.launch { snapclientProcess.start(audioChannel = currentAudioChannel.ordinal) }
     }
 
     companion object {

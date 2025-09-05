@@ -12,7 +12,8 @@ import androidx.compose.ui.test.printToLog
 import org.junit.Rule
 import org.junit.Test
 import tech.capullo.radio.snapcast.Client
-import tech.capullo.radio.ui.RadioBroadcasterScreenContent
+import tech.capullo.radio.ui.BroadcasterScreenContent
+import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 
 class RadioBroadcasterEspotiConnectTest {
@@ -29,7 +30,10 @@ class RadioBroadcasterEspotiConnectTest {
 
         // When: RadioBroadcasterScreen is displayed
         composeTestRule.setContent {
-            RadioBroadcasterScreenContent(uiState)
+            BroadcasterScreenContent(
+                uiState,
+                onAudioChannelChange = { },
+            )
         }
         composeTestRule.onRoot().printToLog("TAG")
 
@@ -57,7 +61,10 @@ class RadioBroadcasterEspotiConnectTest {
 
         // When: RadioBroadcasterScreen is displayed
         composeTestRule.setContent {
-            RadioBroadcasterScreenContent(uiState)
+            BroadcasterScreenContent(
+                uiState,
+                onAudioChannelChange = { },
+            )
         }
         composeTestRule.onRoot().printToLog("TAG")
 
@@ -76,11 +83,15 @@ class RadioBroadcasterEspotiConnectTest {
         val uiState = RadioBroadcasterUiState.EspotiPlayerReady(
             hostAddresses = hostAddresses,
             snapcastClients = mockClients,
+            audioChannel = AudioChannel.STEREO,
         )
 
         // When: Composable is displayed
         composeTestRule.setContent {
-            RadioBroadcasterScreenContent(uiState)
+            BroadcasterScreenContent(
+                uiState,
+                onAudioChannelChange = { },
+            )
         }
 
         // Then: Broadcaster host addresses are displayed

@@ -24,6 +24,7 @@ import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.SnapcastControlClient
+import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
 
 sealed interface RadioBroadcasterUiState {
@@ -31,6 +32,7 @@ sealed interface RadioBroadcasterUiState {
     data class EspotiPlayerReady(
         val hostAddresses: List<String>,
         val snapcastClients: List<Client>,
+        val audioChannel: AudioChannel,
     ) : RadioBroadcasterUiState
 
     data class EspotiConnect(val isLoading: Boolean, val deviceName: String) :
@@ -43,6 +45,7 @@ private data class RadioBroadcasterViewModelState(
     val deviceName: String = "",
     val snapcastClients: List<Client> = emptyList(),
     val hostAddresses: List<String> = emptyList(),
+    val audioChannel: AudioChannel = AudioChannel.STEREO,
 ) {
     /**
      * Converts this [RadioBroadcasterViewModelState] state into a strongly typed
@@ -57,6 +60,7 @@ private data class RadioBroadcasterViewModelState(
         RadioBroadcasterUiState.EspotiPlayerReady(
             hostAddresses = hostAddresses,
             snapcastClients = snapcastClients,
+            audioChannel = audioChannel,
         )
     }
 }
@@ -93,6 +97,7 @@ class RadioBroadcasterViewModel @Inject constructor(
             deviceName = repository.getDeviceName(),
             snapcastClients = emptyList(),
             hostAddresses = emptyList(),
+            audioChannel = AudioChannel.STEREO,
         ),
     )
 
@@ -108,21 +113,17 @@ class RadioBroadcasterViewModel @Inject constructor(
     private val _snapcastClients = MutableStateFlow<List<Client>>(emptyList())
     val snapcastClients = _snapcastClients.asStateFlow()
 
-    class RadioServiceWrapper(service: RadioBroadcasterService) {
-        val isPlayerLoading = service.isPlayerLoading
-    }
-
-    private var serviceWrapper: RadioServiceWrapper? = null
     private var mBound: Boolean = false
+    private var mService: RadioBroadcasterService.LocalBinder? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as RadioBroadcasterService.LocalBinder
-            serviceWrapper = RadioServiceWrapper(binder.getService())
             mBound = true
+            mService = binder
 
             viewModelScope.launch {
-                serviceWrapper?.isPlayerLoading?.collect { isLoading ->
+                binder.getIsPlayerLoadingFlow().collect { isLoading ->
                     // TODO: (potentially) display a screen saying the sessions is established
                     // and the player is loading
                     if (!isLoading) {
@@ -139,8 +140,8 @@ class RadioBroadcasterViewModel @Inject constructor(
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            serviceWrapper = null
             mBound = false
+            mService = null
         }
     }
 
@@ -209,6 +210,12 @@ class RadioBroadcasterViewModel @Inject constructor(
                 _snapcastClients.value = clients
             }
         }
+    }
+
+    fun updateAudioChannel(channel: AudioChannel) {
+        viewModelState.value = viewModelState.value.copy(audioChannel = channel)
+        // Notify service to update audio channel
+        mService?.updateAudioChannel(channel)
     }
 
     fun unbindBroadcasterService() {

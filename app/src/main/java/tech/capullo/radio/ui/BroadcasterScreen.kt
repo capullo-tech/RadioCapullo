@@ -11,18 +11,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -37,6 +45,7 @@ import tech.capullo.radio.snapcast.Host
 import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
+import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
@@ -44,19 +53,27 @@ import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
 import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
 
 @Composable
-fun RadioBroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
+fun BroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    RadioBroadcasterScreenContent(uiState)
+    BroadcasterScreenContent(
+        uiState = uiState,
+        onAudioChannelChange = viewModel::updateAudioChannel,
+    )
 }
 
 @Composable
-fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
+fun BroadcasterScreenContent(
+    uiState: RadioBroadcasterUiState,
+    onAudioChannelChange: (AudioChannel) -> Unit,
+) {
     when (val state = uiState) {
         is RadioBroadcasterUiState.EspotiPlayerReady -> {
-            RadioBroadcasterPlayback(
+            BroadcasterPlayback(
                 hostAddresses = state.hostAddresses,
                 snapcastClients = state.snapcastClients,
+                audioChannel = state.audioChannel,
+                onAudioChannelChange = onAudioChannelChange,
             )
         }
 
@@ -64,10 +81,76 @@ fun RadioBroadcasterScreenContent(uiState: RadioBroadcasterUiState) {
             if (state.isLoading) {
                 LoadingSessionScreen()
             } else {
-                RadioBroadcasterEspotiConnect(
+                BroadcasterEspotiConnect(
                     deviceName = state.deviceName,
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable fun BroadcasterPlayback(
+    hostAddresses: List<String>,
+    snapcastClients: List<Client> = emptyList(),
+    audioChannel: AudioChannel,
+    onAudioChannelChange: (AudioChannel) -> Unit,
+) {
+    var showChannelDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { },
+                actions = {
+                    IconButton(onClick = { showChannelDialog = true }) {
+                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            Card(
+                modifier = Modifier
+                    .padding(vertical = 4.dp, horizontal = 8.dp)
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Host Addresses:",
+                        style = Typography.bodyMedium,
+                    )
+                    LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
+                        items(items = hostAddresses) { name ->
+                            Text(
+                                text = name,
+                                style = Typography.titleLarge,
+                            )
+                        }
+                    }
+                }
+            }
+
+            SnapclientList(snapcastClients)
+        }
+
+        if (showChannelDialog) {
+            AudioSettingsDialog(
+                onDismissRequest = { showChannelDialog = false },
+                selectedChannel = audioChannel,
+                onCheckedChanged = { isChecked: Boolean, channel: AudioChannel ->
+                    if (isChecked && audioChannel != channel) {
+                        onAudioChannelChange(channel)
+                    }
+                },
+            )
         }
     }
 }
@@ -101,7 +184,7 @@ fun LoadingSessionScreen() {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun RadioBroadcasterEspotiConnect(deviceName: String) {
+fun BroadcasterEspotiConnect(deviceName: String) {
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -136,55 +219,17 @@ fun RadioBroadcasterEspotiConnect(deviceName: String) {
     }
 }
 
-@Composable fun RadioBroadcasterPlayback(
-    hostAddresses: List<String>,
-    snapcastClients: List<Client> = emptyList(),
-) {
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            Card(
-                modifier = Modifier
-                    .padding(vertical = 4.dp, horizontal = 8.dp)
-                    .fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Host Addresses:",
-                        style = Typography.bodyMedium,
-                    )
-                    LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-                        items(items = hostAddresses) { name ->
-                            Text(
-                                text = name,
-                                style = Typography.titleLarge,
-                            )
-                        }
-                    }
-                }
-            }
-
-            SnapclientList(snapcastClients)
-        }
-    }
-}
-
 @Preview(
     showBackground = true,
     uiMode = UI_MODE_NIGHT_YES,
-    name = "PreviewRadioBroadcasterEspotiConnectDark",
+    name = "PreviewBroadcasterEspotiConnectDark",
 )
 @Preview(showBackground = true)
 @Composable
-fun PreviewRadioBroadcasterEspotiConnect() {
+fun PreviewBroadcasterEspotiConnect() {
     val deviceName = "Samsung Galaxy S21 Ultra Max"
     RadioTheme(schemeChoice = SchemeChoice.GREEN) {
-        RadioBroadcasterEspotiConnect(deviceName = deviceName)
+        BroadcasterEspotiConnect(deviceName = deviceName)
     }
 }
 
@@ -204,7 +249,7 @@ fun PreviewLoadingIndicator() {
 @Preview(
     showBackground = true,
     uiMode = UI_MODE_NIGHT_YES,
-    name = "PreviewRadioBroadcasterPlaybackDark",
+    name = "PreviewBroadcasterPlaybackDark",
     showSystemUi = true,
 )
 @Preview(
@@ -212,7 +257,7 @@ fun PreviewLoadingIndicator() {
     showSystemUi = true,
 )
 @Composable
-fun PreviewRadioBroadcasterPlayback() {
+fun PreviewBroadcasterPlayback() {
     val hostAddresses = listOf("192.168.0.1", "0.0.0.0", "100.10.14.7")
 
     val sampleClients = listOf(
@@ -288,9 +333,11 @@ fun PreviewRadioBroadcasterPlayback() {
     )
 
     RadioTheme(schemeChoice = SchemeChoice.GREEN) {
-        RadioBroadcasterPlayback(
+        BroadcasterPlayback(
             hostAddresses = hostAddresses,
             snapcastClients = sampleClients,
+            audioChannel = AudioChannel.STEREO,
+            onAudioChannelChange = { _: AudioChannel -> },
         )
     }
 }

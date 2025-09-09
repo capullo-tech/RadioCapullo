@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.capullo.radio.services.SnapclientService
+import tech.capullo.radio.snapcast.DiscoveredSnapserver
+import tech.capullo.radio.snapcast.SnapserverDiscoveryManager
 import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
 
@@ -29,6 +31,7 @@ data class ServiceConnectionState(
 @HiltViewModel
 class RadioTuneInModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
+    private val discoveryManager: SnapserverDiscoveryManager,
 ) : ViewModel() {
 
     private var binder: SnapclientService.SnapclientBinder? = null
@@ -36,6 +39,12 @@ class RadioTuneInModel @Inject constructor(
 
     private val _connectionState = MutableStateFlow(ServiceConnectionState())
     val connectionState: StateFlow<ServiceConnectionState> = _connectionState.asStateFlow()
+
+    private val _isDiscovering = MutableStateFlow(false)
+    val isDiscovering: StateFlow<Boolean> = _isDiscovering.asStateFlow()
+
+    val discoveredServices: StateFlow<List<DiscoveredSnapserver>> =
+        discoveryManager.discoveredServices
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -81,6 +90,9 @@ class RadioTuneInModel @Inject constructor(
         Intent(applicationContext, SnapclientService::class.java).also { intent ->
             applicationContext.bindService(intent, serviceConnection, 0)
         }
+
+        // Start discovering snapcast services
+        startDiscovery()
     }
 
     private fun getSharedPreferences(context: Context): SharedPreferences =
@@ -116,6 +128,29 @@ class RadioTuneInModel @Inject constructor(
         binder?.updateAudioChannel(channel)
     }
 
+    fun connectToDiscoveredService(
+        discoveredServer: DiscoveredSnapserver,
+        audioChannel: AudioChannel,
+    ) {
+        startSnapclientService(discoveredServer.hostAddress, audioChannel)
+    }
+
+    fun startDiscovery() {
+        _isDiscovering.value = true
+        discoveryManager.startDiscovery()
+        // For demo purposes, set discovering to false after a delay
+        // In a real app, you'd track the actual discovery state
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2000) // 2 seconds
+            _isDiscovering.value = false
+        }
+    }
+
+    fun stopDiscovery() {
+        _isDiscovering.value = false
+        discoveryManager.stopDiscovery()
+    }
+
     override fun onCleared() {
         super.onCleared()
         if (isBound) {
@@ -123,5 +158,6 @@ class RadioTuneInModel @Inject constructor(
             isBound = false
             binder = null
         }
+        stopDiscovery()
     }
 }

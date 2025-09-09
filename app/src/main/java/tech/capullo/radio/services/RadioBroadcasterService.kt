@@ -25,6 +25,7 @@ import tech.capullo.radio.espoti.AudioFocusManager
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.SnapclientProcess
+import tech.capullo.radio.snapcast.SnapserverNsdManager
 import tech.capullo.radio.snapcast.SnapserverProcess
 import tech.capullo.radio.ui.model.AudioChannel
 import xyz.gianlu.librespot.audio.MetadataWrapper
@@ -47,6 +48,8 @@ class RadioBroadcasterService : Service() {
     @Inject lateinit var snapclientProcess: SnapclientProcess
 
     @Inject lateinit var snapserverProcess: SnapserverProcess
+
+    @Inject lateinit var snapserverNsdManager: SnapserverNsdManager
 
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
@@ -123,6 +126,7 @@ class RadioBroadcasterService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        snapserverNsdManager.stop()
         scope.cancel()
         player?.close()
         session?.close()
@@ -258,6 +262,7 @@ class RadioBroadcasterService : Service() {
     fun startSnapcast() {
         snapserverJob = scope.launch { snapserverProcess.start() }
         snapclientJob = scope.launch { snapclientProcess.start() }
+        scope.launch { snapserverNsdManager.start() }
     }
 
     fun updateAudioChannel(channel: AudioChannel) {

@@ -4,38 +4,65 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
-import androidx.core.content.edit
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import tech.capullo.radio.services.SnapclientService
+import tech.capullo.radio.snapcast.DiscoveredSnapserver
+import tech.capullo.radio.snapcast.SnapserverDiscoveryManager
 import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
 
-data class ServiceConnectionState(
-    val isConnected: Boolean = false,
+data class TuneInState(
+    val availableServers: List<DiscoveredSnapserver> = emptyList(),
     val serverIp: String = "",
-    val channel: AudioChannel = AudioChannel.STEREO,
+    val audioChannel: AudioChannel = AudioChannel.STEREO,
+    val isTunedIn: Boolean = false,
 )
 
+val Context.dataStore by preferencesDataStore(name = "tune_in_prefs")
+
 @HiltViewModel
-class RadioTuneInModel @Inject constructor(
+class TuneInModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
+    private val discoveryManager: SnapserverDiscoveryManager,
 ) : ViewModel() {
+
+    object PreferencesKeys {
+        val LAST_SERVER_TEXT = stringPreferencesKey("last_server_text")
+    }
 
     private var binder: SnapclientService.SnapclientBinder? = null
     private var isBound = false
 
-    private val _connectionState = MutableStateFlow(ServiceConnectionState())
-    val connectionState: StateFlow<ServiceConnectionState> = _connectionState.asStateFlow()
+    val lastServerTextFlow: Flow<String> = applicationContext.dataStore.data
+        .catch { exception ->
+            if (exception is Exception) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            println("gitting the last server")
+            preferences[PreferencesKeys.LAST_SERVER_TEXT] ?: ""
+        }
+
+    private val _tuneInState = MutableStateFlow(TuneInState())
+    val tuneInState = _tuneInState.asStateFlow()
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -46,22 +73,22 @@ class RadioTuneInModel @Inject constructor(
             viewModelScope.launch {
                 launch {
                     binder?.getSnapserverIpFlow()?.collect { snapserverIp ->
-                        _connectionState.value = connectionState.value.copy(
+                        _tuneInState.value = tuneInState.value.copy(
                             serverIp = snapserverIp,
                         )
                     }
                 }
                 launch {
                     binder?.getAudioChannelFlow()?.collect { audioChannel ->
-                        _connectionState.value = connectionState.value.copy(
-                            channel = audioChannel,
+                        _tuneInState.value = tuneInState.value.copy(
+                            audioChannel = audioChannel,
                         )
                     }
                 }
             }
 
-            _connectionState.value = connectionState.value.copy(
-                isConnected = isBound,
+            _tuneInState.value = tuneInState.value.copy(
+                isTunedIn = isBound,
             )
         }
 
@@ -69,8 +96,8 @@ class RadioTuneInModel @Inject constructor(
             binder = null
             isBound = false
 
-            _connectionState.value = connectionState.value.copy(
-                isConnected = isBound,
+            _tuneInState.value = tuneInState.value.copy(
+                isTunedIn = isBound,
             )
         }
     }
@@ -81,26 +108,43 @@ class RadioTuneInModel @Inject constructor(
         Intent(applicationContext, SnapclientService::class.java).also { intent ->
             applicationContext.bindService(intent, serviceConnection, 0)
         }
+
+        viewModelScope.launch {
+            launch {
+                // collect saved preferences for previously connected servers
+                lastServerTextFlow.collect {
+                    println("collected previously saved value")
+                    _tuneInState.value = _tuneInState.value.copy(serverIp = it)
+                }
+            }
+            launch {
+                // update discovered server list
+                discoveryManager.discoveredServices.collect {
+                    _tuneInState.value = _tuneInState.value.copy(availableServers = it)
+                }
+            }
+        }
+
+        // Start discovering snapcast services
+        discoveryManager.startDiscovery()
     }
 
-    private fun getSharedPreferences(context: Context): SharedPreferences =
-        context.getSharedPreferences("MyApp", Context.MODE_PRIVATE)
-
-    fun saveLastServerText(text: String) {
-        getSharedPreferences(applicationContext).edit {
-            putString("my_text", text)
+    suspend fun saveLastServerText(text: String) {
+        applicationContext.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LAST_SERVER_TEXT] = text
         }
     }
 
-    fun getLastServerText(): String =
-        getSharedPreferences(applicationContext).getString("my_text", "") ?: ""
+    fun onServerIPTextFieldValueChanged(serverIpText: String) {
+        _tuneInState.value = _tuneInState.value.copy(serverIp = serverIpText)
+    }
 
-    fun startSnapclientService(ip: String, audioChannel: AudioChannel) {
+    fun startSnapclientService() {
         // UDF -> set the server IP and Audio Channel settings onto the Service, collect the values
         // as a flow to then display on the UI
         val intent = Intent(applicationContext, SnapclientService::class.java).apply {
-            putExtra(SnapclientService.KEY_IP, ip)
-            putExtra(SnapclientService.KEY_AUDIO_CHANNEL, audioChannel.ordinal)
+            putExtra(SnapclientService.KEY_IP, tuneInState.value.serverIp)
+            putExtra(SnapclientService.KEY_AUDIO_CHANNEL, tuneInState.value.audioChannel.ordinal)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -123,5 +167,6 @@ class RadioTuneInModel @Inject constructor(
             isBound = false
             binder = null
         }
+        discoveryManager.stopDiscovery()
     }
 }

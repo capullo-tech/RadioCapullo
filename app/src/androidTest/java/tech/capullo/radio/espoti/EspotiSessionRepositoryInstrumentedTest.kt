@@ -15,8 +15,8 @@ import org.junit.runner.RunWith
 import tech.capullo.radio.data.PipeFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
-import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
+import tech.capullo.radio.viewmodels.BroadcasterUiState
+import tech.capullo.radio.viewmodels.BroadcasterViewModel
 import java.io.File
 import kotlin.system.measureTimeMillis
 
@@ -48,7 +48,7 @@ class EspotiSessionRepositoryInstrumentedTest {
         val espotiConnectHandler = EspotiConnectHandler(sessionRepository)
         val espotiZeroconfServer = EspotiZeroconfServer(espotiConnectHandler)
         val espotiNsdManager = EspotiNsdManager(nsdManager, espotiZeroconfServer)
-        val viewModel = RadioBroadcasterViewModel(
+        val viewModel = BroadcasterViewModel(
             appContext,
             radioRepository,
             espotiNsdManager,
@@ -56,7 +56,7 @@ class EspotiSessionRepositoryInstrumentedTest {
         )
         var resultState = viewModel.uiState.take(2).toList()
         assertEquals(
-            RadioBroadcasterUiState.EspotiConnect(
+            BroadcasterUiState.EspotiConnect(
                 isLoading = true,
                 deviceName = radioAdvertisingDataSource.getDeviceName(),
             ),
@@ -67,7 +67,7 @@ class EspotiSessionRepositoryInstrumentedTest {
 
         if (!credentialsFile.exists()) {
             assertEquals(
-                RadioBroadcasterUiState.EspotiConnect(
+                BroadcasterUiState.EspotiConnect(
                     isLoading = false,
                     deviceName = radioAdvertisingDataSource.getDeviceName(),
                 ),

@@ -14,7 +14,7 @@ import org.junit.Test
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.ui.BroadcasterScreenContent
 import tech.capullo.radio.ui.model.AudioChannel
-import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
+import tech.capullo.radio.viewmodels.BroadcasterUiState
 
 class RadioBroadcasterEspotiConnectTest {
 
@@ -23,7 +23,7 @@ class RadioBroadcasterEspotiConnectTest {
     @Test
     fun whenEspotiConnectState_showsEspotiConnectScreen() {
         // Given: UI state is EspotiConnect
-        val uiState = RadioBroadcasterUiState.EspotiConnect(
+        val uiState = BroadcasterUiState.EspotiConnect(
             isLoading = false,
             deviceName = "Test Device",
         )
@@ -54,7 +54,7 @@ class RadioBroadcasterEspotiConnectTest {
     @Test
     fun whenLoadingPreviousPlaybackSessionState_showsLoadingIndicator() {
         // Given: UI state is EspotiConnect with loadingStoredCredentials = true
-        val uiState = RadioBroadcasterUiState.EspotiConnect(
+        val uiState = BroadcasterUiState.EspotiConnect(
             isLoading = true,
             deviceName = "Test Device",
         )
@@ -80,7 +80,7 @@ class RadioBroadcasterEspotiConnectTest {
         val hostAddresses = listOf("192.168.0.1", "10.0.0.2")
         val mockClients = emptyList<Client>()
 
-        val uiState = RadioBroadcasterUiState.EspotiPlayerReady(
+        val uiState = BroadcasterUiState.EspotiPlayerReady(
             hostAddresses = hostAddresses,
             snapcastClients = mockClients,
             audioChannel = AudioChannel.STEREO,

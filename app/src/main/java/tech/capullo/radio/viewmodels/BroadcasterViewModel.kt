@@ -27,19 +27,19 @@ import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
 
-sealed interface RadioBroadcasterUiState {
+sealed interface BroadcasterUiState {
 
     data class EspotiPlayerReady(
         val hostAddresses: List<String>,
         val snapcastClients: List<Client>,
         val audioChannel: AudioChannel,
-    ) : RadioBroadcasterUiState
+    ) : BroadcasterUiState
 
     data class EspotiConnect(val isLoading: Boolean, val deviceName: String) :
-        RadioBroadcasterUiState
+        BroadcasterUiState
 }
 
-private data class RadioBroadcasterViewModelState(
+private data class BroadcasterViewModelState(
     val isPlaybackReady: Boolean = false,
     val isLoading: Boolean = true,
     val deviceName: String = "",
@@ -48,16 +48,16 @@ private data class RadioBroadcasterViewModelState(
     val audioChannel: AudioChannel = AudioChannel.STEREO,
 ) {
     /**
-     * Converts this [RadioBroadcasterViewModelState] state into a strongly typed
-     * [RadioBroadcasterUiState] for driving the UI.
+     * Converts this [BroadcasterViewModelState] state into a strongly typed
+     * [BroadcasterUiState] for driving the UI.
      */
-    fun toUiState(): RadioBroadcasterUiState = if (!isPlaybackReady) {
-        RadioBroadcasterUiState.EspotiConnect(
+    fun toUiState(): BroadcasterUiState = if (!isPlaybackReady) {
+        BroadcasterUiState.EspotiConnect(
             isLoading = isLoading,
             deviceName = deviceName,
         )
     } else {
-        RadioBroadcasterUiState.EspotiPlayerReady(
+        BroadcasterUiState.EspotiPlayerReady(
             hostAddresses = hostAddresses,
             snapcastClients = snapcastClients,
             audioChannel = audioChannel,
@@ -76,7 +76,7 @@ private data class RadioBroadcasterViewModelState(
  * @param espotiNsdManager The EspotiNsdManager instance.
  */
 @HiltViewModel
-class RadioBroadcasterViewModel @Inject constructor(
+class BroadcasterViewModel @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val repository: RadioRepository,
     private val espotiNsdManager: EspotiNsdManager,
@@ -91,7 +91,7 @@ class RadioBroadcasterViewModel @Inject constructor(
      * speaker.
      */
     private val viewModelState = MutableStateFlow(
-        RadioBroadcasterViewModelState(
+        BroadcasterViewModelState(
             isPlaybackReady = false,
             isLoading = true,
             deviceName = repository.getDeviceName(),
@@ -103,7 +103,7 @@ class RadioBroadcasterViewModel @Inject constructor(
 
     // UI state exposed to the UI
     val uiState = viewModelState
-        .map(RadioBroadcasterViewModelState::toUiState)
+        .map(BroadcasterViewModelState::toUiState)
         .stateIn(
             viewModelScope,
             started = SharingStarted.Eagerly,
@@ -146,7 +146,7 @@ class RadioBroadcasterViewModel @Inject constructor(
     }
 
     /**
-     * Both [RadioBroadcasterViewModel] and [RadioBroadcasterService] will observe the session state.
+     * Both [BroadcasterViewModel] and [RadioBroadcasterService] will observe the session state.
      * When:
      * 1. EspotiSessionRepository.SessionState.Created -> RadioBroadcasterService ->
      *    serviceWrapper?.isPlayerLoading?.isLoading -> responds -> UI updates

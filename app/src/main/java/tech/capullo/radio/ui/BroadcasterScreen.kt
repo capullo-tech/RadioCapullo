@@ -37,7 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import tech.capullo.radio.R
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientConfig
@@ -49,11 +49,11 @@ import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.viewmodels.RadioBroadcasterUiState
-import tech.capullo.radio.viewmodels.RadioBroadcasterViewModel
+import tech.capullo.radio.viewmodels.BroadcasterUiState
+import tech.capullo.radio.viewmodels.BroadcasterViewModel
 
 @Composable
-fun BroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
+fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     BroadcasterScreenContent(
@@ -64,11 +64,11 @@ fun BroadcasterScreen(viewModel: RadioBroadcasterViewModel = hiltViewModel()) {
 
 @Composable
 fun BroadcasterScreenContent(
-    uiState: RadioBroadcasterUiState,
+    uiState: BroadcasterUiState,
     onAudioChannelChange: (AudioChannel) -> Unit,
 ) {
     when (val state = uiState) {
-        is RadioBroadcasterUiState.EspotiPlayerReady -> {
+        is BroadcasterUiState.EspotiPlayerReady -> {
             BroadcasterPlayback(
                 hostAddresses = state.hostAddresses,
                 snapcastClients = state.snapcastClients,
@@ -77,7 +77,7 @@ fun BroadcasterScreenContent(
             )
         }
 
-        is RadioBroadcasterUiState.EspotiConnect -> {
+        is BroadcasterUiState.EspotiConnect -> {
             if (state.isLoading) {
                 LoadingSessionScreen()
             } else {

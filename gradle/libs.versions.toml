@@ -1,35 +1,38 @@
 [versions]
 accompanistPermissions = "0.37.3"
-activityCompose = "1.10.1"
+activityCompose = "1.11.0"
 agp = "8.13.0"
 androidx-junit = "1.3.0"
 composeLatest = "1.7.8"
-composeBom = "2025.08.01"
+composeBom = "2025.09.01"
+datastorePreferences = "1.1.7"
 espressoCore = "3.7.0"
-hiltNavigationCompose = "1.2.0"
+hiltViewmodelCompose = "1.3.0"
 junit = "4.13.2"
-kotlin = "2.2.10"
+kotlin = "2.2.20"
 kotlinxCoroutinesAndroid = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
-ktlint = "1.5.0"
+ktlint = "1.7.1"
 coreKtx = "1.17.0"
 hilt = "2.57.1"
-ksp = "2.2.10-2.0.2"
-ktor = "3.2.3"
+ksp = "2.2.20-2.0.3"
+ktor = "3.3.0"
 libSnapcastAndroid = "lr_snapcast-SNAPSHOT"
-lifecycleRuntimeKtx = "2.9.3"
-material3 = "1.5.0-alpha03"
+lifecycleRuntimeKtx = "2.9.4"
+material3 = "1.5.0-alpha04"
 media = "1.7.1"
 mockk = "1.14.5"
-navigation3 = "1.0.0-alpha08"
+navigation3 = "1.0.0-alpha10"
 startupRuntime = "1.2.0"
-spotless = "7.2.1"
+spotless = "8.0.0"
 
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "composeLatest" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-hilt-lifecycle-viewmodel-compose = { module = "androidx.hilt:hilt-lifecycle-viewmodel-compose", version.ref = "hiltViewmodelCompose" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
@@ -39,7 +42,6 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-junit" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -48,6 +50,7 @@ androidx-media = { group = "androidx.media", name = "media", version.ref = "medi
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-startup-runtime = { group = "androidx.startup", name = "startup-runtime", version.ref = "startupRuntime" }
+#androidx-hilt-viewmodel-compose = { group = "androidx.hilt.lifecycle.viewmodel.compose", version.ref = "hiltViewmodelCompose" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

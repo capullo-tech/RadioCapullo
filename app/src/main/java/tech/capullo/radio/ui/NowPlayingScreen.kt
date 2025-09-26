@@ -25,20 +25,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.viewmodels.RadioTuneInModel
+import tech.capullo.radio.viewmodels.TuneInModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
-    val connectionState by radioTuneInModel.connectionState.collectAsState()
+fun NowPlayingScreen(viewModel: TuneInModel = hiltViewModel()) {
+    val uiState by viewModel.tuneInState.collectAsState()
     var showChannelDialog by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(AudioChannel.STEREO) }
 
-    LaunchedEffect(connectionState.channel) {
-        selectedChannel = connectionState.channel
+    LaunchedEffect(uiState.audioChannel) {
+        selectedChannel = uiState.audioChannel
     }
 
     Scaffold(
@@ -77,12 +77,12 @@ fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
                     )
 
                     Text(
-                        text = "Server: ${connectionState.serverIp}",
+                        text = "Server: ${uiState.serverIp}",
                         style = Typography.bodyLarge,
                     )
 
                     Text(
-                        text = "Channel: ${connectionState.channel.label}",
+                        text = "Channel: ${uiState.audioChannel.label}",
                         style = Typography.bodyLarge,
                     )
 
@@ -91,7 +91,7 @@ fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
                         style = Typography.bodyMedium,
                     )
 
-                    if (connectionState.isConnected) {
+                    if (uiState.isTunedIn) {
                         Text(
                             text = "✓ Service is running",
                             style = Typography.bodyMedium,
@@ -115,7 +115,7 @@ fun NowPlayingScreen(radioTuneInModel: RadioTuneInModel = hiltViewModel()) {
                 onCheckedChanged = { isChecked: Boolean, audioChannel: AudioChannel ->
                     if (isChecked && selectedChannel != audioChannel) {
                         selectedChannel = audioChannel
-                        radioTuneInModel.updateAudioChannel(audioChannel)
+                        viewModel.updateAudioChannel(audioChannel)
                     }
                 },
             )

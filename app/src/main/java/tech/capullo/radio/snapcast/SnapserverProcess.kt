@@ -54,7 +54,7 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 val threadName = Thread.currentThread().name
                 println("Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (e: CancellationException) {
+        } catch (_: CancellationException) {
             println("Snapserver process cancelled")
             process.destroy()
         } catch (e: Exception) {

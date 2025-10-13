@@ -197,13 +197,20 @@ fun ServerListItem(server: DiscoveredSnapserver, isSelected: Boolean, onClick: (
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = server.hostAddress,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column {
+                Text(
+                    text = server.serviceName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    text = server.hostAddress,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
 
             Spacer(Modifier.weight(1f))
 
@@ -242,16 +249,16 @@ fun ServerListItem(server: DiscoveredSnapserver, isSelected: Boolean, onClick: (
 @Composable
 fun PreviewRadioTuneInContent() {
     val discoveredServices = listOf(
-        DiscoveredSnapserver("Snapcast Server 1", "_snapcast._tcp", "192.168.1.100", 1704),
-        DiscoveredSnapserver("Snapcast Server 2", "_snapcast._tcp", "192.168.1.101", 1704),
-        DiscoveredSnapserver("Snapcast Server 3", "_snapcast._tcp", "192.168.1.102", 1704),
-        DiscoveredSnapserver("Snapcast Server 4", "_snapcast._tcp", "192.168.1.103", 1704),
-        DiscoveredSnapserver("Snapcast Server 5", "_snapcast._tcp", "192.168.1.104", 1704),
-        DiscoveredSnapserver("Snapcast Server 6", "_snapcast._tcp", "192.168.1.105", 1704),
-        DiscoveredSnapserver("Snapcast Server 7", "_snapcast._tcp", "192.168.1.106", 1704),
-        DiscoveredSnapserver("Snapcast Server 8", "_snapcast._tcp", "192.168.1.107", 1704),
-        DiscoveredSnapserver("Snapcast Server 9", "_snapcast._tcp", "192.168.1.108", 1704),
-        DiscoveredSnapserver("Snapcast Server 10", "_snapcast._tcp", "192.168.1.109", 1704),
+        DiscoveredSnapserver("Pixel 3a", "_snapcast._tcp", "192.168.1.100", 1704),
+        DiscoveredSnapserver("OnePlus 3T", "_snapcast._tcp", "192.168.1.101", 1704),
+        DiscoveredSnapserver("Nacatambucho de Karin", "_snapcast._tcp", "192.168.1.102", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.103", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.104", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.105", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.106", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.107", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.108", 1704),
+        DiscoveredSnapserver("Snapcast", "_snapcast._tcp", "192.168.1.109", 1704),
     )
 
     val uiState = TuneInState(

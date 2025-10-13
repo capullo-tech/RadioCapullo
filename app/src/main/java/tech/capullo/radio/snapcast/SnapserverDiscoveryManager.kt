@@ -161,10 +161,29 @@ class SnapserverDiscoveryManager @Inject constructor(private val nsdManager: Nsd
                 _discoveredServices.value =
                     availableServers.filter { it.value.first != null || it.value.second != null }
                         .map {
+                            // TODO: display both stream and control ports
                             val serviceInfo = when {
                                 it.value.first != null -> it.value.first!!
                                 else -> it.value.second!!
                             }
+
+                            // for backwards compatibility with badaix/snapdroid, it will discover
+                            // _snapcast._tcp services only if the service name begins with "Snapcast"
+                            // reference: https://github.com/badaix/snapdroid/blob/0c707f930c422699789d38156eb896edd37dc02a/Snapcast/src/main/java/de/badaix/snapcast/utils/NsdHelper.java#L141
+
+                            // RadioCapullo advertises as: "Snapcast - ${deviceName}"
+                            // Strip out the "Snapcast - " suffix and only display the device name
+                            serviceInfo.serviceName =
+                                if (serviceInfo.serviceName.startsWith(
+                                        SnapserverNsdManager.SERVICE_NAME_PREFIX,
+                                    )
+                                ) {
+                                    serviceInfo.serviceName.substring(
+                                        SnapserverNsdManager.SERVICE_NAME_PREFIX.length,
+                                    )
+                                } else {
+                                    serviceInfo.serviceName
+                                }
                             DiscoveredSnapserver(
                                 serviceName = serviceInfo.serviceName,
                                 serviceType = serviceInfo.serviceType,

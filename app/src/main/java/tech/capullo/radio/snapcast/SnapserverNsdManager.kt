@@ -3,21 +3,25 @@ package tech.capullo.radio.snapcast
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.util.Log
+import tech.capullo.radio.data.RadioRepository
 import javax.inject.Inject
 
-class SnapserverNsdManager @Inject constructor(private val nsdManager: NsdManager) {
+class SnapserverNsdManager @Inject constructor(
+    private val nsdManager: NsdManager,
+    private val repository: RadioRepository,
+) {
 
     private val registeredListeners = mutableListOf<NsdManager.RegistrationListener>()
 
     fun start() {
         val controlServiceInfo = NsdServiceInfo().apply {
-            serviceName = SERVICE_NAME
+            serviceName = SERVICE_NAME_PREFIX + repository.getDeviceName()
             serviceType = SERVICE_TYPE
             port = SERVICE_PORT
         }
 
         val streamServiceInfo = NsdServiceInfo().apply {
-            serviceName = SERVICE_NAME
+            serviceName = SERVICE_NAME_PREFIX + repository.getDeviceName()
             serviceType = STREAM_SERVICE_TYPE
             port = STREAM_SERVICE_PORT
         }
@@ -67,7 +71,7 @@ class SnapserverNsdManager @Inject constructor(private val nsdManager: NsdManage
 
     companion object {
         private val TAG = SnapserverNsdManager::class.java.simpleName
-        const val SERVICE_NAME = "Snapcast"
+        const val SERVICE_NAME_PREFIX = "Snapcast - "
         const val SERVICE_TYPE = "_snapcast._tcp"
         const val SERVICE_PORT = 1704
         const val STREAM_SERVICE_TYPE = "_snapcast-stream._tcp"

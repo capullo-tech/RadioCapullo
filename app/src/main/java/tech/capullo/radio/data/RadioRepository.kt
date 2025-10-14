@@ -17,4 +17,6 @@ class RadioRepository @Inject constructor(
     fun getInetAddresses(): List<String> = radioAdvertisingDataSource.getInetAddresses()
 
     fun getDeviceName(): String = radioAdvertisingDataSource.getDeviceName()
+
+    fun getSnapserverConfPath(): String = pipeFileDataSource.getSnapserverConfPath()
 }

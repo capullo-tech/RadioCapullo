@@ -14,6 +14,7 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
 
     private val nativeLibDir = radioRepository.getNativeLibDirPath()
     private val cacheDir = radioRepository.getCacheDirPath()
+    private val confFile = radioRepository.getSnapserverConfPath()
     private val pipeFilepath = radioRepository.getPipeFilepath()!!
 
     companion object {
@@ -29,13 +30,15 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
             SAMPLE_FORMAT,
         ).joinToString("&")
 
-        private val TAG = SnapclientProcess::class.java.simpleName
+        private val TAG = SnapserverProcess::class.java.simpleName
     }
 
     suspend fun start() = coroutineScope {
         val pb = ProcessBuilder()
             .command(
                 "$nativeLibDir/libsnapserver.so",
+                "--config",
+                confFile,
                 "--server.datadir=$cacheDir",
                 "--stream.source",
                 "pipe://$pipeFilepath?$pipeArgs",
@@ -52,11 +55,13 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 ensureActive()
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
-                println("Running on: $processId -  $threadName - ${line!!}")
+                Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (_: CancellationException) {
-            println("Snapserver process cancelled")
+            Log.d(TAG, "Snapserver process cancelled")
             process.destroy()
+            process.waitFor()
+            Log.d(TAG, "Snapserver process destroyed")
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }

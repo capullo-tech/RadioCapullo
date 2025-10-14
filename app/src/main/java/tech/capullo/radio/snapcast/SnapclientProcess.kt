@@ -47,9 +47,9 @@ class SnapclientProcess @Inject constructor(
         val audioChannel = AudioChannel.entries[audioChannel].label.lowercase()
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
-            "-h", snapserverAddress, "-p", snapserverPort.toString(),
             "--hostID", hostId, "--player", androidPlayer, "--sampleformat", sampleFormat,
             "--logfilter", "*:info,Stats:debug",
+            "tcp://$snapserverAddress:$snapserverPort",
             "--channel", audioChannel,
         )
 
@@ -67,13 +67,13 @@ class SnapclientProcess @Inject constructor(
                 ensureActive()
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
-                println("Running on: $processId -  $threadName - ${line!!}")
+                Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (_: CancellationException) {
-            println("Snapclient process cancelled")
+            Log.d(TAG, "Snapclient process cancelled")
             process.destroy()
             process.waitFor()
-            println("Snapclient process destroyed")
+            Log.d(TAG, "Snapclient process destroyed")
         } catch (e: Exception) {
             Log.e(TAG, "Error starting snapcast process", e)
         }

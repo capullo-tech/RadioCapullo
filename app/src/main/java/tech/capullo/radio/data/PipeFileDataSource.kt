@@ -38,6 +38,23 @@ class PipeFileDataSource @Inject constructor(@ApplicationContext private val con
 
     fun getCacheDirPath(): String = CACHE_DIR.absolutePath
 
+    // Add empty/dummy snapserver conf file, all settings are specified as cli args on the
+    // SnapserverProcess
+    fun getSnapserverConfPath(): String {
+        val confFile = File(CACHE_DIR, "snapserver.conf")
+
+        if (!confFile.exists()) {
+            try {
+                confFile.createNewFile()
+                Log.d(TAG, "Created snapserver.conf: ${confFile.absolutePath}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating snapserver.conf: ${e.message}")
+            }
+        }
+
+        return confFile.absolutePath
+    }
+
     companion object {
         private const val TAG = "RadioRepository"
         private const val PIPE_NAME = "filifo"

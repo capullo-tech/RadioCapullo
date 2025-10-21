@@ -14,7 +14,17 @@ class RadioRepository @Inject constructor(
 
     fun getCacheDirPath(): String = pipeFileDataSource.getCacheDirPath()
 
-    fun getInetAddresses(): List<String> = radioAdvertisingDataSource.getInetAddresses()
+    sealed class IPv4AddressesResult {
+        object Loading : IPv4AddressesResult()
+        data class Success(val addresses: List<String>) : IPv4AddressesResult()
+        data class Error(val message: String?) : IPv4AddressesResult()
+    }
+
+    suspend fun getIPv4Addresses(): IPv4AddressesResult = try {
+        IPv4AddressesResult.Success(radioAdvertisingDataSource.getIPv4Addresses())
+    } catch (e: Exception) {
+        IPv4AddressesResult.Error(e.message)
+    }
 
     fun getDeviceName(): String = radioAdvertisingDataSource.getDeviceName()
 

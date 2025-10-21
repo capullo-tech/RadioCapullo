@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToLog
 import org.junit.Rule
 import org.junit.Test
+import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.ui.BroadcasterScreenContent
 import tech.capullo.radio.ui.model.AudioChannel
@@ -33,6 +35,7 @@ class RadioBroadcasterEspotiConnectTest {
             BroadcasterScreenContent(
                 uiState,
                 onAudioChannelChange = { },
+                onRefreshHostAddresses = { },
             )
         }
         composeTestRule.onRoot().printToLog("TAG")
@@ -64,6 +67,7 @@ class RadioBroadcasterEspotiConnectTest {
             BroadcasterScreenContent(
                 uiState,
                 onAudioChannelChange = { },
+                onRefreshHostAddresses = { },
             )
         }
         composeTestRule.onRoot().printToLog("TAG")
@@ -75,13 +79,15 @@ class RadioBroadcasterEspotiConnectTest {
     }
 
     @Test
-    fun whenPlayerReadyState_showsRabioBroadcasterPlaybackScreen() {
+    fun whenPlayerReadyState_showsRadioBroadcasterPlaybackScreen() {
         // Given: UI state is EspotiPlayerReady
-        val hostAddresses = listOf("192.168.0.1", "10.0.0.2")
+        var ipv4AddressesResult: IPv4AddressesResult = IPv4AddressesResult.Success(
+            listOf("192.168.0.1", "10.0.0.2"),
+        )
         val mockClients = emptyList<Client>()
 
-        val uiState = BroadcasterUiState.EspotiPlayerReady(
-            hostAddresses = hostAddresses,
+        var uiState = BroadcasterUiState.EspotiPlayerReady(
+            ipv4AddressesResult = ipv4AddressesResult,
             snapcastClients = mockClients,
             audioChannel = AudioChannel.STEREO,
         )
@@ -91,6 +97,7 @@ class RadioBroadcasterEspotiConnectTest {
             BroadcasterScreenContent(
                 uiState,
                 onAudioChannelChange = { },
+                onRefreshHostAddresses = { },
             )
         }
 
@@ -98,5 +105,11 @@ class RadioBroadcasterEspotiConnectTest {
         composeTestRule.onNodeWithText("Host Addresses:").assertIsDisplayed()
         composeTestRule.onNodeWithText("192.168.0.1").assertIsDisplayed()
         composeTestRule.onNodeWithText("10.0.0.2").assertIsDisplayed()
+
+        val refreshIpAdressesButton = SemanticsMatcher.expectValue(
+            SemanticsProperties.Role,
+            Role.Button,
+        ) and hasContentDescription("Refresh ip addresses")
+        composeTestRule.onNode(refreshIpAdressesButton).assertIsEnabled()
     }
 }

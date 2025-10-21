@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
@@ -29,22 +31,21 @@ import javax.inject.Inject
 
 sealed interface BroadcasterUiState {
 
+    data class EspotiConnect(val isLoading: Boolean, val deviceName: String) : BroadcasterUiState
+
     data class EspotiPlayerReady(
-        val hostAddresses: List<String>,
+        val ipv4AddressesResult: IPv4AddressesResult,
         val snapcastClients: List<Client>,
         val audioChannel: AudioChannel,
     ) : BroadcasterUiState
-
-    data class EspotiConnect(val isLoading: Boolean, val deviceName: String) :
-        BroadcasterUiState
 }
 
 private data class BroadcasterViewModelState(
     val isPlaybackReady: Boolean = false,
     val isLoading: Boolean = true,
     val deviceName: String = "",
+    val ipv4AddressesResult: IPv4AddressesResult = IPv4AddressesResult.Loading,
     val snapcastClients: List<Client> = emptyList(),
-    val hostAddresses: List<String> = emptyList(),
     val audioChannel: AudioChannel = AudioChannel.STEREO,
 ) {
     /**
@@ -58,7 +59,7 @@ private data class BroadcasterViewModelState(
         )
     } else {
         BroadcasterUiState.EspotiPlayerReady(
-            hostAddresses = hostAddresses,
+            ipv4AddressesResult = ipv4AddressesResult,
             snapcastClients = snapcastClients,
             audioChannel = audioChannel,
         )
@@ -95,8 +96,8 @@ class BroadcasterViewModel @Inject constructor(
             isPlaybackReady = false,
             isLoading = true,
             deviceName = repository.getDeviceName(),
+            ipv4AddressesResult = IPv4AddressesResult.Loading,
             snapcastClients = emptyList(),
-            hostAddresses = emptyList(),
             audioChannel = AudioChannel.STEREO,
         ),
     )
@@ -127,13 +128,12 @@ class BroadcasterViewModel @Inject constructor(
                     // TODO: (potentially) display a screen saying the sessions is established
                     // and the player is loading
                     if (!isLoading) {
-                        val hostAddresses = repository.getInetAddresses()
                         viewModelState.value =
                             viewModelState.value.copy(
                                 isPlaybackReady = true,
-                                hostAddresses = hostAddresses,
                                 snapcastClients = snapcastClients.value,
                             )
+                        refreshIPv4Addresses()
                     }
                 }
             }
@@ -216,6 +216,18 @@ class BroadcasterViewModel @Inject constructor(
         viewModelState.value = viewModelState.value.copy(audioChannel = channel)
         // Notify service to update audio channel
         mService?.updateAudioChannel(channel)
+    }
+
+    fun refreshIPv4Addresses() {
+        viewModelState.value = viewModelState.value.copy(
+            ipv4AddressesResult = IPv4AddressesResult.Loading,
+        )
+        viewModelScope.launch {
+            delay(500) // make the loading/result transition last for at least 0.5 sec
+            val ipv4AddressesResult = repository.getIPv4Addresses()
+            viewModelState.value =
+                viewModelState.value.copy(ipv4AddressesResult = ipv4AddressesResult)
+        }
     }
 
     fun unbindBroadcasterService() {

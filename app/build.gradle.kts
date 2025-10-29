@@ -45,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -56,6 +57,12 @@ android {
             jniLibs {
                 useLegacyPackaging = true
             }
+        }
+    }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            // TODO: introduce robolectric
         }
     }
 }
@@ -97,6 +104,7 @@ dependencies {
         exclude(group = "com.lmax", module = "disruptor")
         exclude(group = "org.apache.logging.log4j")
     }
+    implementation(libs.slf4j.handroid)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

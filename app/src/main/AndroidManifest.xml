@@ -56,7 +56,7 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <meta-data  android:name="tech.capullo.radio.espoti.AndroidNativeDecoderInitializer"
+            <meta-data  android:name="tech.capullo.radio.espoti.EspotiInitializer"
                 android:value="androidx.startup" />
         </provider>
     </application>

@@ -23,6 +23,7 @@ material3 = "1.5.0-alpha07"
 media = "1.7.1"
 mockk = "1.14.6"
 navigation3 = "1.0.0-beta01"
+slf4jHandroid = "2.0.13"
 startupRuntime = "1.2.0"
 spotless = "8.0.0"
 
@@ -62,6 +63,7 @@ ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" 
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 lib-snapcast-android = { group = "com.github.capullo-tech.lib-snapcast-android", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
 mockk = { group= "io.mockk", name = "mockk", version.ref = "mockk" }
+slf4j-handroid = { module = "com.gitlab.mvysny.slf4j:slf4j-handroid", version.ref = "slf4jHandroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

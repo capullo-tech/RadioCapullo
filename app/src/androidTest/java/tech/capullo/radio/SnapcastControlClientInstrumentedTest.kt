@@ -12,7 +12,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.capullo.radio.data.PipeFileDataSource
+import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -28,9 +28,9 @@ class SnapcastControlClientInstrumentedTest {
     @Before
     fun setup() {
         appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val pipeFileDataSource = PipeFileDataSource(appContext)
+        val confFileDataSource = ConfFileDataSource(appContext)
         val radioAdvertisingDataSource = RadioAdvertisingDataSource(appContext)
-        radioRepository = RadioRepository(pipeFileDataSource, radioAdvertisingDataSource)
+        radioRepository = RadioRepository(confFileDataSource, radioAdvertisingDataSource)
     }
 
     @Test

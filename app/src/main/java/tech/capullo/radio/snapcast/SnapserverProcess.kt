@@ -13,7 +13,7 @@ import javax.inject.Inject
 class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
 
     private val nativeLibDir = radioRepository.getNativeLibDirPath()
-    private val cacheDir = radioRepository.getCacheDirPath()
+    private val cacheDir = radioRepository.getCacheDir()
     private val confFile = radioRepository.getSnapserverConfPath()
     private val pipeFilepath = radioRepository.getPipeFilepath()!!
 

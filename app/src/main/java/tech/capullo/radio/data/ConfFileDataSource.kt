@@ -9,15 +9,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
-class PipeFileDataSource @Inject constructor(@ApplicationContext private val context: Context) {
-    @Suppress("ktlint:standard:property-naming")
-    private val CACHE_DIR = context.cacheDir
-
-    @Suppress("ktlint:standard:property-naming")
-    private val NATIVE_LIB_DIR_PATH = context.applicationInfo.nativeLibraryDir
-
+class ConfFileDataSource @Inject constructor(@ApplicationContext private val appContext: Context) {
     fun getPipeFilepath(): String? {
-        val pipeFile = File(CACHE_DIR, PIPE_NAME)
+        val pipeFile = File(getCacheDir(), PIPE_NAME)
 
         if (pipeFile.exists()) {
             Log.d(TAG, "Deleting existing PIPE file")
@@ -34,14 +28,16 @@ class PipeFileDataSource @Inject constructor(@ApplicationContext private val con
         }
     }
 
-    fun getNativeLibDirPath(): String = NATIVE_LIB_DIR_PATH
+    fun getNativeLibDirPath(): String = appContext.applicationInfo.nativeLibraryDir
 
-    fun getCacheDirPath(): String = CACHE_DIR.absolutePath
+    fun getCacheDir(): File = appContext.cacheDir
+
+    fun getFilesDir(): File = appContext.filesDir
 
     // Add empty/dummy snapserver conf file, all settings are specified as cli args on the
     // SnapserverProcess
     fun getSnapserverConfPath(): String {
-        val confFile = File(CACHE_DIR, "snapserver.conf")
+        val confFile = File(getCacheDir(), "snapserver.conf")
 
         if (!confFile.exists()) {
             try {
@@ -56,7 +52,7 @@ class PipeFileDataSource @Inject constructor(@ApplicationContext private val con
     }
 
     companion object {
-        private const val TAG = "RadioRepository"
+        private val TAG = ConfFileDataSource::class.java.simpleName
         private const val PIPE_NAME = "filifo"
     }
 }

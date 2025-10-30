@@ -4,15 +4,13 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.NetworkInterface
-import java.util.Collections
 import javax.inject.Inject
 
 class RadioAdvertisingDataSource @Inject constructor(
-    @ApplicationContext private val applicationContext: Context,
+    @ApplicationContext private val appContext: Context,
 ) {
     // TODO: injected dispatcher
     suspend fun getIPv4Addresses(): List<String> = withContext(Dispatchers.Default) {
@@ -25,7 +23,7 @@ class RadioAdvertisingDataSource @Inject constructor(
 
     fun getDeviceName(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
         val deviceName = Settings.Global.getString(
-            applicationContext.contentResolver,
+            appContext.contentResolver,
             Settings.Global.DEVICE_NAME,
         )
         if (deviceName == Build.MODEL) Build.MODEL else "$deviceName (${Build.MODEL})"

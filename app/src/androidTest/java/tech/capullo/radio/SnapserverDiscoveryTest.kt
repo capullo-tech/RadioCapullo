@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.capullo.radio.data.PipeFileDataSource
+import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.snapcast.SnapserverDiscoveryManager
@@ -21,9 +21,9 @@ class SnapserverDiscoveryTest {
     @Test
     fun testDiscoversSnapserverServices() = runBlocking {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val pipeFileDataSource = PipeFileDataSource(appContext)
+        val confFileDataSource = ConfFileDataSource(appContext)
         val radioAdvertisingDataSource = RadioAdvertisingDataSource(appContext)
-        val repository = RadioRepository(pipeFileDataSource, radioAdvertisingDataSource)
+        val repository = RadioRepository(confFileDataSource, radioAdvertisingDataSource)
         val nsdManager = appContext.getSystemService(Context.NSD_SERVICE) as NsdManager
 
         launch {

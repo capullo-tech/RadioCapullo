@@ -117,12 +117,21 @@ class RadioBroadcasterService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
-        observeSessionState()
 
         return START_NOT_STICKY
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        observeSessionState()
+    }
+
     override fun onBind(intent: Intent?): IBinder = binder
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        println("RadioBroadcasterService on unbind")
+        return super.onUnbind(intent)
+    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
@@ -233,6 +242,7 @@ class RadioBroadcasterService : Service() {
                 val uri = "spotify:user:${ses.username()}:collection"
                 println("loading uri: $uri")
                 espotiPlayerManager.player.load(uri, true, true)
+                espotiPlayerManager.player.next()
             }
         }
     }

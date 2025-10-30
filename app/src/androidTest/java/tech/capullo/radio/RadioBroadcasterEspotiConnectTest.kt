@@ -15,8 +15,10 @@ import org.junit.Test
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.ui.BroadcasterScreenContent
+import tech.capullo.radio.ui.EspotiSessionLoadingScreenContent
 import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.viewmodels.BroadcasterUiState
+import tech.capullo.radio.viewmodels.EspotiSessionLoadingUiState
 
 class RadioBroadcasterEspotiConnectTest {
 
@@ -24,20 +26,15 @@ class RadioBroadcasterEspotiConnectTest {
 
     @Test
     fun whenEspotiConnectState_showsEspotiConnectScreen() {
-        // Given: UI state is EspotiConnect
-        val uiState = BroadcasterUiState.EspotiConnect(
+        // Given: Finished loading the stored session, but the player didn't load
+        val uiState = EspotiSessionLoadingUiState(
             isLoading = false,
+            isPlayerReady = false,
             deviceName = "Test Device",
         )
 
-        // When: RadioBroadcasterScreen is displayed
-        composeTestRule.setContent {
-            BroadcasterScreenContent(
-                uiState,
-                onAudioChannelChange = { },
-                onRefreshHostAddresses = { },
-            )
-        }
+        // When: EspotiSessionLoadingScreen is displayed
+        composeTestRule.setContent { EspotiSessionLoadingScreenContent(uiState) }
         composeTestRule.onRoot().printToLog("TAG")
 
         // Then: The EspotiConnect screen is displayed
@@ -56,20 +53,15 @@ class RadioBroadcasterEspotiConnectTest {
 
     @Test
     fun whenLoadingPreviousPlaybackSessionState_showsLoadingIndicator() {
-        // Given: UI state is EspotiConnect with loadingStoredCredentials = true
-        val uiState = BroadcasterUiState.EspotiConnect(
+        // Given: UI state is loading the stored credentials
+        val uiState = EspotiSessionLoadingUiState(
             isLoading = true,
+            isPlayerReady = false,
             deviceName = "Test Device",
         )
 
-        // When: RadioBroadcasterScreen is displayed
-        composeTestRule.setContent {
-            BroadcasterScreenContent(
-                uiState,
-                onAudioChannelChange = { },
-                onRefreshHostAddresses = { },
-            )
-        }
+        // When: EspotiSessionLoadingScreen is displayed
+        composeTestRule.setContent { EspotiSessionLoadingScreenContent(uiState) }
         composeTestRule.onRoot().printToLog("TAG")
 
         // Then: The loading indicator is displayed
@@ -84,11 +76,9 @@ class RadioBroadcasterEspotiConnectTest {
         var ipv4AddressesResult: IPv4AddressesResult = IPv4AddressesResult.Success(
             listOf("192.168.0.1", "10.0.0.2"),
         )
-        val mockClients = emptyList<Client>()
 
-        var uiState = BroadcasterUiState.EspotiPlayerReady(
+        var uiState = BroadcasterUiState(
             ipv4AddressesResult = ipv4AddressesResult,
-            snapcastClients = mockClients,
             audioChannel = AudioChannel.STEREO,
         )
 

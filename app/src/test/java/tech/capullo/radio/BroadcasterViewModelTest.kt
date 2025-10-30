@@ -5,7 +5,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import tech.capullo.radio.data.PipeFileDataSource
+import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
 import java.net.SocketException
@@ -17,8 +17,8 @@ class BroadcasterViewModelTest {
         val mockContext = mockk<Context>()
 
         val radioAdvertisingDataSource = RadioAdvertisingDataSource(mockContext)
-        val pipeFileDataSource = mockk<PipeFileDataSource>()
-        val radioRepository = RadioRepository(pipeFileDataSource, radioAdvertisingDataSource)
+        val confFileDataSource = mockk<ConfFileDataSource>()
+        val radioRepository = RadioRepository(confFileDataSource, radioAdvertisingDataSource)
 
         val iPv4AddressesResult = radioRepository.getIPv4Addresses()
 
@@ -39,8 +39,8 @@ class BroadcasterViewModelTest {
         coEvery { radioAdvertisingDataSource.getIPv4Addresses() } throws
             SocketException(socketExceptionTestMessage)
 
-        val pipeFileDataSource = mockk<PipeFileDataSource>()
-        val radioRepository = RadioRepository(pipeFileDataSource, radioAdvertisingDataSource)
+        val confFileDataSource = mockk<ConfFileDataSource>()
+        val radioRepository = RadioRepository(confFileDataSource, radioAdvertisingDataSource)
 
         val iPv4AddressesResult = radioRepository.getIPv4Addresses()
 

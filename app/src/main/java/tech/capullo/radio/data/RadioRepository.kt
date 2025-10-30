@@ -1,18 +1,21 @@
 package tech.capullo.radio.data
 
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RadioRepository @Inject constructor(
-    private val pipeFileDataSource: PipeFileDataSource,
+    private val confFileDataSource: ConfFileDataSource,
     private val radioAdvertisingDataSource: RadioAdvertisingDataSource,
 ) {
-    fun getPipeFilepath(): String? = pipeFileDataSource.getPipeFilepath()
+    fun getPipeFilepath(): String? = confFileDataSource.getPipeFilepath()
 
-    fun getNativeLibDirPath(): String = pipeFileDataSource.getNativeLibDirPath()
+    fun getNativeLibDirPath(): String = confFileDataSource.getNativeLibDirPath()
 
-    fun getCacheDirPath(): String = pipeFileDataSource.getCacheDirPath()
+    fun getCacheDir(): File = confFileDataSource.getCacheDir()
+
+    fun getFilesDir(): File = confFileDataSource.getFilesDir()
 
     sealed class IPv4AddressesResult {
         object Loading : IPv4AddressesResult()
@@ -28,5 +31,5 @@ class RadioRepository @Inject constructor(
 
     fun getDeviceName(): String = radioAdvertisingDataSource.getDeviceName()
 
-    fun getSnapserverConfPath(): String = pipeFileDataSource.getSnapserverConfPath()
+    fun getSnapserverConfPath(): String = confFileDataSource.getSnapserverConfPath()
 }

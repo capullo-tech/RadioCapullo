@@ -1,64 +1,91 @@
 package tech.capullo.radio
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.navigation3.runtime.NavEntry
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import kotlinx.serialization.Serializable
 import tech.capullo.radio.ui.BroadcasterScreen
+import tech.capullo.radio.ui.EspotiSessionLoadingScreen
 import tech.capullo.radio.ui.NowPlayingScreen
 import tech.capullo.radio.ui.RadioHomeScreen
 import tech.capullo.radio.ui.TuneInScreen
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 
-data object Home
-data object Broadcast
-data object TuneIn
-data object NowPlaying
+@Serializable
+private data object Home : NavKey
+
+@Serializable
+private data object EspotiSessionLoading : NavKey
+
+@Serializable
+private data object Broadcast : NavKey
+
+@Serializable
+private data object TuneIn : NavKey
+
+@Serializable
+private data object NowPlaying : NavKey
 
 @Composable
 fun RadioCapulloNavHost() {
-    val backStack = remember { mutableStateListOf<Any>(Home) }
+    val backStack = rememberNavBackStack(Home)
 
     NavDisplay(
         backStack = backStack,
-        entryProvider = { key ->
-            when (key) {
-                is Home -> NavEntry(key) {
-                    RadioHomeScreen(
-                        onStartBroadcastingClicked = { backStack.add(Broadcast) },
-                        onTuneInClicked = { backStack.add(TuneIn) },
+        onBack = { backStack.removeLastOrNull() },
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
+        entryProvider = entryProvider {
+            entry<Home> {
+                RadioHomeScreen(
+                    onStartBroadcastingClicked = { backStack.add(EspotiSessionLoading) },
+                    onTuneInClicked = { backStack.add(TuneIn) },
+                )
+            }
+
+            entry<EspotiSessionLoading> {
+                RadioTheme(
+                    schemeChoice = SchemeChoice.GREEN,
+                ) {
+                    EspotiSessionLoadingScreen(
+                        onPlayerReady = {
+                            backStack.add(Broadcast)
+                        },
                     )
                 }
+            }
 
-                is Broadcast -> NavEntry(key) {
-                    RadioTheme(
-                        schemeChoice = SchemeChoice.GREEN,
-                    ) {
-                        BroadcasterScreen()
-                    }
+            entry<Broadcast> {
+                RadioTheme(
+                    schemeChoice = SchemeChoice.GREEN,
+                ) {
+                    BroadcasterScreen()
                 }
+            }
 
-                is TuneIn -> NavEntry(key) {
-                    RadioTheme(
-                        schemeChoice = SchemeChoice.ORANGE,
-                    ) {
-                        TuneInScreen(
-                            onConnected = { backStack.add(NowPlaying) },
-                        )
-                    }
+            entry<TuneIn> {
+                RadioTheme(
+                    schemeChoice = SchemeChoice.ORANGE,
+                ) {
+                    TuneInScreen(
+                        onConnected = { backStack.add(NowPlaying) },
+                    )
                 }
+            }
 
-                is NowPlaying -> NavEntry(key) {
-                    RadioTheme(
-                        schemeChoice = SchemeChoice.ORANGE,
-                    ) {
-                        NowPlayingScreen()
-                    }
+            entry<NowPlaying> {
+                RadioTheme(
+                    schemeChoice = SchemeChoice.ORANGE,
+                ) {
+                    NowPlayingScreen()
                 }
-
-                else -> NavEntry(Unit) {}
             }
         },
     )

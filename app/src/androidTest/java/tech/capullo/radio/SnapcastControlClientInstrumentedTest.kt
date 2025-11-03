@@ -3,18 +3,27 @@ package tech.capullo.radio
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import org.junit.Assert.assertNotNull
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.snapcast.ServerGetStatusResponse
+import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
@@ -34,63 +43,84 @@ class SnapcastControlClientInstrumentedTest {
     }
 
     @Test
-    fun testSnapcastControlClientConnection() = runBlocking {
-        // Start a snapserver process
-        val serverJob = launch(Dispatchers.IO) {
-            val snapserverProcess = SnapserverProcess(radioRepository)
-            snapserverProcess.start()
+    fun serverGetStatusAfterOneClientConnection() = runTest {
+        // Setup
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapserverProcess(radioRepository).start()
         }
 
-        // Give server time to start
-        delay(2000)
+        val snapcastControlClient = SnapcastControlClient(
+            "127.0.0.1",
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        snapcastControlClient.initialize()
 
-        // Start a snapclient process
-        val snapclientJob = launch(Dispatchers.IO) {
-            val snapclientProcess = SnapclientProcess(appContext, radioRepository)
-            snapclientProcess.start()
+        // no client connections yet, querying for the status should return us an empty list
+        snapcastControlClient.sendGetStatus()
+
+        var notification = snapcastControlClient.notifications.first()
+
+        assert(notification is ServerGetStatusResponse)
+        (notification as ServerGetStatusResponse).also { serverGetStatusResponse ->
+            assert(serverGetStatusResponse.result.server.groups.isEmpty())
         }
 
-        // Give client time to connect
-        delay(2000)
-
-        // Create and test the control client
-        val snapcastControlClient = SnapcastControlClient("127.0.0.1")
-
-        // Start listening for server status updates
-        val statusJob = launch {
-            println("Listening for server status updates")
-            val result = withTimeoutOrNull(5000) {
-                snapcastControlClient.serverStatus.first()
-            }
-            println("Received server status: $result")
-            assertNotNull("Should receive server status", result)
-
-            println("Checking server status")
-            result?.let {
-                // Verify some basic structure of the response
-                assertNotNull(it.result)
-                assertNotNull(it.result.server)
-                assertNotNull(it.result.server.groups)
-                // assertTrue("Server should have a version", it.result.server.version.isNotEmpty())
-            }
-            println("Server status check complete")
+        // expecting a serverOnUpdate right after a snapclient has connected
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapclientProcess(appContext, radioRepository).start()
         }
 
-        // Initialize the websocket connection
-        val controlClientJob = launch(Dispatchers.IO) {
-            snapcastControlClient.initWebsocket()
+        notification = snapcastControlClient.notifications.first()
+
+        assert(notification is ServerOnUpdate)
+        (notification as ServerOnUpdate).also { serverOnUpdate ->
+            assert(serverOnUpdate.params.server.groups.size == 1)
         }
 
-        // Wait for status job to complete
-        println("Waiting for status job to complete")
-        statusJob.join()
-        println("Status job complete")
+        // querying again for the server.getStatus should be consistent
+        snapcastControlClient.sendGetStatus()
+        notification = snapcastControlClient.notifications.first()
 
-        // Clean up
-        println("Cleaning up")
-        snapclientJob.cancel()
-        serverJob.cancel()
-        controlClientJob.cancel()
-        println("Cleanup complete")
+        assert(notification is ServerGetStatusResponse)
+        (notification as ServerGetStatusResponse).also { serverGetStatusResponse ->
+            assert(serverGetStatusResponse.result.server.groups.size == 1)
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun notificationCollectionDuringSnapserverShutdown() = runTest {
+        // Setup
+        val serverJob = backgroundScope.launch(Dispatchers.IO) {
+            SnapserverProcess(radioRepository).start()
+        }
+
+        val snapcastControlClient = SnapcastControlClient(
+            "127.0.0.1",
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        snapcastControlClient.initialize()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            snapcastControlClient.notifications
+                // If it wasn't for this catch, the collection would fail...
+                .catch { exception ->
+                    println("caught: $exception")
+                }
+                .collect {
+                    println("collected: $it")
+                }
+        }
+
+        snapcastControlClient.sendGetStatus()
+
+        val clientJob = backgroundScope.launch(Dispatchers.IO) {
+            SnapclientProcess(appContext, radioRepository).start()
+        }
+
+        serverJob.cancelAndJoin()
+        clientJob.cancelAndJoin()
+        assert(serverJob.isCancelled)
+
+        // ...therefore we count this test being able to finish as "passing"
     }
 }

@@ -1,5 +1,6 @@
 package tech.capullo.radio.snapcast
 
+import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -9,19 +10,22 @@ import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 
-class SnapcastControlClient(private val snapserverHostAddress: String) {
+class SnapcastControlClient(
+    private val snapserverHostAddress: String,
+    private val tag: Int = 1,
+    private val websocketPort: Int = 1780,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val client = HttpClient(OkHttp) {
         engine {
             config {
@@ -34,57 +38,58 @@ class SnapcastControlClient(private val snapserverHostAddress: String) {
         }
     }
 
-    private val _serverStatus = MutableSharedFlow<SnapcastServerStatus>()
-    val serverStatus: SharedFlow<SnapcastServerStatus> = _serverStatus
-
-    var receiveJob: Job? = null
     private var session: DefaultClientWebSocketSession? = null
 
-    suspend fun initWebsocket() = coroutineScope {
-        val session = client.webSocketSession(
+    private var requestIdCounter: Int = 1
+
+    suspend fun initialize() = withContext(ioDispatcher) {
+        session = client.webSocketSession(
             method = HttpMethod.Get,
             host = snapserverHostAddress,
-            port = DEFAULT_WS_PORT,
+            port = websocketPort,
             path = "/jsonrpc",
         )
-
-        receiveJob = launch {
-            try {
-                while (true) {
-                    ensureActive()
-                    val frame = session.incoming.receive() as? Frame.Text
-                    println("Received frame: ${frame?.readText()}")
-
-                    val jsonString = frame?.readText()
-                    jsonString?.let {
-                        try {
-                            val response = Json.decodeFromString<SnapcastServerStatus>(jsonString)
-                            println(response)
-                            _serverStatus.emit(response)
-                            println("emmitting server status")
-                        } catch (e: Exception) {
-                            println("Error decoding response: $e")
-                        }
-                    }
-                }
-            } catch (e: CancellationException) {
-                println("Websocket receive job cancelled")
-            } catch (e: Exception) {
-                println("Error receiving frame: $e")
-            }
-        }
-
-        println("sending frame")
-        val getStatus = SnapcastGetStatusRequest(1, "2.0", "Server.GetStatus")
-        session.sendSerialized(getStatus)
     }
 
-    @Serializable
-    data class SnapcastGetStatusRequest(val id: Int, val jsonrpc: String, val method: String)
+    val notifications: Flow<SnapcastJSONRPCResponse?> = flow {
+        while (true) {
+            val frame = withContext(ioDispatcher) {
+                session?.incoming?.receive() as? Frame.Text
+            }
+            frame?.readText()?.also { jsonString ->
+                val response = try {
+                    Json.decodeFromString(SnapcastJSONRPCResponseSerializer, jsonString)
+                } catch (e: Exception) {
+                    Log.d(TAG, "Error decoding response: $e")
+                    null
+                }
+                emit(response)
+            }
+        }
+    }
+
+    suspend fun sendGetStatus() {
+        val getStatusRequest = ServerGetStatusRequest(id = requestIdCounter++)
+        session?.sendSerialized(getStatusRequest)
+    }
+
+    suspend fun sendSetVolume(clientId: String, muted: Boolean, percent: Int) {
+        val volume = Volume(
+            muted = muted,
+            percent = percent,
+        )
+        val setVolume = ClientSetVolumeRequest(
+            id = requestIdCounter++,
+            params = VolumeParams(
+                clientId = clientId,
+                volume = volume,
+            ),
+        )
+
+        session?.sendSerialized(setVolume)
+    }
 
     companion object {
-        private const val TAG = "SnapcastControlClient"
-        private const val DEFAULT_PORT = 1705
-        private const val DEFAULT_WS_PORT = 1780
+        private val TAG = SnapcastControlClient::class.simpleName
     }
 }

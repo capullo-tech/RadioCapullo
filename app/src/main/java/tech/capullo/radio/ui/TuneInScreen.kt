@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -54,11 +53,11 @@ import tech.capullo.radio.snapcast.DiscoveredSnapserver
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.viewmodels.TuneInModel
 import tech.capullo.radio.viewmodels.TuneInState
+import tech.capullo.radio.viewmodels.TuneInViewModel
 
 @Composable
-fun TuneInScreen(viewModel: TuneInModel = hiltViewModel(), onConnected: () -> Unit) {
+fun TuneInScreen(viewModel: TuneInViewModel = hiltViewModel(), onConnected: () -> Unit) {
     val uiState by viewModel.tuneInState.collectAsState()
 
     // Navigate when service is connected and running

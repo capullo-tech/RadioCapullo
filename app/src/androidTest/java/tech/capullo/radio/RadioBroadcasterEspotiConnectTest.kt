@@ -66,7 +66,7 @@ class RadioBroadcasterEspotiConnectTest {
 
         // Then: The loading indicator is displayed
         composeTestRule.onNodeWithText(
-            "Checking for previous playback session...",
+            text = "Connecting to music source...",
         ).assertIsDisplayed()
     }
 
@@ -88,6 +88,8 @@ class RadioBroadcasterEspotiConnectTest {
                 uiState,
                 onAudioChannelChange = { },
                 onRefreshHostAddresses = { },
+                clients = listOf(),
+                onClientVolumeChange = { _, _, _ -> },
             )
         }
 

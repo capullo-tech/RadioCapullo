@@ -26,14 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.Typography
-import tech.capullo.radio.viewmodels.TuneInModel
+import tech.capullo.radio.viewmodels.TuneInViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NowPlayingScreen(viewModel: TuneInModel = hiltViewModel()) {
-    val uiState by viewModel.tuneInState.collectAsState()
+fun NowPlayingScreen(viewModel: TuneInViewModel = hiltViewModel()) {
+    val uiState by viewModel.tuneInState.collectAsStateWithLifecycle()
     var showChannelDialog by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(AudioChannel.STEREO) }
 
@@ -106,6 +107,10 @@ fun NowPlayingScreen(viewModel: TuneInModel = hiltViewModel()) {
                     }
                 }
             }
+            SnapserverGroups(
+                clients = viewModel.snapserverGroups,
+                onClientVolumeChange = viewModel::onClientVolumeChange,
+            )
         }
 
         if (showChannelDialog) {

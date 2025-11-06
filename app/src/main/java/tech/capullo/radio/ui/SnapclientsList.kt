@@ -1,26 +1,25 @@
 package tech.capullo.radio.ui
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons.Filled
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,101 +34,109 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.capullo.radio.R
 import tech.capullo.radio.snapcast.Client
+import tech.capullo.radio.snapcast.ClientConfig
+import tech.capullo.radio.snapcast.Host
+import tech.capullo.radio.snapcast.LastSeen
+import tech.capullo.radio.snapcast.SnapClient
+import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.viewmodels.GroupUIState
 
-@SuppressLint("SuspiciousIndentation")
 @Composable
-fun SnapclientList(snapclientList: List<Client>) {
-    LazyColumn {
-        items(snapclientList) { client ->
+fun SnapserverGroups(
+    modifier: Modifier = Modifier,
+    clients: List<Client>,
+    onClientVolumeChange: (String, Boolean, Int) -> Unit,
+) {
+    LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
+        items(
+            items = clients,
+            key = { client -> client.id },
+        ) { client ->
             SnapcastClientCard(
                 name = client.host.name,
+                muted = client.config.volume.muted,
                 volume = client.config.volume.percent.toFloat(),
+                onVolumeChange = { muted, volume ->
+                    onClientVolumeChange(
+                        client.id,
+                        muted,
+                        volume,
+                    )
+                },
             )
         }
     }
 }
 
 @Composable
-private fun Greetings(
-    modifier: Modifier = Modifier,
-    // TODO a list of custom data object
-    names: List<Pair<String, Float>> = listOf(Pair("localhost", 100f), Pair("Pixel 3a", 85f)),
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SnapcastClientCard(
+    name: String,
+    muted: Boolean,
+    volume: Float,
+    onVolumeChange: (Boolean, Int) -> Unit,
 ) {
-    LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
-        items(items = names) { name ->
-            name.first
-            SnapcastClientCard(name = name.first, volume = name.second)
-        }
-    }
-}
-
-@Composable
-private fun SnapcastClientCard(name: String, volume: Float) {
     Card(
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
-        SnapcastClientContent(name, volume)
-    }
-}
+        var mutedState by remember { mutableStateOf(muted) }
+        var volumeState by remember { mutableFloatStateOf(volume) }
 
-@Composable
-private fun SnapcastClientContent(name: String, volume: Float) {
-    val expanded by remember { mutableStateOf(true) }
-    var progress by remember { mutableFloatStateOf(volume) }
+        LaunchedEffect(muted) {
+            mutedState = muted
+        }
+        LaunchedEffect(volume) {
+            volumeState = volume
+        }
 
-    Row(
-        modifier = Modifier
-            .padding(12.dp)
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow,
-                ),
-            ),
-    ) {
-        Column(
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(12.dp),
-        ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
+                .padding(12.dp)
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    ),
                 ),
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = if (expanded) {
-                        painterResource(id = R.drawable.volume_up_24px)
-                    } else {
-                        painterResource(id = R.drawable.volume_off_24px)
-                    },
-                    contentDescription = if (expanded) {
-                        stringResource(R.string.app_name)
-                    } else {
-                        stringResource(R.string.app_name)
-                    },
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp),
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                    ),
                 )
-                Slider(
-                    value = progress,
-                    onValueChange = {
-                        progress = it
-                    },
-                    valueRange = 0f..100f,
-                    // steps = 100,
-                    modifier = Modifier.weight(2f),
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                IconButton(onClick = { /*expanded = !expanded */ }) {
-                    Icon(
-                        imageVector = if (expanded) Filled.Settings else Filled.Settings,
-                        contentDescription = if (expanded) {
-                            stringResource(R.string.app_name)
-                        } else {
-                            stringResource(R.string.app_name)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { mutedState = !mutedState },
+                    ) {
+                        Icon(
+                            painter = if (mutedState) {
+                                painterResource(id = R.drawable.volume_off_24px)
+                            } else {
+                                painterResource(id = R.drawable.volume_up_24px)
+                            },
+                            contentDescription = if (mutedState) {
+                                stringResource(R.string.app_name)
+                            } else {
+                                stringResource(R.string.app_name)
+                            },
+
+                        )
+                    }
+                    Slider(
+                        value = volumeState,
+                        onValueChange = {
+                            volumeState = it
+                            onVolumeChange(mutedState, volumeState.toInt())
                         },
+                        valueRange = 0f..100f,
+                        modifier = Modifier.weight(2f),
                     )
                 }
             }
@@ -146,7 +153,102 @@ private fun SnapcastClientContent(name: String, volume: Float) {
 @Preview(showBackground = true, widthDp = 320)
 @Composable
 fun DefaultPreview() {
+    val clients = listOf(
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "LEFT Device 1", ""),
+            id = "LEFT Device 1",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "LEFT Device 2", ""),
+            id = "LEFT Device 2",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "LEFT Device 3", ""),
+            id = "LEFT Device 3",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "LEFT Device 4", ""),
+            id = "LEFT Device 4",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "LEFT Device 5", ""),
+            id = "LEFT Device 5",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "RIGHT Device 1", ""),
+            id = "RIGHT Device 1",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "RIGHT Device 2", ""),
+            id = "RIGHT Device 2",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "RIGHT Device 3", ""),
+            id = "RIGHT Device 3",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "RIGHT Device 4", ""),
+            id = "RIGHT Device 4",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+        Client(
+            config =
+            ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+            connected = true,
+            host = Host("", "", "", "RIGHT Device 5", ""),
+            id = "RIGHT Device 5",
+            lastSeen = LastSeen(0, 0),
+            snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+        ),
+    )
     RadioTheme {
-        Greetings()
+        SnapserverGroups(
+            clients = clients,
+            onClientVolumeChange = { _, _, _ -> },
+        )
     }
 }

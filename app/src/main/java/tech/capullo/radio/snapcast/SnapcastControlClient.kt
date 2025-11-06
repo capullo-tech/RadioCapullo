@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit
 
 class SnapcastControlClient(
     private val snapserverHostAddress: String,
-    private val tag: Int = 1,
     private val websocketPort: Int = 1780,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -43,6 +42,7 @@ class SnapcastControlClient(
     private var requestIdCounter: Int = 1
 
     suspend fun initialize() = withContext(ioDispatcher) {
+        // TODO: deal with the connection error
         session = client.webSocketSession(
             method = HttpMethod.Get,
             host = snapserverHostAddress,
@@ -57,6 +57,8 @@ class SnapcastControlClient(
                 session?.incoming?.receive() as? Frame.Text
             }
             frame?.readText()?.also { jsonString ->
+                Log.d(TAG, "[RAW] Notification from server: $jsonString")
+
                 val response = try {
                     Json.decodeFromString(SnapcastJSONRPCResponseSerializer, jsonString)
                 } catch (e: Exception) {
@@ -70,22 +72,19 @@ class SnapcastControlClient(
 
     suspend fun sendGetStatus() {
         val getStatusRequest = ServerGetStatusRequest(id = requestIdCounter++)
+
+        Log.d(TAG, "sendGetStatus: $getStatusRequest")
         session?.sendSerialized(getStatusRequest)
     }
 
     suspend fun sendSetVolume(clientId: String, muted: Boolean, percent: Int) {
-        val volume = Volume(
-            muted = muted,
-            percent = percent,
-        )
+        val volume = Volume(muted, percent)
         val setVolume = ClientSetVolumeRequest(
             id = requestIdCounter++,
-            params = VolumeParams(
-                clientId = clientId,
-                volume = volume,
-            ),
+            params = VolumeParams(clientId, volume),
         )
 
+        Log.d(TAG, "sendSetVolume: $setVolume")
         session?.sendSerialized(setVolume)
     }
 

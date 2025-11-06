@@ -45,6 +45,7 @@ import tech.capullo.radio.R
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientConfig
+import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.Host
 import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
@@ -55,6 +56,7 @@ import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.BroadcasterUiState
 import tech.capullo.radio.viewmodels.BroadcasterViewModel
+import tech.capullo.radio.viewmodels.GroupUIState
 
 @Composable
 fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
@@ -67,6 +69,8 @@ fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
         uiState = uiState,
         onAudioChannelChange = viewModel::updateAudioChannel,
         onRefreshHostAddresses = viewModel::refreshIPv4Addresses,
+        clients = viewModel.snapserverGroups,
+        onClientVolumeChange = viewModel::onClientVolumeChange,
     )
 }
 
@@ -76,6 +80,8 @@ fun BroadcasterScreenContent(
     uiState: BroadcasterUiState,
     onAudioChannelChange: (AudioChannel) -> Unit,
     onRefreshHostAddresses: () -> Unit,
+    clients: List<Client>,
+    onClientVolumeChange: (String, Boolean, Int) -> Unit,
 ) {
     var showChannelDialog by remember { mutableStateOf(false) }
 
@@ -97,6 +103,10 @@ fun BroadcasterScreenContent(
                 .padding(innerPadding),
         ) {
             IPv4AddressesCard(uiState.ipv4AddressesResult, onRefreshHostAddresses)
+            SnapserverGroups(
+                clients = clients,
+                onClientVolumeChange = onClientVolumeChange,
+            )
         }
 
         if (showChannelDialog) {
@@ -223,6 +233,36 @@ fun PreviewBroadcasterScreenContent() {
             uiState,
             onAudioChannelChange = { },
             onRefreshHostAddresses = { },
+            clients = listOf(
+                Client(
+                    config =
+                    ClientConfig(
+                        instance = 1,
+                        latency = 10,
+                        name = "OnePlus",
+                        volume = Volume(muted = false, percent = 40),
+                    ),
+                    connected = true,
+                    host = Host(
+                        arch = "",
+                        ip = "",
+                        mac = "",
+                        name = "OnePlus",
+                        os = "",
+                    ),
+                    id = "xxxxx",
+                    lastSeen = LastSeen(
+                        sec = 0,
+                        usec = 0,
+                    ),
+                    snapclient = SnapClient(
+                        name = "Snapclient",
+                        protocolVersion = 2,
+                        version = "0.34.0",
+                    ),
+                ),
+            ),
+            onClientVolumeChange = { _, _, _ -> },
         )
     }
 }

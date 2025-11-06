@@ -6,6 +6,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Process
 import android.util.Log
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
@@ -38,13 +39,43 @@ class SnapclientProcess @Inject constructor(
     )
     private val sampleFormat = "$rate:16:*"
 
+    fun loadHostId(): String {
+        val sharedPreferences = applicationContext.getSharedPreferences(
+            "SNAPCAST_CLIENT_HOST_ID",
+            Context.MODE_PRIVATE,
+        )
+
+        var hostId = sharedPreferences.getString(
+            "SNAPCAST_CLIENT_HOST_ID_PREFERENCE",
+            null,
+        )
+
+        if (hostId == null) {
+            // Generate a new hostId
+            hostId = UUID.randomUUID().toString()
+
+            // Save it for future use
+            sharedPreferences.edit {
+                putString(
+                    "SNAPCAST_CLIENT_HOST_ID_PREFERENCE",
+                    hostId,
+                )
+            }
+
+            Log.d(TAG, "Generating hostID for the first time: $hostId")
+        }
+
+        return hostId
+    }
+
     suspend fun start(
-        hostId: String = UUID.randomUUID().toString(),
         snapserverAddress: String = "localhost",
         snapserverPort: Int = 1704,
         audioChannel: Int = AudioChannel.STEREO.ordinal,
     ) = coroutineScope {
+        val hostId = loadHostId()
         val audioChannel = AudioChannel.entries[audioChannel].label.lowercase()
+
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
             "--hostID", hostId, "--player", androidPlayer, "--sampleformat", sampleFormat,

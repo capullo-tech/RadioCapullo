@@ -8,8 +8,6 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +21,6 @@ import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.services.RadioBroadcasterService
-import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
@@ -38,8 +35,6 @@ data class BroadcasterUiState(
     val audioChannel: AudioChannel,
 )
 
-data class GroupUIState(val displayName: String, val isMuted: Boolean, val clients: List<Client>)
-
 @HiltViewModel
 class BroadcasterViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
@@ -52,8 +47,8 @@ class BroadcasterViewModel @Inject constructor(
         "127.0.0.1",
     )
 
-    private var _snapserverGroups = mutableStateListOf<Client>()
-    val snapserverGroups: List<Client> = _snapserverGroups
+    private var _groups = mutableStateListOf<Group>()
+    val groups: List<Group> = _groups
 
     private val _uiState = MutableStateFlow(
         BroadcasterUiState(
@@ -135,31 +130,35 @@ class BroadcasterViewModel @Inject constructor(
 
         when (notification) {
             is ServerGetStatusResponse -> {
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(
-                    notification.result.server.groups.flatMap { group -> group.clients },
-                )
+                _groups.clear()
+                _groups.addAll(notification.result.server.groups)
             }
 
             is ServerOnUpdate -> {
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(
-                    notification.params.server.groups.flatMap { group -> group.clients },
-                )
+                _groups.clear()
+                _groups.addAll(notification.params.server.groups)
             }
 
             is ClientOnVolumeChanged -> {
-                val clients = snapserverGroups.map { client ->
-                    if (client.id == notification.params.clientId) {
-                        client.copy(
-                            config = client.config.copy(volume = notification.params.volume),
-                        )
-                    } else {
-                        client
-                    }
+                // index of the group we are going to replace
+                val targetGroupIndex = _groups.find { group ->
+                    group.clients.any { client -> client.id == notification.params.clientId }
+                }?.let { group ->
+                    _groups.indexOf(group)
                 }
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(clients)
+
+                targetGroupIndex?.let { i ->
+                    val updatedClientList = _groups[i].clients.map { client ->
+                        if (client.id == notification.params.clientId) {
+                            client.copy(
+                                config = client.config.copy(volume = notification.params.volume),
+                            )
+                        } else {
+                            client
+                        }
+                    }
+                    _groups[i] = _groups[i].copy(clients = updatedClientList)
+                }
             }
 
             else -> { }

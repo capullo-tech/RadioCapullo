@@ -4,7 +4,6 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,8 +20,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearWavyProgressIndicator
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,12 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import tech.capullo.radio.R
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientConfig
@@ -56,7 +50,6 @@ import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.BroadcasterUiState
 import tech.capullo.radio.viewmodels.BroadcasterViewModel
-import tech.capullo.radio.viewmodels.GroupUIState
 
 @Composable
 fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
@@ -69,7 +62,7 @@ fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
         uiState = uiState,
         onAudioChannelChange = viewModel::updateAudioChannel,
         onRefreshHostAddresses = viewModel::refreshIPv4Addresses,
-        clients = viewModel.snapserverGroups,
+        groups = viewModel.groups,
         onClientVolumeChange = viewModel::onClientVolumeChange,
     )
 }
@@ -80,7 +73,7 @@ fun BroadcasterScreenContent(
     uiState: BroadcasterUiState,
     onAudioChannelChange: (AudioChannel) -> Unit,
     onRefreshHostAddresses: () -> Unit,
-    clients: List<Client>,
+    groups: List<Group>,
     onClientVolumeChange: (String, Boolean, Int) -> Unit,
 ) {
     var showChannelDialog by remember { mutableStateOf(false) }
@@ -104,7 +97,7 @@ fun BroadcasterScreenContent(
         ) {
             IPv4AddressesCard(uiState.ipv4AddressesResult, onRefreshHostAddresses)
             SnapserverGroups(
-                clients = clients,
+                groups = groups,
                 onClientVolumeChange = onClientVolumeChange,
             )
         }
@@ -233,33 +226,41 @@ fun PreviewBroadcasterScreenContent() {
             uiState,
             onAudioChannelChange = { },
             onRefreshHostAddresses = { },
-            clients = listOf(
-                Client(
-                    config =
-                    ClientConfig(
-                        instance = 1,
-                        latency = 10,
-                        name = "OnePlus",
-                        volume = Volume(muted = false, percent = 40),
+            groups = listOf(
+                Group(
+                    clients = listOf(
+                        Client(
+                            config =
+                            ClientConfig(
+                                instance = 1,
+                                latency = 10,
+                                name = "OnePlus",
+                                volume = Volume(muted = false, percent = 40),
+                            ),
+                            connected = true,
+                            host = Host(
+                                arch = "",
+                                ip = "",
+                                mac = "",
+                                name = "OnePlus",
+                                os = "",
+                            ),
+                            id = "xxxxx",
+                            lastSeen = LastSeen(
+                                sec = 0,
+                                usec = 0,
+                            ),
+                            snapclient = SnapClient(
+                                name = "Snapclient",
+                                protocolVersion = 2,
+                                version = "0.34.0",
+                            ),
+                        ),
                     ),
-                    connected = true,
-                    host = Host(
-                        arch = "",
-                        ip = "",
-                        mac = "",
-                        name = "OnePlus",
-                        os = "",
-                    ),
-                    id = "xxxxx",
-                    lastSeen = LastSeen(
-                        sec = 0,
-                        usec = 0,
-                    ),
-                    snapclient = SnapClient(
-                        name = "Snapclient",
-                        protocolVersion = 2,
-                        version = "0.34.0",
-                    ),
+                    id = "group1",
+                    muted = false,
+                    name = "Group 1",
+                    streamId = "stream1",
                 ),
             ),
             onClientVolumeChange = { _, _, _ -> },

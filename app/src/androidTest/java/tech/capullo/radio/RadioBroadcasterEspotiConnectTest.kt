@@ -13,7 +13,6 @@ import androidx.compose.ui.test.printToLog
 import org.junit.Rule
 import org.junit.Test
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
-import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.ui.BroadcasterScreenContent
 import tech.capullo.radio.ui.EspotiSessionLoadingScreenContent
 import tech.capullo.radio.ui.model.AudioChannel
@@ -73,11 +72,11 @@ class RadioBroadcasterEspotiConnectTest {
     @Test
     fun whenPlayerReadyState_showsRadioBroadcasterPlaybackScreen() {
         // Given: UI state is EspotiPlayerReady
-        var ipv4AddressesResult: IPv4AddressesResult = IPv4AddressesResult.Success(
+        val ipv4AddressesResult: IPv4AddressesResult = IPv4AddressesResult.Success(
             listOf("192.168.0.1", "10.0.0.2"),
         )
 
-        var uiState = BroadcasterUiState(
+        val uiState = BroadcasterUiState(
             ipv4AddressesResult = ipv4AddressesResult,
             audioChannel = AudioChannel.STEREO,
         )
@@ -88,7 +87,7 @@ class RadioBroadcasterEspotiConnectTest {
                 uiState,
                 onAudioChannelChange = { },
                 onRefreshHostAddresses = { },
-                clients = listOf(),
+                groups = listOf(),
                 onClientVolumeChange = { _, _, _ -> },
             )
         }

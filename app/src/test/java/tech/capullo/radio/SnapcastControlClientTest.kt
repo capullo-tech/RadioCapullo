@@ -16,7 +16,7 @@ class SnapcastControlClientTest {
               "id": 2,
               "jsonrpc": "2.0",
               "result": {
-                "server": {
+                "server":  {
                   "groups": [
                     {
                       "clients": [

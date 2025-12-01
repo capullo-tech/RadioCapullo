@@ -7,9 +7,6 @@ import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.toMutableStateList
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -25,26 +22,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import tech.capullo.radio.services.SnapclientService
-import tech.capullo.radio.snapcast.Client
-import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.DiscoveredSnapserver
-import tech.capullo.radio.snapcast.ServerGetStatusResponse
-import tech.capullo.radio.snapcast.ServerOnUpdate
-import tech.capullo.radio.snapcast.SnapcastControlClient
-import tech.capullo.radio.snapcast.SnapcastJSONRPCResponse
 import tech.capullo.radio.snapcast.SnapserverDiscoveryManager
-import tech.capullo.radio.ui.model.AudioChannel
 import javax.inject.Inject
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.map
-import kotlin.collections.set
-import kotlin.text.ifEmpty
 
 data class TuneInState(
     val availableServers: List<DiscoveredSnapserver> = emptyList(),
     val serverIp: String = "",
-    val audioChannel: AudioChannel = AudioChannel.STEREO,
     val isTunedIn: Boolean = false,
 )
 
@@ -59,11 +43,6 @@ class TuneInViewModel @Inject constructor(
     object PreferencesKeys {
         val LAST_SERVER_TEXT = stringPreferencesKey("last_server_text")
     }
-
-    private var _snapserverGroups = mutableStateListOf<Client>()
-    val snapserverGroups: List<Client> = _snapserverGroups
-
-    var snapcastControlClient: SnapcastControlClient? = null
 
     private var binder: SnapclientService.SnapclientBinder? = null
     private var isBound = false
@@ -87,34 +66,6 @@ class TuneInViewModel @Inject constructor(
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             binder = service as SnapclientService.SnapclientBinder
             isBound = true
-
-            // collect both server ip and audio channel settings
-            viewModelScope.launch {
-                launch {
-                    binder?.getSnapserverIpFlow()?.collect { snapserverIp ->
-                        Log.d(TAG, "latest serverIP: $snapserverIp")
-                        _tuneInState.value = tuneInState.value.copy(
-                            serverIp = snapserverIp,
-                        )
-                        Log.d(TAG, "tuneInState: ${tuneInState.value}")
-                        snapcastControlClient = SnapcastControlClient(
-                            snapserverIp,
-                        )
-                        snapcastControlClient?.initialize()
-                        snapcastControlClient?.sendGetStatus()
-                        snapcastControlClient?.notifications?.collect { notification ->
-                            notification?.let { handleNotification(it) }
-                        }
-                    }
-                }
-                launch {
-                    binder?.getAudioChannelFlow()?.collect { audioChannel ->
-                        _tuneInState.value = tuneInState.value.copy(
-                            audioChannel = audioChannel,
-                        )
-                    }
-                }
-            }
 
             _tuneInState.value = tuneInState.value.copy(
                 isTunedIn = isBound,
@@ -158,12 +109,6 @@ class TuneInViewModel @Inject constructor(
         discoveryManager.startDiscovery()
     }
 
-    suspend fun saveLastServerText(text: String) {
-        applicationContext.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.LAST_SERVER_TEXT] = text
-        }
-    }
-
     fun onServerIPTextFieldValueChanged(serverIpText: String) {
         _tuneInState.value = _tuneInState.value.copy(serverIp = serverIpText)
     }
@@ -173,7 +118,6 @@ class TuneInViewModel @Inject constructor(
         // as a flow to then display on the UI
         val intent = Intent(applicationContext, SnapclientService::class.java).apply {
             putExtra(SnapclientService.KEY_IP, tuneInState.value.serverIp)
-            putExtra(SnapclientService.KEY_AUDIO_CHANNEL, tuneInState.value.audioChannel.ordinal)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -183,49 +127,12 @@ class TuneInViewModel @Inject constructor(
         }
 
         applicationContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-    }
 
-    fun updateAudioChannel(channel: AudioChannel) {
-        binder?.updateAudioChannel(channel)
-    }
-
-    fun handleNotification(notification: SnapcastJSONRPCResponse) {
-        Log.d(TAG, "Handling notification: $notification")
-
-        when (notification) {
-            is ServerGetStatusResponse -> {
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(
-                    notification.result.server.groups.flatMap { group -> group.clients },
-                )
-            }
-
-            is ServerOnUpdate -> {
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(
-                    notification.params.server.groups.flatMap { group -> group.clients },
-                )
-            }
-
-            is ClientOnVolumeChanged -> {
-                val clients = snapserverGroups.map { client ->
-                    if (client.id == notification.params.clientId) {
-                        client.copy(
-                            config = client.config.copy(volume = notification.params.volume),
-                        )
-                    } else {
-                        client
-                    }
-                }
-                _snapserverGroups.clear()
-                _snapserverGroups.addAll(clients)
-            }
-        }
-    }
-
-    fun onClientVolumeChange(clientId: String, muted: Boolean, volume: Int) {
+        // Save the server host address
         viewModelScope.launch {
-            snapcastControlClient?.sendSetVolume(clientId, muted, volume)
+            applicationContext.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.LAST_SERVER_TEXT] = tuneInState.value.serverIp
+            }
         }
     }
 

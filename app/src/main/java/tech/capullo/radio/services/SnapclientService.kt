@@ -41,8 +41,6 @@ class SnapclientService : Service() {
 
     override fun onBind(intent: Intent?): IBinder = binder
 
-    override fun onUnbind(intent: Intent?): Boolean = true
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val snapserverIp = intent?.getStringExtra(KEY_IP) ?: return START_NOT_STICKY
         val audioChannel = intent.getIntExtra(KEY_AUDIO_CHANNEL, AudioChannel.STEREO.ordinal)

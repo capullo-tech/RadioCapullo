@@ -1,9 +1,6 @@
 package tech.capullo.radio.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,6 +39,7 @@ import tech.capullo.radio.snapcast.LastSeen
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 import kotlin.math.round
 
 @Composable
@@ -280,7 +278,9 @@ fun DefaultPreview() {
             streamId = "right_stream",
         ),
     )
-    RadioTheme {
+    RadioTheme(
+        schemeChoice = SchemeChoice.ORANGE,
+    ) {
         SnapserverGroups(
             groups = groups,
             onClientVolumeChange = { _, _, _ -> },

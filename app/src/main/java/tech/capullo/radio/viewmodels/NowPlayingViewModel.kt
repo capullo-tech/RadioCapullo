@@ -4,11 +4,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,26 +29,34 @@ import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.SnapcastJSONRPCResponse
 import tech.capullo.radio.ui.model.AudioChannel
-import javax.inject.Inject
 
 data class NowPlayingUiState(val audioChannel: AudioChannel, val serverIp: String)
 
-@HiltViewModel
-class NowPlayingViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = NowPlayingViewModel.Factory::class)
+class NowPlayingViewModel @AssistedInject constructor(
     @ApplicationContext private val applicationContext: Context,
+    @Assisted val serverIp: String,
 ) : ViewModel() {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(serverIp: String): NowPlayingViewModel
+    }
+
     private var _groups = mutableStateListOf<Group>()
     val groups: List<Group> = _groups
 
     private var _nowPlayingUiState = MutableStateFlow(
         NowPlayingUiState(
             audioChannel = AudioChannel.STEREO,
-            serverIp = "",
+            serverIp = serverIp,
         ),
     )
     val nowPlayingUiState: StateFlow<NowPlayingUiState> = _nowPlayingUiState
 
-    var snapcastControlClient: SnapcastControlClient? = null
+    var snapcastControlClient = SnapcastControlClient(
+        serverIp,
+    )
 
     private var binder: SnapclientService.SnapclientBinder? = null
     private var isBound = false
@@ -52,28 +66,14 @@ class NowPlayingViewModel @Inject constructor(
             binder = service as SnapclientService.SnapclientBinder
             isBound = true
 
-            // collect both server ip and audio channel settings
+            // collect audio channel settings (they can be changed from the UI)
             viewModelScope.launch {
-                launch {
-                    binder?.getSnapserverIpFlow()?.collect { snapserverIp ->
-                        _nowPlayingUiState.update { it.copy(serverIp = snapserverIp) }
-
-                        snapcastControlClient = SnapcastControlClient(
-                            snapserverIp,
-                        )
-                        snapcastControlClient?.initialize()
-                        snapcastControlClient?.sendGetStatus()
-                        snapcastControlClient?.notifications?.collect { notification ->
-                            notification?.let { handleNotification(it) }
-                        }
-                    }
-                }
-                launch {
-                    binder?.getAudioChannelFlow()?.collect { audioChannel ->
-                        _nowPlayingUiState.update { it.copy(audioChannel = audioChannel) }
-                    }
+                binder?.getAudioChannelFlow()?.collect { audioChannel ->
+                    _nowPlayingUiState.update { it.copy(audioChannel = audioChannel) }
                 }
             }
+
+            startSnapcastControlClient()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -83,8 +83,37 @@ class NowPlayingViewModel @Inject constructor(
     }
 
     init {
-        Intent(applicationContext, SnapclientService::class.java).also { intent ->
-            applicationContext.bindService(intent, serviceConnection, 0)
+        Log.d(TAG, "NowPlayingViewModel got created with: $serverIp")
+
+        val intent = Intent(applicationContext, SnapclientService::class.java).apply {
+            putExtra(SnapclientService.KEY_IP, serverIp)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            applicationContext.startForegroundService(intent)
+        } else {
+            applicationContext.startService(intent)
+        }
+
+        applicationContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+
+        // Save the server host address
+        viewModelScope.launch {
+            applicationContext.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.LAST_SERVER_TEXT] = serverIp
+            }
+        }
+    }
+
+    fun startSnapcastControlClient() {
+        viewModelScope.launch {
+            // TODO: loading/success/error uiStates
+            // goes together with session connection retry in control client
+            snapcastControlClient.initialize()
+            snapcastControlClient.sendGetStatus()
+            snapcastControlClient.notifications.collect { notification ->
+                notification?.let { handleNotification(it) }
+            }
         }
     }
 
@@ -132,11 +161,15 @@ class NowPlayingViewModel @Inject constructor(
 
     fun onClientVolumeChange(clientId: String, muted: Boolean, volume: Int) {
         viewModelScope.launch {
-            snapcastControlClient?.sendSetVolume(clientId, muted, volume)
+            snapcastControlClient.sendSetVolume(clientId, muted, volume)
         }
     }
 
     companion object {
         private val TAG = NowPlayingViewModel::class.simpleName
+    }
+
+    object PreferencesKeys {
+        val LAST_SERVER_TEXT = stringPreferencesKey("last_server_text")
     }
 }

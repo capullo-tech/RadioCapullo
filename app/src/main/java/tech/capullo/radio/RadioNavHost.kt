@@ -1,6 +1,7 @@
 package tech.capullo.radio
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -15,6 +16,7 @@ import tech.capullo.radio.ui.RadioHomeScreen
 import tech.capullo.radio.ui.TuneInScreen
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
+import tech.capullo.radio.viewmodels.NowPlayingViewModel
 
 @Serializable
 private data object Home : NavKey
@@ -29,7 +31,7 @@ private data object Broadcast : NavKey
 private data object TuneIn : NavKey
 
 @Serializable
-private data object NowPlaying : NavKey
+private data class NowPlaying(val serverIp: String) : NavKey
 
 @Composable
 fun RadioCapulloNavHost() {
@@ -75,16 +77,23 @@ fun RadioCapulloNavHost() {
                     schemeChoice = SchemeChoice.ORANGE,
                 ) {
                     TuneInScreen(
-                        onConnected = { backStack.add(NowPlaying) },
+                        onTuneInClicked = { serverIp ->
+                            backStack.add(NowPlaying(serverIp))
+                        },
                     )
                 }
             }
 
-            entry<NowPlaying> {
+            entry<NowPlaying> { key ->
+                val viewModel = hiltViewModel<NowPlayingViewModel, NowPlayingViewModel.Factory>(
+                    creationCallback = { factory ->
+                        factory.create(key.serverIp)
+                    },
+                )
                 RadioTheme(
                     schemeChoice = SchemeChoice.ORANGE,
                 ) {
-                    NowPlayingScreen()
+                    NowPlayingScreen(viewModel = viewModel)
                 }
             }
         },

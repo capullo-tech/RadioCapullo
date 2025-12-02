@@ -1,11 +1,6 @@
 package tech.capullo.radio.viewmodels
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.Build
-import android.os.IBinder
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -21,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import tech.capullo.radio.services.SnapclientService
 import tech.capullo.radio.snapcast.DiscoveredSnapserver
 import tech.capullo.radio.snapcast.SnapserverDiscoveryManager
 import javax.inject.Inject
@@ -29,7 +23,6 @@ import javax.inject.Inject
 data class TuneInState(
     val availableServers: List<DiscoveredSnapserver> = emptyList(),
     val serverIp: String = "",
-    val isTunedIn: Boolean = false,
 )
 
 val Context.dataStore by preferencesDataStore(name = "tune_in_prefs")
@@ -43,9 +36,6 @@ class TuneInViewModel @Inject constructor(
     object PreferencesKeys {
         val LAST_SERVER_TEXT = stringPreferencesKey("last_server_text")
     }
-
-    private var binder: SnapclientService.SnapclientBinder? = null
-    private var isBound = false
 
     val lastServerTextFlow: Flow<String> = applicationContext.dataStore.data
         .catch { exception ->
@@ -62,38 +52,11 @@ class TuneInViewModel @Inject constructor(
     private val _tuneInState = MutableStateFlow(TuneInState())
     val tuneInState = _tuneInState.asStateFlow()
 
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            binder = service as SnapclientService.SnapclientBinder
-            isBound = true
-
-            _tuneInState.value = tuneInState.value.copy(
-                isTunedIn = isBound,
-            )
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            binder = null
-            isBound = false
-
-            _tuneInState.value = tuneInState.value.copy(
-                isTunedIn = isBound,
-            )
-        }
-    }
-
     init {
-        // upon starting, try to bind to the service if it is already running
-        // service connection callback will trigger, changing the UI state
-        Intent(applicationContext, SnapclientService::class.java).also { intent ->
-            applicationContext.bindService(intent, serviceConnection, 0)
-        }
-
         viewModelScope.launch {
             launch {
                 // collect saved preferences for previously connected servers
                 lastServerTextFlow.collect {
-                    println("collected previously saved value")
                     _tuneInState.value = _tuneInState.value.copy(serverIp = it)
                 }
             }
@@ -113,36 +76,9 @@ class TuneInViewModel @Inject constructor(
         _tuneInState.value = _tuneInState.value.copy(serverIp = serverIpText)
     }
 
-    fun startSnapclientService() {
-        // UDF -> set the server IP and Audio Channel settings onto the Service, collect the values
-        // as a flow to then display on the UI
-        val intent = Intent(applicationContext, SnapclientService::class.java).apply {
-            putExtra(SnapclientService.KEY_IP, tuneInState.value.serverIp)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            applicationContext.startForegroundService(intent)
-        } else {
-            applicationContext.startService(intent)
-        }
-
-        applicationContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-
-        // Save the server host address
-        viewModelScope.launch {
-            applicationContext.dataStore.edit { preferences ->
-                preferences[PreferencesKeys.LAST_SERVER_TEXT] = tuneInState.value.serverIp
-            }
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
-        if (isBound) {
-            applicationContext.unbindService(serviceConnection)
-            isBound = false
-            binder = null
-        }
+        Log.d(TAG, "TuneInViewModel onCleared")
         discoveryManager.stopDiscovery()
     }
 

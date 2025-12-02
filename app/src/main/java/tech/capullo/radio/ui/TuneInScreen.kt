@@ -57,20 +57,15 @@ import tech.capullo.radio.viewmodels.TuneInState
 import tech.capullo.radio.viewmodels.TuneInViewModel
 
 @Composable
-fun TuneInScreen(viewModel: TuneInViewModel = hiltViewModel(), onConnected: () -> Unit) {
+fun TuneInScreen(viewModel: TuneInViewModel = hiltViewModel(), onTuneInClicked: (String) -> Unit) {
     val uiState by viewModel.tuneInState.collectAsState()
-
-    // Navigate when service is connected and running
-    if (uiState.isTunedIn) {
-        onConnected()
-    }
 
     Scaffold { innerPadding ->
         TuneInScreenContent(
             modifier = Modifier.padding(innerPadding),
             uiState = uiState,
             onServerIPTextFieldValueChanged = viewModel::onServerIPTextFieldValueChanged,
-            onTuneInClick = viewModel::startSnapclientService,
+            onTuneInClicked = onTuneInClicked,
             onServerSelected = { server: DiscoveredSnapserver ->
                 viewModel.onServerIPTextFieldValueChanged(server.hostAddress)
             },
@@ -84,7 +79,7 @@ fun TuneInScreenContent(
     modifier: Modifier = Modifier,
     uiState: TuneInState,
     onServerIPTextFieldValueChanged: (String) -> Unit,
-    onTuneInClick: () -> Unit,
+    onTuneInClicked: (String) -> Unit,
     onServerSelected: (DiscoveredSnapserver) -> Unit,
 ) {
     Column(
@@ -119,7 +114,7 @@ fun TuneInScreenContent(
                 )
 
                 Button(
-                    onClick = { onTuneInClick() },
+                    onClick = { onTuneInClicked(uiState.serverIp) },
                     enabled = uiState.serverIp.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -268,7 +263,7 @@ fun PreviewRadioTuneInContent() {
                 modifier = Modifier.padding(innerPadding),
                 uiState = uiState,
                 onServerIPTextFieldValueChanged = {},
-                onTuneInClick = {},
+                onTuneInClicked = {},
                 onServerSelected = {},
             )
         }

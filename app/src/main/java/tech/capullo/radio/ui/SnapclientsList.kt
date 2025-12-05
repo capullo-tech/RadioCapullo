@@ -53,7 +53,7 @@ fun SnapserverGroups(
             stickyHeader {
                 Row(
                     modifier = Modifier.fillMaxWidth().background(
-                        MaterialTheme.colorScheme.surfaceVariant,
+                        MaterialTheme.colorScheme.secondaryContainer,
                     ).padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(group.name.ifEmpty { group.streamId.ifEmpty { group.id } })
@@ -171,6 +171,105 @@ private fun SnapcastClientCard(
     }
 }
 
+val mockSnapcastGroups = listOf(
+    Group(
+        clients = listOf(
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "LEFT Device 1", ""),
+                id = "LEFT Device 1",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "LEFT Device 2", ""),
+                id = "LEFT Device 2",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "LEFT Device 3", ""),
+                id = "LEFT Device 3",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "LEFT Device 4", ""),
+                id = "LEFT Device 4",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "LEFT Device 5", ""),
+                id = "LEFT Device 5",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+        ),
+        id = "left_group",
+        muted = false,
+        name = "LEFT",
+        streamId = "left_stream",
+    ),
+    Group(
+        clients = listOf(
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "RIGHT Device 1", ""),
+                id = "RIGHT Device 1",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "RIGHT Device 2", ""),
+                id = "RIGHT Device 2",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "RIGHT Device 3", ""),
+                id = "RIGHT Device 3",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "RIGHT Device 4", ""),
+                id = "RIGHT Device 4",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+            Client(
+                config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
+                connected = true,
+                host = Host("", "", "", "RIGHT Device 5", ""),
+                id = "RIGHT Device 5",
+                lastSeen = LastSeen(0, 0),
+                snapclient = SnapClient("Snapclient", 2, "0.34.0"),
+            ),
+        ),
+        id = "right_group",
+        muted = false,
+        name = "RIGHT",
+        streamId = "right_stream",
+    ),
+)
+
 @Preview(
     showBackground = true,
     widthDp = 320,
@@ -180,109 +279,11 @@ private fun SnapcastClientCard(
 @Preview(showBackground = true, widthDp = 320)
 @Composable
 fun DefaultPreview() {
-    val groups = listOf(
-        Group(
-            clients = listOf(
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "LEFT Device 1", ""),
-                    id = "LEFT Device 1",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "LEFT Device 2", ""),
-                    id = "LEFT Device 2",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "LEFT Device 3", ""),
-                    id = "LEFT Device 3",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "LEFT Device 4", ""),
-                    id = "LEFT Device 4",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "LEFT Device 5", ""),
-                    id = "LEFT Device 5",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-            ),
-            id = "left_group",
-            muted = false,
-            name = "LEFT",
-            streamId = "left_stream",
-        ),
-        Group(
-            clients = listOf(
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "RIGHT Device 1", ""),
-                    id = "RIGHT Device 1",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "RIGHT Device 2", ""),
-                    id = "RIGHT Device 2",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "RIGHT Device 3", ""),
-                    id = "RIGHT Device 3",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "RIGHT Device 4", ""),
-                    id = "RIGHT Device 4",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-                Client(
-                    config = ClientConfig(1, 10, "OnePlus", Volume(false, 40)),
-                    connected = true,
-                    host = Host("", "", "", "RIGHT Device 5", ""),
-                    id = "RIGHT Device 5",
-                    lastSeen = LastSeen(0, 0),
-                    snapclient = SnapClient("Snapclient", 2, "0.34.0"),
-                ),
-            ),
-            id = "right_group",
-            muted = false,
-            name = "RIGHT",
-            streamId = "right_stream",
-        ),
-    )
     RadioTheme(
         schemeChoice = SchemeChoice.ORANGE,
     ) {
         SnapserverGroups(
-            groups = groups,
+            groups = mockSnapcastGroups,
             onClientVolumeChange = { _, _, _ -> },
         )
     }

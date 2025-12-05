@@ -3,6 +3,7 @@ package tech.capullo.radio.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -26,14 +27,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import tech.capullo.radio.snapcast.Client
-import tech.capullo.radio.snapcast.ClientConfig
 import tech.capullo.radio.snapcast.Group
-import tech.capullo.radio.snapcast.Host
-import tech.capullo.radio.snapcast.LastSeen
-import tech.capullo.radio.snapcast.SnapClient
-import tech.capullo.radio.snapcast.Volume
+import tech.capullo.radio.snapcast.SnapcastControlClient
+import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.ui.model.AudioChannel
+import tech.capullo.radio.ui.theme.RadioTheme
+import tech.capullo.radio.ui.theme.SchemeChoice
 import tech.capullo.radio.ui.theme.Typography
 import tech.capullo.radio.viewmodels.NowPlayingUiState
 import tech.capullo.radio.viewmodels.NowPlayingViewModel
@@ -90,7 +89,11 @@ fun NowPlayingScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Connected to Server",
+                        text = when (uiState.snapclientProcessConnectionState) {
+                            SnapclientProcess.ConnectionState.STARTING -> "Connecting to Server..."
+                            SnapclientProcess.ConnectionState.CONNECTED -> "Connected to Server"
+                            SnapclientProcess.ConnectionState.ERROR -> "Failed to Connect to Server"
+                        },
                         style = Typography.headlineMedium,
                     )
 
@@ -99,29 +102,77 @@ fun NowPlayingScreenContent(
                         style = Typography.bodyLarge,
                     )
 
-                    Text(
-                        text = "Channel: ${uiState.audioChannel.label}",
-                        style = Typography.bodyLarge,
-                    )
+                    if (uiState.snapclientProcessConnectionState ==
+                        SnapclientProcess.ConnectionState.CONNECTED
+                    ) {
+                        Text(
+                            text = "Channel: ${uiState.audioChannelState.label}",
+                            style = Typography.bodyLarge,
+                        )
 
-                    Text(
-                        text = "Playing music via Snapclient",
-                        style = Typography.bodyMedium,
-                    )
+                        Text(
+                            text = "Playing music via Snapclient",
+                            style = Typography.bodyMedium,
+                        )
+                    }
                 }
             }
-            SnapserverGroups(
-                groups = groups,
-                onClientVolumeChange = onClientVolumeChange,
-            )
+            // Show SnapserverGroups only when snapcastControlClient is connected
+            if (uiState.snapcastControlClientConnectionState ==
+                SnapcastControlClient.ConnectionState.CONNECTED
+            ) {
+                SnapserverGroups(
+                    groups = groups,
+                    onClientVolumeChange = onClientVolumeChange,
+                )
+            } else {
+                Card(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = when (uiState.snapcastControlClientConnectionState) {
+                                SnapcastControlClient.ConnectionState.STARTING -> {
+                                    "Connecting to Snapserver Control..."
+                                }
+                                SnapcastControlClient.ConnectionState.CONNECTED -> {
+                                    "Connected to Snapserver Control"
+                                } // This case is handled above
+                                SnapcastControlClient.ConnectionState.ERROR -> {
+                                    "Failed to Connect to Snapserver Control"
+                                }
+                            },
+                            style = Typography.headlineSmall,
+                        )
+
+                        if (uiState.snapcastControlClientConnectionState ==
+                            SnapcastControlClient.ConnectionState.ERROR
+                        ) {
+                            Text(
+                                text = "Retrying connection...",
+                                style = Typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         if (showChannelDialog) {
             AudioSettingsDialog(
                 onDismissRequest = { showChannelDialog = false },
-                selectedChannel = uiState.audioChannel,
+                selectedChannel = uiState.audioChannelState,
                 onCheckedChanged = { isChecked: Boolean, audioChannel: AudioChannel ->
-                    if (isChecked && audioChannel != uiState.audioChannel) {
+                    if (isChecked && audioChannel != uiState.audioChannelState) {
                         onUpdateAudioChannel(audioChannel)
                     }
                 },
@@ -133,68 +184,37 @@ fun NowPlayingScreenContent(
 @Preview(showBackground = true)
 @Composable
 fun NowPlayingScreenContentPreview() {
-    val mockGroup = Group(
-        clients = listOf(
-            Client(
-                config = ClientConfig(
-                    instance = 1,
-                    latency = 0,
-                    name = "Living Room",
-                    volume = Volume(muted = false, percent = 50),
-                ),
-                connected = true,
-                host = Host(
-                    arch = "x86_64",
-                    ip = "192.168.1.101",
-                    mac = "00:11:22:33:44:55",
-                    name = "LivingRoomPC",
-                    os = "Linux",
-                ),
-                id = "client1",
-                lastSeen = LastSeen(sec = 0, usec = 0),
-                snapclient = SnapClient(
-                    name = "Snapclient",
-                    protocolVersion = 1,
-                    version = "0.26.0",
-                ),
-            ),
-            Client(
-                config = ClientConfig(
-                    instance = 1,
-                    latency = 0,
-                    name = "Kitchen",
-                    volume = Volume(muted = false, percent = 75),
-                ),
-                connected = true,
-                host = Host(
-                    arch = "arm64",
-                    ip = "192.168.1.102",
-                    mac = "AA:BB:CC:DD:EE:FF",
-                    name = "KitchenPi",
-                    os = "Linux",
-                ),
-                id = "client2",
-                lastSeen = LastSeen(sec = 0, usec = 0),
-                snapclient = SnapClient(
-                    name = "Snapclient",
-                    protocolVersion = 1,
-                    version = "0.26.0",
-                ),
-            ),
-        ),
-        id = "group1",
-        muted = false,
-        name = "Default",
-        streamId = "stream1",
+    val uiState = NowPlayingUiState(
+        audioChannelState = AudioChannel.STEREO,
+        serverIp = "192.168.1.100",
+        snapclientProcessConnectionState = SnapclientProcess.ConnectionState.CONNECTED,
+        snapcastControlClientConnectionState = SnapcastControlClient.ConnectionState.CONNECTED,
     )
+    RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
+        NowPlayingScreenContent(
+            uiState = uiState,
+            groups = mockSnapcastGroups,
+            onClientVolumeChange = { _, _, _ -> },
+            onUpdateAudioChannel = {},
+        )
+    }
+}
 
-    NowPlayingScreenContent(
-        uiState = NowPlayingUiState(
-            audioChannel = AudioChannel.STEREO,
-            serverIp = "192.168.1.100",
-        ),
-        groups = listOf(mockGroup),
-        onClientVolumeChange = { _, _, _ -> },
-        onUpdateAudioChannel = {},
+@Preview(showBackground = true)
+@Composable
+fun NowPlayingScreenContentErrorPreview() {
+    val uiState = NowPlayingUiState(
+        audioChannelState = AudioChannel.STEREO,
+        serverIp = "192.168.1.100",
+        snapclientProcessConnectionState = SnapclientProcess.ConnectionState.CONNECTED,
+        snapcastControlClientConnectionState = SnapcastControlClient.ConnectionState.ERROR,
     )
+    RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
+        NowPlayingScreenContent(
+            uiState = uiState,
+            groups = emptyList(), // No groups when control client is not connected
+            onClientVolumeChange = { _, _, _ -> },
+            onUpdateAudioChannel = {},
+        )
+    }
 }

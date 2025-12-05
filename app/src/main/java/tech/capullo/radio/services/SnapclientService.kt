@@ -116,8 +116,9 @@ class SnapclientService : Service() {
     inner class SnapclientBinder : Binder() {
         fun updateAudioChannel(channel: AudioChannel) =
             this@SnapclientService.updateAudioChannel(channel)
-        fun getSnapserverIpFlow(): StateFlow<String> = this@SnapclientService.snapserverIpFlow
         fun getAudioChannelFlow(): StateFlow<AudioChannel> = this@SnapclientService.audioChannelFlow
+        fun getConnectionStateFlow(): StateFlow<SnapclientProcess.ConnectionState> =
+            this@SnapclientService.snapclientProcess.connectionState
     }
 
     companion object {

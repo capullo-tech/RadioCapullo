@@ -9,8 +9,12 @@ import android.util.Log
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.ui.model.AudioChannel
 import java.io.BufferedReader
@@ -38,6 +42,11 @@ class SnapclientProcess @Inject constructor(
         AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER,
     )
     private val sampleFormat = "$rate:16:*"
+
+    enum class ConnectionState { STARTING, CONNECTED, ERROR }
+
+    private val _connectionState = MutableStateFlow(ConnectionState.STARTING)
+    val connectionState = _connectionState.asStateFlow()
 
     fun loadHostId(): String {
         val sharedPreferences = applicationContext.getSharedPreferences(
@@ -78,7 +87,9 @@ class SnapclientProcess @Inject constructor(
 
         val pb = ProcessBuilder().command(
             "$nativeLibDir/libsnapclient.so",
-            "--hostID", hostId, "--player", androidPlayer, "--sampleformat", sampleFormat,
+            "--hostID", hostId,
+            "--player", androidPlayer,
+            "--sampleformat", sampleFormat,
             "--logfilter", "*:info,Stats:debug",
             "tcp://$snapserverAddress:$snapserverPort",
             "--channel", audioChannel,
@@ -96,6 +107,42 @@ class SnapclientProcess @Inject constructor(
             var line: String?
             while (bufferedReader.readLine().also { line = it } != null) {
                 ensureActive()
+
+                /*** Example logs from snapclient process stdout ***/
+
+                // typing a host that doesn't exist - tries to resolve but fails
+                // [Error] (Connection) Failed to resolve host 'srttrs', error: Host not found (authoritative)
+                // [Error] (Controller) Error: Host not found (authoritative)
+                // [Info] (Controller) Reconnecting
+                // [Info] (Connection) Resolving host IP for: srttrs
+
+                // typing a host that exists but doesn't have the port open or is refusing
+                // [Info] (Connection) Connecting to host: 127.0.0.1:1704, port: 1704, protocol: tcp
+                // [Error] (Connection) Failed to connect to host 'localhost', error: Connection refused
+                // [Error] (Connection) Error in socket shutdown: Transport endpoint is not connected
+                // [Error] (Controller) Error: Connection refused
+                // [Info] (Controller) Reconnecting
+                // [Info] (Connection) Resolving host IP for: localhost
+                // [Info] (Connection) Connecting to host: 127.0.0.1:1704, port: 1704, protocol: tcp
+
+                // connection got established but cancelled later on
+                // [Error] (Connection) Error reading message header of length 0: End of file
+                // [Error] (Controller) Error receiving next message: asio.misc:2
+
+                // connection got established successfully
+                // [Info] (Connection) Resolving host IP for: localhost
+                // [Info] (Connection) Connecting to host: 127.0.0.1:1704, port: 1704, protocol: tcp
+                // [Notice] (Connection) Connected to localhost
+
+                line?.let { processStdout ->
+                    if (processStdout.contains("[Error] (Connection)")) {
+                        _connectionState.update { ConnectionState.ERROR }
+                    }
+                    if (processStdout.contains("[Notice] (Connection) Connected to")) {
+                        _connectionState.update { ConnectionState.CONNECTED }
+                    }
+                }
+
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
                 Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")

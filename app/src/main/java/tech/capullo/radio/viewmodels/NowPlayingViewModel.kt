@@ -18,7 +18,10 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tech.capullo.radio.services.SnapclientService
@@ -28,9 +31,15 @@ import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.SnapcastJSONRPCResponse
+import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.ui.model.AudioChannel
 
-data class NowPlayingUiState(val audioChannel: AudioChannel, val serverIp: String)
+data class NowPlayingUiState(
+    val audioChannelState: AudioChannel,
+    val serverIp: String,
+    val snapclientProcessConnectionState: SnapclientProcess.ConnectionState,
+    val snapcastControlClientConnectionState: SnapcastControlClient.ConnectionState,
+)
 
 @HiltViewModel(assistedFactory = NowPlayingViewModel.Factory::class)
 class NowPlayingViewModel @AssistedInject constructor(
@@ -43,19 +52,39 @@ class NowPlayingViewModel @AssistedInject constructor(
         fun create(serverIp: String): NowPlayingViewModel
     }
 
+    var snapcastControlClient = SnapcastControlClient(
+        serverIp,
+    )
+
+    // updated by notifications flow from snapcastControlClient
     private var _groups = mutableStateListOf<Group>()
     val groups: List<Group> = _groups
 
-    private var _nowPlayingUiState = MutableStateFlow(
-        NowPlayingUiState(
-            audioChannel = AudioChannel.STEREO,
-            serverIp = serverIp,
-        ),
-    )
-    val nowPlayingUiState: StateFlow<NowPlayingUiState> = _nowPlayingUiState
+    private val audioChannelState = MutableStateFlow(AudioChannel.STEREO)
 
-    var snapcastControlClient = SnapcastControlClient(
-        serverIp,
+    private val snapclientProcessConnectionState =
+        MutableStateFlow(SnapclientProcess.ConnectionState.STARTING)
+
+    val nowPlayingUiState: StateFlow<NowPlayingUiState> = combine(
+        audioChannelState,
+        snapcastControlClient.connectionState,
+        snapclientProcessConnectionState,
+    ) { audioChannelState, snapcastControlClientConnectionState, snapclientProcessConnectionState ->
+        NowPlayingUiState(
+            audioChannelState = audioChannelState,
+            serverIp = serverIp,
+            snapclientProcessConnectionState = snapclientProcessConnectionState,
+            snapcastControlClientConnectionState = snapcastControlClientConnectionState,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = NowPlayingUiState(
+            audioChannelState = AudioChannel.STEREO,
+            serverIp = serverIp,
+            snapclientProcessConnectionState = SnapclientProcess.ConnectionState.STARTING,
+            snapcastControlClientConnectionState = SnapcastControlClient.ConnectionState.STARTING,
+        ),
     )
 
     private var binder: SnapclientService.SnapclientBinder? = null
@@ -68,8 +97,15 @@ class NowPlayingViewModel @AssistedInject constructor(
 
             // collect audio channel settings (they can be changed from the UI)
             viewModelScope.launch {
-                binder?.getAudioChannelFlow()?.collect { audioChannel ->
-                    _nowPlayingUiState.update { it.copy(audioChannel = audioChannel) }
+                launch {
+                    binder?.getConnectionStateFlow()?.collect { newConnectionState ->
+                        snapclientProcessConnectionState.update { newConnectionState }
+                    }
+                }
+                launch {
+                    binder?.getAudioChannelFlow()?.collect { audioChannel ->
+                        audioChannelState.update { audioChannel }
+                    }
                 }
             }
 
@@ -83,8 +119,6 @@ class NowPlayingViewModel @AssistedInject constructor(
     }
 
     init {
-        Log.d(TAG, "NowPlayingViewModel got created with: $serverIp")
-
         val intent = Intent(applicationContext, SnapclientService::class.java).apply {
             putExtra(SnapclientService.KEY_IP, serverIp)
         }
@@ -107,10 +141,8 @@ class NowPlayingViewModel @AssistedInject constructor(
 
     fun startSnapcastControlClient() {
         viewModelScope.launch {
-            // TODO: loading/success/error uiStates
-            // goes together with session connection retry in control client
-            snapcastControlClient.initialize()
-            snapcastControlClient.sendGetStatus()
+            snapcastControlClient.initialize() // <--- will suspend until connected
+
             snapcastControlClient.notifications.collect { notification ->
                 notification?.let { handleNotification(it) }
             }

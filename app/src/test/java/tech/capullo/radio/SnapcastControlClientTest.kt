@@ -2,6 +2,8 @@ package tech.capullo.radio
 
 import kotlinx.serialization.json.Json
 import org.junit.Test
+import tech.capullo.radio.snapcast.ClientOnConnect
+import tech.capullo.radio.snapcast.ClientOnDisconnect
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
@@ -239,5 +241,113 @@ class SnapcastControlClientTest {
         val response =
             Json.decodeFromString(SnapcastJSONRPCResponseSerializer, onUpdateString)
         assert(response is ServerOnUpdate)
+    }
+
+    @Test
+    fun serverClientOnDisconnectDeserializeTest() {
+        val clientId = "c2b30a57-e3b3-4157-a30d-38b10513b4be"
+        val hostName = "sdk_gphone64_x86_64"
+        val onDisconnectString = """
+            {
+              "jsonrpc": "2.0",
+              "method": "Client.OnDisconnect",
+              "params": {
+                "client": {
+                  "config": {
+                    "instance": 1,
+                    "latency": 0,
+                    "name": "",
+                    "volume": {
+                      "muted": false,
+                      "percent": 100
+                    }
+                  },
+                  "connected": false,
+                  "host": {
+                    "arch": "x86_64",
+                    "ip": "::ffff:127.0.0.1",
+                    "mac": "00:00:00:00:00:00",
+                    "name": "$hostName",
+                    "os": "Android 16"
+                  },
+                  "id": "$clientId",
+                  "lastSeen": {
+                    "sec": 1772428020,
+                    "usec": 692807
+                  },
+                  "snapclient": {
+                    "name": "Snapclient",
+                    "protocolVersion": 2,
+                    "version": "0.34.0"
+                  }
+                },
+                "id": "$clientId"
+              }
+            }
+        """.trimIndent()
+
+        val response =
+            Json.decodeFromString(SnapcastJSONRPCResponseSerializer, onDisconnectString)
+
+        assert(response is ClientOnDisconnect)
+        (response as ClientOnDisconnect).let {
+            assert(it.params.client.id == clientId)
+            assert(it.params.id == clientId)
+            assert(it.params.client.host.name == hostName)
+        }
+    }
+
+    @Test
+    fun serverClientOnConnectDeserializeTest() {
+        val clientId = "11b01211-ae95-41f6-876c-48c3ea4310da"
+        val hostName = "sdk_gphone64_x86_64"
+        val onConnectString = """
+            {
+              "jsonrpc": "2.0",
+              "method": "Client.OnConnect",
+              "params": {
+                "client": {
+                  "config": {
+                    "instance": 1,
+                    "latency": 0,
+                    "name": "",
+                    "volume": {
+                      "muted": false,
+                      "percent": 100
+                    }
+                  },
+                  "connected": true,
+                  "host": {
+                    "arch": "x86_64",
+                    "ip": "::ffff:127.0.0.1",
+                    "mac": "00:00:00:00:00:00",
+                    "name": "$hostName",
+                    "os": "Android 16"
+                  },
+                  "id": "$clientId",
+                  "lastSeen": {
+                    "sec": 1772457507,
+                    "usec": 730325
+                  },
+                  "snapclient": {
+                    "name": "Snapclient",
+                    "protocolVersion": 2,
+                    "version": "0.34.0"
+                  }
+                },
+                "id": "$clientId"
+              }
+            }
+        """.trimIndent()
+
+        val response =
+            Json.decodeFromString(SnapcastJSONRPCResponseSerializer, onConnectString)
+
+        assert(response is ClientOnConnect)
+        (response as ClientOnConnect).let {
+            assert(it.params.client.id == clientId)
+            assert(it.params.id == clientId)
+            assert(it.params.client.host.name == hostName)
+        }
     }
 }

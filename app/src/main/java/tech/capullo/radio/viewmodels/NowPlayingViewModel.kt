@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tech.capullo.radio.services.SnapclientService
+import tech.capullo.radio.snapcast.ClientOnConnect
+import tech.capullo.radio.snapcast.ClientOnDisconnect
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
@@ -180,6 +182,50 @@ class NowPlayingViewModel @AssistedInject constructor(
                         if (client.id == notification.params.clientId) {
                             client.copy(
                                 config = client.config.copy(volume = notification.params.volume),
+                            )
+                        } else {
+                            client
+                        }
+                    }
+                    _groups[i] = _groups[i].copy(clients = updatedClientList)
+                }
+            }
+
+            is ClientOnDisconnect -> {
+                // index of the group we are going to replace
+                val targetGroupIndex = _groups.find { group ->
+                    group.clients.any { client -> client.id == notification.params.client.id }
+                }?.let { group ->
+                    _groups.indexOf(group)
+                }
+
+                targetGroupIndex?.let { i ->
+                    val updatedClientList = _groups[i].clients.map { client ->
+                        if (client.id == notification.params.client.id) {
+                            client.copy(
+                                connected = notification.params.client.connected,
+                            )
+                        } else {
+                            client
+                        }
+                    }
+                    _groups[i] = _groups[i].copy(clients = updatedClientList)
+                }
+            }
+
+            is ClientOnConnect -> {
+                // index of the group we are going to replace
+                val targetGroupIndex = _groups.find { group ->
+                    group.clients.any { client -> client.id == notification.params.client.id }
+                }?.let { group ->
+                    _groups.indexOf(group)
+                }
+
+                targetGroupIndex?.let { i ->
+                    val updatedClientList = _groups[i].clients.map { client ->
+                        if (client.id == notification.params.client.id) {
+                            client.copy(
+                                connected = notification.params.client.connected,
                             )
                         } else {
                             client

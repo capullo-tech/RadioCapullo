@@ -22,6 +22,8 @@ import org.junit.runner.RunWith
 import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
+import tech.capullo.radio.snapcast.ClientOnConnect
+import tech.capullo.radio.snapcast.ClientOnDisconnect
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -40,6 +42,39 @@ class SnapcastControlClientInstrumentedTest {
         val confFileDataSource = ConfFileDataSource(appContext)
         val radioAdvertisingDataSource = RadioAdvertisingDataSource(appContext)
         radioRepository = RadioRepository(confFileDataSource, radioAdvertisingDataSource)
+    }
+
+    @Test
+    fun serverClientOnDisconnectOnConnect() = runTest {
+        // Setup
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapserverProcess(radioRepository).start()
+        }
+
+        // A client's first ever connection will trigger a ServerOnUpdate notification...
+        val clientJob = backgroundScope.launch(Dispatchers.IO) {
+            SnapclientProcess(appContext, radioRepository).start()
+        }
+
+        val snapcastControlClient = SnapcastControlClient(
+            "127.0.0.1",
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        // the control client will do a status query as part of its init routine
+        snapcastControlClient.initialize()
+
+        clientJob.cancelAndJoin()
+
+        // skip the initial getServerStatus and serverOnUpdate
+        var notification = snapcastControlClient.notifications.drop(2).first()
+        assert(notification is ClientOnDisconnect)
+
+        // ...subsequent connections of a particular client will trigger ClientOnConnect
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapclientProcess(appContext, radioRepository).start()
+        }
+        notification = snapcastControlClient.notifications.first()
+        assert(notification is ClientOnConnect)
     }
 
     @Test

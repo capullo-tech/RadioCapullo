@@ -59,6 +59,9 @@ data class Client(
 data class ClientConfig(val instance: Int, val latency: Int, val name: String, val volume: Volume)
 
 @Serializable
+data class ClientParams(val client: Client, val id: String)
+
+@Serializable
 data class Volume(val muted: Boolean, val percent: Int)
 
 @Serializable
@@ -162,6 +165,20 @@ data class ClientOnVolumeChanged(
 ) : Notification()
 
 @Serializable
+data class ClientOnDisconnect(
+    override val jsonrpc: String,
+    override val method: String,
+    val params: ClientParams,
+) : Notification()
+
+@Serializable
+data class ClientOnConnect(
+    override val jsonrpc: String,
+    override val method: String,
+    val params: ClientParams,
+) : Notification()
+
+@Serializable
 data class ServerOnUpdate(
     override val jsonrpc: String,
     override val method: String,
@@ -176,6 +193,8 @@ object NotificationSerializer : JsonContentPolymorphicSerializer<Notification>(
         return when (method.toString()) {
             "\"Server.OnUpdate\"" -> ServerOnUpdate.serializer()
             "\"Client.OnVolumeChanged\"" -> ClientOnVolumeChanged.serializer()
+            "\"Client.OnDisconnect\"" -> ClientOnDisconnect.serializer()
+            "\"Client.OnConnect\"" -> ClientOnConnect.serializer()
             else -> GenericNotification.serializer()
         }
     }

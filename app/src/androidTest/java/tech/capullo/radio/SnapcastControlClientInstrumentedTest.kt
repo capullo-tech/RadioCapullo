@@ -25,7 +25,6 @@ import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
-import tech.capullo.radio.snapcast.SnapcastJSONRPCResponse
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverProcess
 
@@ -54,11 +53,10 @@ class SnapcastControlClientInstrumentedTest {
             "127.0.0.1",
             ioDispatcher = StandardTestDispatcher(testScheduler),
         )
+        // the control client will do a status query as part of its init routine
         snapcastControlClient.initialize()
 
-        // no client connections yet, querying for the status should return us an empty list
-        snapcastControlClient.sendGetStatus()
-
+        // no client connections yet, the initial status query should return us an empty list
         var notification = snapcastControlClient.notifications.first()
 
         assert(notification is ServerGetStatusResponse)
@@ -179,14 +177,17 @@ class SnapcastControlClientInstrumentedTest {
 
         // trick to make the snapserver process stdout to print something
         // causing the readLine() function call [SnapserverProcess.kt:45] to unblock
-        // and ensureActive to recognize the process has been cancelled
-        try {
-            val snapcastControlClient = SnapcastControlClient(
-                "127.0.0.1",
-                ioDispatcher = StandardTestDispatcher(testScheduler),
-            )
-            snapcastControlClient.initialize()
-        } catch (_: Exception) {}
+        // and ensureActive to recognize the process has been canceled
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            // run it in a background scope since the control client has an auto retry mechanism
+            try {
+                val snapcastControlClient = SnapcastControlClient(
+                    "127.0.0.1",
+                    ioDispatcher = StandardTestDispatcher(testScheduler),
+                )
+                snapcastControlClient.initialize()
+            } catch (_: Exception) {}
+        }
 
         serverJob.join()
 
@@ -202,40 +203,42 @@ class SnapcastControlClientInstrumentedTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun snapcastControlClientReconnect() = runBlocking {
-        // Setup: snapclient, control client, and notifications flow will all retry in a loop
-        // until the specified server ("localhost" in this case) becomes available
-        val clientJob = launch(Dispatchers.IO) {
-            SnapclientProcess(appContext, radioRepository).start()
-        }
-        val snapcastControlClient = SnapcastControlClient(
-            "127.0.0.1",
-            ioDispatcher = Dispatchers.IO,
-        )
-        launch {
-            snapcastControlClient.notifications.collect { println("collected: $it") }
-        }
-        launch {
-            snapcastControlClient.initialize() // loops continuously until it connects
-            println("finished init")
-        }
+    fun snapcastControlClientReconnect() {
+        runBlocking {
+            // Setup: snapclient, control client, and notifications flow will all retry in a loop
+            // until the specified server ("localhost" in this case) becomes available
+            val clientJob = launch(Dispatchers.IO) {
+                SnapclientProcess(appContext, radioRepository).start()
+            }
+            val snapcastControlClient = SnapcastControlClient(
+                "127.0.0.1",
+                ioDispatcher = Dispatchers.IO,
+            )
+            launch {
+                snapcastControlClient.notifications.collect { println("collected: $it") }
+            }
+            launch {
+                snapcastControlClient.initialize() // loops continuously until it connects
+                println("finished init")
+            }
 
-        // confirm that snapcastControlClient.initialize() unblocks
-        delay(5000)
-        val serverJob = launch(Dispatchers.IO) {
-            SnapserverProcess(radioRepository).start()
-        }
+            // confirm that snapcastControlClient.initialize() unblocks
+            delay(5000)
+            val serverJob = launch(Dispatchers.IO) {
+                SnapserverProcess(radioRepository).start()
+            }
 
-        // cancelling the server will make the notification flow reconnect mechanism to trigger
-        delay(2000)
-        serverJob.cancel()
-        delay(2000)
-        clientJob.cancel()
+            // cancelling the server will make the notification flow reconnect mechanism to trigger
+            delay(2000)
+            serverJob.cancel()
+            delay(2000)
+            clientJob.cancel()
 
-        // bringing the server back online will make the notifications flow to start emmitting again
-        delay(7000)
-        launch(Dispatchers.IO) {
-            SnapserverProcess(radioRepository).start()
+            // bringing the server back online will make the notifications flow to start emmitting again
+            delay(7000)
+            launch(Dispatchers.IO) {
+                SnapserverProcess(radioRepository).start()
+            }
         }
     }
 }

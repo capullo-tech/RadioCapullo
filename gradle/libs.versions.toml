@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.37.3"
 activityCompose = "1.12.4"
-agp = "9.0.1"
+agp = "9.1.0"
 androidx-junit = "1.3.0"
 composeLatest = "1.7.8"
 composeBom = "2026.02.01"
@@ -18,7 +18,7 @@ ktlint = "1.7.1"
 coreKtx = "1.17.0"
 hilt = "2.59.2"
 ksp = "2.3.6"
-ktor = "3.4.0"
+ktor = "3.4.1"
 libSnapcastAndroid = "lr_snapcast-SNAPSHOT"
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleViewmodelNav3 = "2.10.0"
@@ -29,7 +29,7 @@ navigation3 = "1.0.1"
 robolectric = "4.16.1"
 slf4jHandroid = "2.0.13"
 startupRuntime = "1.2.0"
-spotless = "8.2.1"
+spotless = "8.3.0"
 
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }

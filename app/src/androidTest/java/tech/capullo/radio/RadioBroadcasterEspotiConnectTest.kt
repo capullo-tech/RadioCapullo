@@ -89,6 +89,7 @@ class RadioBroadcasterEspotiConnectTest {
                 onRefreshHostAddresses = { },
                 groups = listOf(),
                 onClientVolumeChange = { _, _, _ -> },
+                onClientLatencyChange = { _, _ -> },
             )
         }
 

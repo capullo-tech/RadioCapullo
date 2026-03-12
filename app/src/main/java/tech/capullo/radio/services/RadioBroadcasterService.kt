@@ -260,9 +260,11 @@ class RadioBroadcasterService : Service() {
                         // Start snapcast processes after we have a valid session
                         startSnapcast()
                     }
+
                     is EspotiSessionRepository.SessionState.Error -> {
                         Log.d(TAG, "Session error: ${sessionState.message}")
                     }
+
                     else -> {}
                 }
             }

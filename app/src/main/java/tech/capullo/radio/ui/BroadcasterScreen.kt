@@ -64,6 +64,7 @@ fun BroadcasterScreen(viewModel: BroadcasterViewModel = hiltViewModel()) {
         onRefreshHostAddresses = viewModel::refreshIPv4Addresses,
         groups = viewModel.groups,
         onClientVolumeChange = viewModel::onClientVolumeChange,
+        onClientLatencyChange = viewModel::onClientLatencyChange,
     )
 }
 
@@ -75,6 +76,7 @@ fun BroadcasterScreenContent(
     onRefreshHostAddresses: () -> Unit,
     groups: List<Group>,
     onClientVolumeChange: (String, Boolean, Int) -> Unit,
+    onClientLatencyChange: (String, Int) -> Unit,
 ) {
     var showChannelDialog by remember { mutableStateOf(false) }
 
@@ -99,6 +101,7 @@ fun BroadcasterScreenContent(
             SnapserverGroups(
                 groups = groups,
                 onClientVolumeChange = onClientVolumeChange,
+                onClientLatencyChange = onClientLatencyChange,
             )
         }
 
@@ -170,6 +173,7 @@ fun IPv4AddressesCard(
                         }
                     }
                 }
+
                 is IPv4AddressesResult.Error -> {
                     Text(
                         text =
@@ -178,6 +182,7 @@ fun IPv4AddressesCard(
                         style = Typography.displaySmall,
                     )
                 }
+
                 else -> Unit
             }
         }
@@ -264,6 +269,7 @@ fun PreviewBroadcasterScreenContent() {
                 ),
             ),
             onClientVolumeChange = { _, _, _ -> },
+            onClientLatencyChange = { _, _ -> },
         )
     }
 }

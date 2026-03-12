@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 /**
@@ -80,6 +81,11 @@ class SnapcastControlClient(
     private val websocketPort: Int = 1780,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
     val client = HttpClient(OkHttp) {
         engine {
             config {
@@ -88,13 +94,14 @@ class SnapcastControlClient(
         }
 
         install(WebSockets) {
-            contentConverter = KotlinxWebsocketSerializationConverter(Json)
+            contentConverter = KotlinxWebsocketSerializationConverter(json)
         }
     }
 
     private var session: DefaultClientWebSocketSession? = null
 
     private var requestIdCounter: Int = 1
+    private val pendingRequests = Collections.synchronizedMap(mutableMapOf<Int, String>())
 
     enum class ConnectionState { STARTING, CONNECTED, ERROR }
 
@@ -158,10 +165,32 @@ class SnapcastControlClient(
                 Log.d(TAG, "[RAW] Notification from server: $jsonString")
 
                 val response = try {
-                    Json.decodeFromString(SnapcastJSONRPCResponseSerializer, jsonString)
+                    json.decodeFromString(SnapcastJSONRPCResponseSerializer, jsonString)
                 } catch (e: Exception) {
                     Log.d(TAG, "Error decoding response: $e")
                     null
+                }
+
+                if (response is RequestResponse) {
+                    val requestMethod = pendingRequests.remove(response.id)
+
+                    when (response) {
+                        is JsonRpcErrorResponse -> {
+                            Log.e(
+                                TAG,
+                                "JSON-RPC error for ${requestMethod ?: "unknown request"}: ${response.error}",
+                            )
+                        }
+
+                        is GenericResultResponse -> {
+                            Log.d(
+                                TAG,
+                                "Ack for ${requestMethod ?: "unknown request"}: ${response.result}",
+                            )
+                        }
+
+                        else -> Unit
+                    }
                 }
                 emit(response)
             } ?: run {
@@ -173,7 +202,8 @@ class SnapcastControlClient(
     }
 
     suspend fun sendGetStatus() {
-        val getStatusRequest = ServerGetStatusRequest(id = requestIdCounter++)
+        val requestId = nextRequestId("Server.GetStatus")
+        val getStatusRequest = ServerGetStatusRequest(id = requestId)
 
         Log.d(TAG, "sendGetStatus: $getStatusRequest")
         session?.sendSerialized(getStatusRequest)
@@ -181,13 +211,43 @@ class SnapcastControlClient(
 
     suspend fun sendSetVolume(clientId: String, muted: Boolean, percent: Int) {
         val volume = Volume(muted, percent)
+        val requestId = nextRequestId("Client.SetVolume")
         val setVolume = ClientSetVolumeRequest(
-            id = requestIdCounter++,
+            id = requestId,
             params = VolumeParams(clientId, volume),
         )
 
         Log.d(TAG, "sendSetVolume: $setVolume")
         session?.sendSerialized(setVolume)
+    }
+
+    suspend fun sendSetLatency(clientId: String, latency: Int) {
+        val requestId = nextRequestId("Client.SetLatency")
+        val setLatency = ClientSetLatencyRequest(
+            id = requestId,
+            params = LatencyParams(clientId, latency),
+        )
+
+        Log.d(TAG, "sendSetLatency: $setLatency")
+        session?.sendSerialized(setLatency)
+        sendGetStatus()
+    }
+
+    suspend fun sendStreamControl(streamId: String, command: String) {
+        val requestId = nextRequestId("Stream.Control")
+        val streamControl = StreamControlRequest(
+            id = requestId,
+            params = StreamControlParams(id = streamId, command = command),
+        )
+
+        Log.d(TAG, "sendStreamControl: $streamControl")
+        session?.sendSerialized(streamControl)
+    }
+
+    private fun nextRequestId(method: String): Int {
+        val requestId = requestIdCounter++
+        pendingRequests[requestId] = method
+        return requestId
     }
 
     companion object {

@@ -39,10 +39,12 @@ class AudioFocusManager @Inject constructor(
                 Log.d("AudioFocusManager", "Lost focus")
                 // espotiPlayerManager.playerNullable()?.pause()
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 Log.d("AudioFocusManager", "Lost focus transient")
                 espotiPlayerManager.playerNullable()?.volumeDown(24) // 64 total
             }
+
             AudioManager.AUDIOFOCUS_GAIN -> {
                 Log.d("AudioFocusManager", "Gained focus")
                 espotiPlayerManager.playerNullable()?.play()

@@ -108,7 +108,7 @@ class SnapclientProcess @Inject constructor(
             while (bufferedReader.readLine().also { line = it } != null) {
                 ensureActive()
 
-                /*** Example logs from snapclient process stdout ***/
+                // Example logs from snapclient process stdout
 
                 // typing a host that doesn't exist - tries to resolve but fails
                 // [Error] (Connection) Failed to resolve host 'srttrs', error: Host not found (authoritative)

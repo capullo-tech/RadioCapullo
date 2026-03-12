@@ -146,6 +146,7 @@ class SnapserverDiscoveryManager @Inject constructor(private val nsdManager: Nsd
                             )}",
                         )
                     }
+
                     resolvedServiceInfo.serviceType.contains(
                         SnapserverNsdManager.STREAM_SERVICE_TYPE,
                     ) -> {

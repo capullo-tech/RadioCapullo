@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.data.RadioRepository.IPv4AddressesResult
 import tech.capullo.radio.services.RadioBroadcasterService
+import tech.capullo.radio.snapcast.ClientOnLatencyChanged
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
@@ -161,6 +162,27 @@ class BroadcasterViewModel @Inject constructor(
                 }
             }
 
+            is ClientOnLatencyChanged -> {
+                val targetGroupIndex = _groups.find { group ->
+                    group.clients.any { client -> client.id == notification.params.clientId }
+                }?.let { group ->
+                    _groups.indexOf(group)
+                }
+
+                targetGroupIndex?.let { i ->
+                    val updatedClientList = _groups[i].clients.map { client ->
+                        if (client.id == notification.params.clientId) {
+                            client.copy(
+                                config = client.config.copy(latency = notification.params.latency),
+                            )
+                        } else {
+                            client
+                        }
+                    }
+                    _groups[i] = _groups[i].copy(clients = updatedClientList)
+                }
+            }
+
             else -> { }
         }
     }
@@ -168,6 +190,12 @@ class BroadcasterViewModel @Inject constructor(
     fun onClientVolumeChange(clientId: String, muted: Boolean, volume: Int) {
         viewModelScope.launch {
             snapcastControlClient.sendSetVolume(clientId, muted, volume)
+        }
+    }
+
+    fun onClientLatencyChange(clientId: String, latency: Int) {
+        viewModelScope.launch {
+            snapcastControlClient.sendSetLatency(clientId, latency)
         }
     }
 

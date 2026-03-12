@@ -24,6 +24,7 @@ import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
 import tech.capullo.radio.snapcast.ClientOnConnect
 import tech.capullo.radio.snapcast.ClientOnDisconnect
+import tech.capullo.radio.snapcast.GenericResultResponse
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -119,6 +120,59 @@ class SnapcastControlClientInstrumentedTest {
         (notification as ServerGetStatusResponse).also { serverGetStatusResponse ->
             assert(serverGetStatusResponse.result.server.groups.size == 1)
         }
+    }
+
+    @Test
+    fun clientSetLatencyRefreshesServerStatus() = runTest {
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapserverProcess(radioRepository).start()
+        }
+
+        backgroundScope.launch(Dispatchers.IO) {
+            SnapclientProcess(appContext, radioRepository).start()
+        }
+
+        val snapcastControlClient = SnapcastControlClient(
+            "127.0.0.1",
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+        )
+        snapcastControlClient.initialize()
+
+        val initialStatus =
+            snapcastControlClient.notifications.first { notification ->
+                notification is ServerGetStatusResponse &&
+                    notification.result.server.groups.isNotEmpty()
+            } as ServerGetStatusResponse
+
+        val clientId = initialStatus.result.server.groups.first().clients.first().id
+        val updatedLatency =
+            initialStatus.result.server.groups.first().clients.first().config.latency + 25
+
+        snapcastControlClient.sendSetLatency(clientId, updatedLatency)
+
+        val refreshedStatus =
+            snapcastControlClient.notifications.first { notification ->
+                when (notification) {
+                    is GenericResultResponse -> false
+
+                    is ServerGetStatusResponse -> {
+                        notification.result.server.groups.firstOrNull()
+                            ?.clients
+                            ?.firstOrNull { client -> client.id == clientId }
+                            ?.config
+                            ?.latency == updatedLatency
+                    }
+
+                    else -> false
+                }
+            } as ServerGetStatusResponse
+
+        val updatedClient =
+            refreshedStatus.result.server.groups.first().clients.first { client ->
+                client.id == clientId
+            }
+
+        assert(updatedClient.config.latency == updatedLatency)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

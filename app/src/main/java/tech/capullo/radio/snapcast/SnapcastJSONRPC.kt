@@ -94,12 +94,32 @@ data class Stream(
 
 @Serializable
 data class StreamProperties(
-    val canControl: Boolean,
-    val canGoNext: Boolean,
-    val canGoPrevious: Boolean,
-    val canPause: Boolean,
-    val canPlay: Boolean,
-    val canSeek: Boolean,
+    val playbackStatus: String? = null,
+    val loopStatus: String? = null,
+    val shuffle: Boolean? = null,
+    val volume: Int? = null,
+    val mute: Boolean? = null,
+    val rate: Float? = null,
+    val position: Float? = null,
+    val canControl: Boolean = false,
+    val canGoNext: Boolean = false,
+    val canGoPrevious: Boolean = false,
+    val canPause: Boolean = false,
+    val canPlay: Boolean = false,
+    val canSeek: Boolean = false,
+    val metadata: StreamMetadata? = null,
+)
+
+@Serializable
+data class StreamMetadata(
+    val album: String? = null,
+    val artist: JsonElement? = null,
+    @SerialName("trackId")
+    val track: String? = null,
+    val title: String? = null,
+    val duration: Float? = null,
+    val artUrl: String? = null,
+    val artData: String? = null, // Base64 encoded art
 )
 
 @Serializable
@@ -142,6 +162,52 @@ data class VolumeParams(
     val volume: Volume,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class ClientSetLatencyRequest(
+    val id: Int,
+    @EncodeDefault
+    val jsonrpc: String = "2.0",
+    @EncodeDefault
+    val method: String = "Client.SetLatency",
+    val params: LatencyParams,
+)
+
+@Serializable
+data class LatencyParams(
+    @SerialName("id")
+    val clientId: String,
+    val latency: Int,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class StreamControlRequest(
+    val id: Int,
+    @EncodeDefault
+    val jsonrpc: String = "2.0",
+    @EncodeDefault
+    val method: String = "Stream.Control",
+    val params: StreamControlParams,
+)
+
+@Serializable
+data class StreamControlParams(val id: String, val command: String, val params: JsonObject? = null)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class StreamSetPropertyRequest(
+    val id: Int,
+    @EncodeDefault
+    val jsonrpc: String = "2.0",
+    @EncodeDefault
+    val method: String = "Stream.SetProperty",
+    val params: StreamSetPropertyParams,
+)
+
+@Serializable
+data class StreamSetPropertyParams(val id: String, val property: String, val value: JsonElement)
+
 // Notifications
 // https://github.com/badaix/snapcast/blob/develop/doc/json_rpc_api/control.md#notifications
 @Serializable
@@ -165,6 +231,13 @@ data class ClientOnVolumeChanged(
 ) : Notification()
 
 @Serializable
+data class ClientOnLatencyChanged(
+    override val jsonrpc: String,
+    override val method: String,
+    val params: LatencyParams,
+) : Notification()
+
+@Serializable
 data class ClientOnDisconnect(
     override val jsonrpc: String,
     override val method: String,
@@ -185,6 +258,16 @@ data class ServerOnUpdate(
     val params: ServerStatusResult,
 ) : Notification()
 
+@Serializable
+data class StreamParams(val id: String, val properties: StreamProperties)
+
+@Serializable
+data class StreamOnProperties(
+    override val jsonrpc: String,
+    override val method: String,
+    val params: StreamParams,
+) : Notification()
+
 object NotificationSerializer : JsonContentPolymorphicSerializer<Notification>(
     Notification::class,
 ) {
@@ -192,7 +275,9 @@ object NotificationSerializer : JsonContentPolymorphicSerializer<Notification>(
         val method = element.jsonObject["method"]
         return when (method.toString()) {
             "\"Server.OnUpdate\"" -> ServerOnUpdate.serializer()
+            "\"Stream.OnProperties\"" -> StreamOnProperties.serializer()
             "\"Client.OnVolumeChanged\"" -> ClientOnVolumeChanged.serializer()
+            "\"Client.OnLatencyChanged\"" -> ClientOnLatencyChanged.serializer()
             "\"Client.OnDisconnect\"" -> ClientOnDisconnect.serializer()
             "\"Client.OnConnect\"" -> ClientOnConnect.serializer()
             else -> GenericNotification.serializer()
@@ -207,14 +292,41 @@ abstract class RequestResponse : SnapcastJSONRPCResponse() {
     abstract override val jsonrpc: String
 }
 
+@Serializable
+data class GenericResultResponse(
+    override val id: Int,
+    override val jsonrpc: String,
+    val result: JsonElement? = null,
+) : RequestResponse()
+
+@Serializable
+data class JsonRpcErrorResponse(
+    override val id: Int,
+    override val jsonrpc: String,
+    val error: JsonRpcError,
+) : RequestResponse()
+
+@Serializable
+data class JsonRpcError(val code: Int, val message: String, val data: JsonElement? = null)
+
 object RequestResponseSerializer : JsonContentPolymorphicSerializer<RequestResponse>(
     RequestResponse::class,
 ) {
     override fun selectDeserializer(
         element: JsonElement,
     ): DeserializationStrategy<RequestResponse> {
-        // TODO: add serializers for all kinds of responses
-        return ServerGetStatusResponse.serializer()
+        val jsonObject = element.jsonObject
+        val resultObject = jsonObject["result"] as? JsonObject
+
+        return when {
+            "error" in jsonObject -> JsonRpcErrorResponse.serializer()
+
+            resultObject?.containsKey("server") == true -> {
+                ServerGetStatusResponse.serializer()
+            }
+
+            else -> GenericResultResponse.serializer()
+        }
     }
 }
 

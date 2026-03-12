@@ -1,15 +1,39 @@
 package tech.capullo.radio
 
 import kotlinx.serialization.json.Json
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import tech.capullo.radio.snapcast.ClientOnConnect
 import tech.capullo.radio.snapcast.ClientOnDisconnect
+import tech.capullo.radio.snapcast.ClientOnLatencyChanged
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
+import tech.capullo.radio.snapcast.ClientSetLatencyRequest
+import tech.capullo.radio.snapcast.GenericNotification
+import tech.capullo.radio.snapcast.GenericResultResponse
+import tech.capullo.radio.snapcast.LatencyParams
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastJSONRPCResponseSerializer
 
 class SnapcastControlClientTest {
+
+    @Test
+    fun clientSetLatencySerializeTest() {
+        val request = ClientSetLatencyRequest(
+            id = 7,
+            params = LatencyParams(
+                clientId = "client-1",
+                latency = 125,
+            ),
+        )
+
+        val serialized = Json.encodeToString(request)
+
+        assertTrue(serialized.contains("\"method\":\"Client.SetLatency\""))
+        assertTrue(serialized.contains("\"id\":\"client-1\""))
+        assertTrue(serialized.contains("\"latency\":125"))
+    }
 
     @Test
     fun serverGetStatusResponseDeserializeTest() {
@@ -139,6 +163,31 @@ class SnapcastControlClientTest {
             assert(it.params.clientId == clientId)
             assert(it.params.volume.muted == muted)
             assert(it.params.volume.percent == percent)
+        }
+    }
+
+    @Test
+    fun clientOnLatencyChangedDeserializeTest() {
+        val clientId = "dabb677e-18ca-429d-a710-1740e400a40a"
+        val latency = 5
+        val onLatencyChangedString = """
+        {
+          "jsonrpc": "2.0",
+          "method": "Client.OnLatencyChanged",
+          "params": {
+            "id": "$clientId",
+            "latency": $latency
+          }
+        }
+    """
+
+        val response =
+            Json.decodeFromString(SnapcastJSONRPCResponseSerializer, onLatencyChangedString)
+
+        assertTrue(response is ClientOnLatencyChanged)
+        (response as ClientOnLatencyChanged).let {
+            assertEquals(clientId, it.params.clientId)
+            assertEquals(latency, it.params.latency)
         }
     }
 
@@ -349,5 +398,40 @@ class SnapcastControlClientTest {
             assert(it.params.id == clientId)
             assert(it.params.client.host.name == hostName)
         }
+    }
+
+    @Test
+    fun genericResultResponseDeserializeTest() {
+        val ackString = """
+            {
+              "id": 9,
+              "jsonrpc": "2.0",
+              "result": {}
+            }
+        """.trimIndent()
+
+        val response = Json.decodeFromString(SnapcastJSONRPCResponseSerializer, ackString)
+
+        assertTrue(response is GenericResultResponse)
+        assertEquals(9, (response as GenericResultResponse).id)
+    }
+
+    @Test
+    fun genericNotificationDeserializeTest() {
+        val genericNotificationString = """
+            {
+              "jsonrpc": "2.0",
+              "method": "Client.OnSomethingElse",
+              "params": {
+                "id": "client-1",
+                "latency": 42
+              }
+            }
+        """.trimIndent()
+
+        val response =
+            Json.decodeFromString(SnapcastJSONRPCResponseSerializer, genericNotificationString)
+
+        assertTrue(response is GenericNotification)
     }
 }

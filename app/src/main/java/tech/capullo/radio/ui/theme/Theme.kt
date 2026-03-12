@@ -90,6 +90,7 @@ fun RadioTheme(
         }
 
         darkTheme -> schemeChoice.darkColorScheme
+
         else -> schemeChoice.lightColorScheme
     }
 

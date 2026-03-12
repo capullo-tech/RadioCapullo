@@ -1,36 +1,50 @@
 package tech.capullo.radio.ui
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import tech.capullo.radio.R
 import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.ClientConfig
 import tech.capullo.radio.snapcast.Group
@@ -40,21 +54,36 @@ import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.Volume
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.round
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+private enum class KnobMode { LATENCY, VOLUME }
 
 @Composable
 fun SnapserverGroups(
     modifier: Modifier = Modifier,
     groups: List<Group>,
     onClientVolumeChange: (String, Boolean, Int) -> Unit,
+    onClientLatencyChange: (String, Int) -> Unit,
 ) {
-    LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         groups.forEach { group ->
-            stickyHeader {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(
-                        MaterialTheme.colorScheme.secondaryContainer,
-                    ).padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(group.name.ifEmpty { group.streamId.ifEmpty { group.id } })
                 }
@@ -68,7 +97,6 @@ fun SnapserverGroups(
                     name = client.host.name,
                     muted = client.config.volume.muted,
                     onMutedChange = { muted ->
-                        // pass over new muted state, keep the same volume value
                         onClientVolumeChange(
                             client.id,
                             muted,
@@ -77,12 +105,15 @@ fun SnapserverGroups(
                     },
                     volume = client.config.volume.percent.toFloat() / 100f,
                     onVolumeChange = { volume ->
-                        // pass over new volume value, keep the same muted state
                         onClientVolumeChange(
                             client.id,
                             client.config.volume.muted,
                             volume,
                         )
+                    },
+                    latency = client.config.latency,
+                    onLatencyChange = { latency ->
+                        onClientLatencyChange(client.id, latency)
                     },
                 )
             }
@@ -98,77 +129,357 @@ private fun SnapcastClientCard(
     onMutedChange: (Boolean) -> Unit,
     volume: Float,
     onVolumeChange: (Int) -> Unit,
+    latency: Int,
+    onLatencyChange: (Int) -> Unit,
 ) {
-    // Context: When sending a ClientSetVolumeRequest, we DO NOT process the request's response
-    // therefore, we manage the slider state locally for UI interactions
-    // Incoming ClientOnVolumeChanged notifications are being reflected with LaunchedEffect
+    // Context: When sending ClientSetVolume/Latency requests, we DO NOT process the response;
+    // state is managed locally for UI responsiveness. Server notifications sync via LaunchedEffect.
     var mutedState by remember { mutableStateOf(muted) }
     var volumeState by remember { mutableFloatStateOf(volume) }
+    var latencyState by remember { mutableStateOf(latency) }
+    var knobMode by remember { mutableStateOf(KnobMode.LATENCY) }
 
-    LaunchedEffect(muted) {
-        mutedState = muted
-    }
-    LaunchedEffect(volume) {
-        volumeState = volume
-    }
+    LaunchedEffect(muted) { mutedState = muted }
+    LaunchedEffect(volume) { volumeState = volume }
+    LaunchedEffect(latency) { latencyState = latency }
 
     Card(
-        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
     ) {
-        Column {
-            Text(
-                modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 12.dp),
-                text = name,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                ),
-            )
-            Row(
-                modifier = Modifier.padding(start = 12.dp, end = 24.dp, bottom = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val knobBaseSize = maxWidth * 0.75f
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                IconButton(
-                    onClick = {
-                        mutedState = !mutedState
-                        onMutedChange(mutedState)
-                    },
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, top = 10.dp, end = 12.dp),
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painter = if (mutedState) {
-                            painterResource(id = R.drawable.volume_off_24px)
-                        } else {
-                            painterResource(id = R.drawable.volume_up_24px)
+                    ClientKnob(
+                        mode = knobMode,
+                        onModeToggle = {
+                            knobMode =
+                                if (knobMode ==
+                                    KnobMode.LATENCY
+                                ) {
+                                    KnobMode.VOLUME
+                                } else {
+                                    KnobMode.LATENCY
+                                }
                         },
-                        contentDescription = if (mutedState) {
-                            "Unmute"
-                        } else {
-                            "Mute"
+                        latency = latencyState,
+                        onLatencyChange = { newLatency ->
+                            latencyState = newLatency
+                            onLatencyChange(newLatency)
                         },
-
+                        volume = round(volumeState * 100f).toInt(),
+                        onVolumeChange = { newVolume ->
+                            volumeState = newVolume / 100f
+                            onVolumeChange(newVolume)
+                        },
+                        muted = mutedState,
+                        onMutedToggle = {
+                            mutedState = !mutedState
+                            onMutedChange(mutedState)
+                        },
+                        baseSize = knobBaseSize,
                     )
                 }
-                Slider(
-                    value = volumeState,
-                    onValueChange = {
-                        volumeState = it
-                        onVolumeChange(round(volumeState * 100).toInt())
-                    },
-                    steps = 99,
-                    valueRange = 0f..1f,
-                    modifier = Modifier.weight(2f),
-                    track = { sliderState ->
-                        SliderDefaults.Track(
-                            sliderState = sliderState,
-                            colors = SliderDefaults.colors(
-                                activeTickColor = Color.Transparent,
-                                inactiveTickColor = Color.Transparent,
-                            ),
-                        )
-                    },
-                )
             }
         }
     }
+}
+
+@Composable
+private fun ClientKnob(
+    mode: KnobMode,
+    onModeToggle: () -> Unit,
+    latency: Int,
+    onLatencyChange: (Int) -> Unit,
+    volume: Int,
+    onVolumeChange: (Int) -> Unit,
+    muted: Boolean,
+    onMutedToggle: () -> Unit,
+    baseSize: Dp = 124.dp,
+) {
+    val minLatency = -500
+    val maxLatency = 1000
+    // Tuned for higher responsiveness so users need less circular travel per ms/% step.
+    val degreesPerStep = 7f
+    val minActiveRadiusRatio = 0.28f
+    val tinyMotionDeadzoneDeg = 0.18f
+    val maxEventDeltaDeg = 10f
+    val smoothingPrevWeight = 0.35f
+    val smoothingCurrentWeight = 0.65f
+    val angularGain = 1.35f
+    var isActive by remember { mutableStateOf(false) }
+    var displayLatency by remember { mutableStateOf(latency) }
+    var displayVolume by remember { mutableIntStateOf(volume) }
+    var center by remember { mutableStateOf(Offset.Zero) }
+    var knobRadiusPx by remember { mutableStateOf(0f) }
+    var previousSmoothedDeltaDeg by remember { mutableStateOf(0f) }
+    var accumulatedDelta by remember { mutableStateOf(0f) }
+
+    val knobSize by animateDpAsState(
+        targetValue = if (isActive) baseSize * 1.28f else baseSize,
+        label = "knobSize",
+    )
+    val indicatorScale by animateFloatAsState(
+        targetValue = if (isActive) 1.06f else 1f,
+        label = "knobScale",
+    )
+
+    LaunchedEffect(latency) { displayLatency = latency }
+    LaunchedEffect(volume) { displayVolume = volume }
+
+    val knobFillColor = when {
+        isActive && mode == KnobMode.LATENCY -> MaterialTheme.colorScheme.primaryContainer
+        isActive && mode == KnobMode.VOLUME -> MaterialTheme.colorScheme.tertiary
+        mode == KnobMode.LATENCY -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val knobEdgeColor = MaterialTheme.colorScheme.tertiary
+    val indicatorColor = when (mode) {
+        KnobMode.LATENCY -> MaterialTheme.colorScheme.onPrimaryContainer
+        KnobMode.VOLUME -> MaterialTheme.colorScheme.onTertiary
+    }
+    val centerTextColor = when (mode) {
+        KnobMode.LATENCY -> MaterialTheme.colorScheme.onSecondaryContainer
+        KnobMode.VOLUME -> MaterialTheme.colorScheme.onTertiaryContainer
+    }
+
+    Box(
+        modifier = Modifier
+            .size(knobSize)
+            .onSizeChanged { size ->
+                center = Offset(size.width / 2f, size.height / 2f)
+                knobRadiusPx = minOf(size.width, size.height) / 2f
+            }
+            .pointerInput(mode) {
+                detectTapGestures(
+                    onTap = { onModeToggle() },
+                    onDoubleTap = {
+                        isActive = false
+                        previousSmoothedDeltaDeg = 0f
+                        accumulatedDelta = 0f
+                        when (mode) {
+                            KnobMode.LATENCY -> if (displayLatency != 0) {
+                                displayLatency = 0
+                                onLatencyChange(0)
+                            }
+
+                            KnobMode.VOLUME -> onMutedToggle()
+                        }
+                    },
+                )
+            }
+            .pointerInput(mode) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { _ ->
+                        isActive = true
+                        previousSmoothedDeltaDeg = 0f
+                        accumulatedDelta = 0f
+                    },
+                    onDragEnd = {
+                        isActive = false
+                        previousSmoothedDeltaDeg = 0f
+                        accumulatedDelta = 0f
+                    },
+                    onDragCancel = {
+                        isActive = false
+                        previousSmoothedDeltaDeg = 0f
+                        accumulatedDelta = 0f
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val normalizedDeltaDeg = computeNormalizedAngularDelta(
+                            center = center,
+                            pointerPosition = change.position,
+                            dragAmount = dragAmount,
+                            knobRadiusPx = knobRadiusPx,
+                            minActiveRadiusRatio = minActiveRadiusRatio,
+                            tinyMotionDeadzoneDeg = tinyMotionDeadzoneDeg,
+                            maxEventDeltaDeg = maxEventDeltaDeg,
+                        )
+
+                        val smoothedDeltaDeg =
+                            (previousSmoothedDeltaDeg * smoothingPrevWeight) +
+                                (normalizedDeltaDeg * smoothingCurrentWeight)
+                        previousSmoothedDeltaDeg = smoothedDeltaDeg
+                        accumulatedDelta += smoothedDeltaDeg * angularGain
+
+                        while (accumulatedDelta >= degreesPerStep) {
+                            when (mode) {
+                                KnobMode.LATENCY -> if (displayLatency < maxLatency) {
+                                    val v = (displayLatency + 1).coerceAtMost(maxLatency)
+                                    displayLatency = v
+                                    onLatencyChange(v)
+                                }
+
+                                KnobMode.VOLUME -> if (displayVolume < 100) {
+                                    val v = (displayVolume + 1).coerceAtMost(100)
+                                    displayVolume = v
+                                    onVolumeChange(v)
+                                }
+                            }
+                            accumulatedDelta -= degreesPerStep
+                        }
+
+                        while (accumulatedDelta <= -degreesPerStep) {
+                            when (mode) {
+                                KnobMode.LATENCY -> if (displayLatency > minLatency) {
+                                    val v = (displayLatency - 1).coerceAtLeast(minLatency)
+                                    displayLatency = v
+                                    onLatencyChange(v)
+                                }
+
+                                KnobMode.VOLUME -> if (displayVolume > 0) {
+                                    val v = (displayVolume - 1).coerceAtLeast(0)
+                                    displayVolume = v
+                                    onVolumeChange(v)
+                                }
+                            }
+                            accumulatedDelta += degreesPerStep
+                        }
+                    },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier.size(knobSize * indicatorScale),
+        ) {
+            val radius = size.minDimension / 2f
+            val edgeStroke = size.minDimension * 0.045f
+            val shadowRadius = radius * 0.86f
+
+            val indicatorAngle = when (mode) {
+                KnobMode.LATENCY -> {
+                    val latencyRange = (maxLatency - minLatency).toFloat()
+                    val normalized = (displayLatency - minLatency).toFloat() / latencyRange
+                    val zeroNormalized = (0 - minLatency).toFloat() / latencyRange
+                    (normalized - zeroNormalized) * 360f
+                }
+
+                KnobMode.VOLUME -> {
+                    // 270° arc: 0% ≈ 7 o'clock (-135°), 50% = top (0°), 100% ≈ 5 o'clock (135°)
+                    -135f + (displayVolume / 100f) * 270f
+                }
+            }
+
+            val indicatorRadians = ((indicatorAngle - 90f) * PI / 180f).toFloat()
+            val indicatorRadius = radius * 0.67f
+            val indicatorCenter = Offset(
+                x = center.x + cos(indicatorRadians) * indicatorRadius,
+                y = center.y + sin(indicatorRadians) * indicatorRadius,
+            )
+
+            drawCircle(color = knobFillColor, radius = shadowRadius)
+            drawCircle(
+                color = knobEdgeColor,
+                radius = shadowRadius,
+                style = Stroke(width = edgeStroke),
+            )
+            drawCircle(
+                color = knobEdgeColor.copy(alpha = 0.14f),
+                radius = shadowRadius * 0.76f,
+            )
+            drawCircle(
+                color = indicatorColor,
+                radius = size.minDimension * 0.055f,
+                center = indicatorCenter,
+            )
+        }
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = if (mode == KnobMode.LATENCY) "LAT" else "VOL",
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                color = centerTextColor.copy(alpha = 0.5f),
+            )
+            when (mode) {
+                KnobMode.LATENCY -> {
+                    Text(
+                        text = "$displayLatency",
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        color = centerTextColor,
+                    )
+                    Text(
+                        text = "ms",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        color = centerTextColor.copy(alpha = 0.8f),
+                    )
+                }
+
+                KnobMode.VOLUME -> {
+                    Text(
+                        text = "$displayVolume%",
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        color = centerTextColor.copy(alpha = if (muted) 0.4f else 1f),
+                    )
+                    Text(
+                        text = if (muted) "muted" else " ",
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Center,
+                        color = centerTextColor.copy(alpha = 0.6f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun computeNormalizedAngularDelta(
+    center: Offset,
+    pointerPosition: Offset,
+    dragAmount: Offset,
+    knobRadiusPx: Float,
+    minActiveRadiusRatio: Float,
+    tinyMotionDeadzoneDeg: Float,
+    maxEventDeltaDeg: Float,
+): Float {
+    val touchVector = pointerPosition - center
+    val radius = sqrt((touchVector.x * touchVector.x) + (touchVector.y * touchVector.y))
+    val minActiveRadiusPx = knobRadiusPx * minActiveRadiusRatio
+
+    if (radius < minActiveRadiusPx || radius <= 0f) {
+        return 0f
+    }
+
+    val tangentUnit = Offset(
+        x = -touchVector.y / radius,
+        y = touchVector.x / radius,
+    )
+    val tangentialPx = (dragAmount.x * tangentUnit.x) + (dragAmount.y * tangentUnit.y)
+    val angularDeltaDeg = (tangentialPx / radius) * (180f / PI.toFloat())
+
+    if (abs(angularDeltaDeg) < tinyMotionDeadzoneDeg) {
+        return 0f
+    }
+
+    return angularDeltaDeg.coerceIn(-maxEventDeltaDeg, maxEventDeltaDeg)
 }
 
 val mockSnapcastGroups = listOf(
@@ -277,6 +588,7 @@ val mockSnapcastGroups = listOf(
     name = "DefaultPreviewDark",
 )
 @Preview(showBackground = true, widthDp = 320)
+@Preview(showBackground = true, widthDp = 360, name = "DefaultPreviewWide")
 @Composable
 fun DefaultPreview() {
     RadioTheme(
@@ -285,6 +597,7 @@ fun DefaultPreview() {
         SnapserverGroups(
             groups = mockSnapcastGroups,
             onClientVolumeChange = { _, _, _ -> },
+            onClientLatencyChange = { _, _ -> },
         )
     }
 }

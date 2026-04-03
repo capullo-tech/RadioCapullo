@@ -12,12 +12,14 @@ import kotlinx.serialization.json.jsonObject
 
 // Requests
 // https://github.com/badaix/snapcast/blob/develop/doc/json_rpc_api/control.md#requests-1
+val JSON_RPC_VERSION: String = "2.0"
+
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class ServerGetStatusRequest(
     val id: Int,
     @EncodeDefault
-    val jsonrpc: String = "2.0",
+    val jsonrpc: String = JSON_RPC_VERSION,
     @EncodeDefault
     val method: String = "Server.GetStatus",
 )
@@ -129,7 +131,7 @@ data class StreamQuery(
 data class ClientSetVolumeRequest(
     val id: Int,
     @EncodeDefault
-    val jsonrpc: String = "2.0",
+    val jsonrpc: String = JSON_RPC_VERSION,
     @EncodeDefault
     val method: String = "Client.SetVolume",
     val params: VolumeParams,
@@ -140,6 +142,23 @@ data class VolumeParams(
     @SerialName("id")
     val clientId: String,
     val volume: Volume,
+)
+
+@Serializable
+data class ClientSetLatencyRequest(
+    val id: Int,
+    @EncodeDefault
+    val jsonrpc: String = JSON_RPC_VERSION,
+    @EncodeDefault
+    val method: String = "Client.SetLatency",
+    val params: LatencyParams,
+)
+
+@Serializable
+data class LatencyParams(
+    @SerialName("id")
+    val clientId: String,
+    val latency: Int,
 )
 
 // Notifications
@@ -179,6 +198,13 @@ data class ClientOnConnect(
 ) : Notification()
 
 @Serializable
+data class ClientOnLatencyChanged(
+    override val jsonrpc: String,
+    override val method: String,
+    val params: LatencyParams,
+) : Notification()
+
+@Serializable
 data class ServerOnUpdate(
     override val jsonrpc: String,
     override val method: String,
@@ -195,6 +221,7 @@ object NotificationSerializer : JsonContentPolymorphicSerializer<Notification>(
             "\"Client.OnVolumeChanged\"" -> ClientOnVolumeChanged.serializer()
             "\"Client.OnDisconnect\"" -> ClientOnDisconnect.serializer()
             "\"Client.OnConnect\"" -> ClientOnConnect.serializer()
+            "\"Client.OnLatencyChanged\"" -> ClientOnLatencyChanged.serializer()
             else -> GenericNotification.serializer()
         }
     }

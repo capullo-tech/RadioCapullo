@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "tech.capullo.radio"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "tech.capullo.radio"
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "v0.5.7"
 
@@ -35,12 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-        }
     }
     buildFeatures {
         compose = true
@@ -64,6 +58,13 @@ android {
             // TODO: introduce robolectric
             isIncludeAndroidResources = true
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 

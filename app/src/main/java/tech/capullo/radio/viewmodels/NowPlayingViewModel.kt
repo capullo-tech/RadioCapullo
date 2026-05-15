@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +26,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import tech.capullo.radio.services.SnapclientService
 import tech.capullo.radio.snapcast.ClientOnConnect
 import tech.capullo.radio.snapcast.ClientOnDisconnect
@@ -40,6 +44,12 @@ import tech.capullo.radio.snapcast.StreamMetadata
 import tech.capullo.radio.snapcast.StreamOnProperties
 import tech.capullo.radio.ui.model.AudioChannel
 
+sealed class StreamCommand(val wire: String) {
+    data object Previous : StreamCommand("previous")
+    data object PlayPause : StreamCommand("playPause")
+    data object Next : StreamCommand("next")
+}
+
 data class NowPlayingUiState(
     val audioChannelState: AudioChannel,
     val serverIp: String,
@@ -47,6 +57,11 @@ data class NowPlayingUiState(
     val snapcastControlClientConnectionState: SnapcastControlClient.ConnectionState,
     val playbackStatus: String? = null,
     val metadata: StreamMetadata? = null,
+    val canPlay: Boolean = false,
+    val canPause: Boolean = false,
+    val canGoNext: Boolean = false,
+    val canGoPrevious: Boolean = false,
+    val artistDisplay: String? = null,
 )
 
 @HiltViewModel(assistedFactory = NowPlayingViewModel.Factory::class)
@@ -68,37 +83,48 @@ class NowPlayingViewModel @AssistedInject constructor(
     private var _groups = mutableStateListOf<Group>()
     val groups: List<Group> = _groups
 
-    private var _streams = mutableStateListOf<Stream>()
-    val streams: List<Stream> = _streams
+    private var streams = mutableStateListOf<Stream>()
 
     private val audioChannelState = MutableStateFlow(AudioChannel.STEREO)
 
     private val snapclientProcessConnectionState =
         MutableStateFlow(SnapclientProcess.ConnectionState.STARTING)
 
-    private val playbackStatusState = MutableStateFlow<String?>(null)
-    private val metadataState = MutableStateFlow<StreamMetadata?>(null)
+    private val activeStreamFlow: Flow<Stream?> = snapshotFlow {
+        // TODO: single-stream assumption — multi-stream needs group→stream mapping.
+        streams.firstOrNull()
+    }
 
     val nowPlayingUiState: StateFlow<NowPlayingUiState> = combine(
         audioChannelState,
         snapcastControlClient.connectionState,
         snapclientProcessConnectionState,
-        playbackStatusState,
-        metadataState,
+        activeStreamFlow,
     ) {
             audioChannelState,
             snapcastControlClientConnectionState,
             snapclientProcessConnectionState,
-            playbackStatus,
-            metadata,
+            activeStream,
         ->
+        val artistDisplay = when (val a = activeStream?.properties?.metadata?.artist) {
+            is JsonPrimitive -> a.content
+            is JsonArray -> a.mapNotNull { (it as? JsonPrimitive)?.content }.joinToString(", ")
+            null -> null
+            else -> null
+        }
+
         NowPlayingUiState(
             audioChannelState = audioChannelState,
             serverIp = serverIp,
             snapclientProcessConnectionState = snapclientProcessConnectionState,
             snapcastControlClientConnectionState = snapcastControlClientConnectionState,
-            playbackStatus = playbackStatus,
-            metadata = metadata,
+            playbackStatus = activeStream?.properties?.playbackStatus,
+            metadata = activeStream?.properties?.metadata,
+            canPlay = activeStream?.properties?.canPlay ?: false,
+            canPause = activeStream?.properties?.canPause ?: false,
+            canGoNext = activeStream?.properties?.canGoNext ?: false,
+            canGoPrevious = activeStream?.properties?.canGoPrevious ?: false,
+            artistDisplay = artistDisplay,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -184,26 +210,29 @@ class NowPlayingViewModel @AssistedInject constructor(
             is ServerGetStatusResponse -> {
                 _groups.clear()
                 _groups.addAll(notification.result.server.groups)
-                _streams.clear()
-                _streams.addAll(notification.result.server.streams)
-                updateStreamInfo()
+                streams.clear()
+                streams.addAll(notification.result.server.streams)
+                if (streams.size > 1) {
+                    Log.w(TAG, "Multiple streams detected, assuming first stream for properties")
+                }
             }
 
             is ServerOnUpdate -> {
                 _groups.clear()
                 _groups.addAll(notification.params.server.groups)
-                _streams.clear()
-                _streams.addAll(notification.params.server.streams)
-                updateStreamInfo()
+                streams.clear()
+                streams.addAll(notification.params.server.streams)
+                if (streams.size > 1) {
+                    Log.w(TAG, "Multiple streams detected, assuming first stream for properties")
+                }
             }
 
             is StreamOnProperties -> {
-                val index = _streams.indexOfFirst { it.id == notification.params.id }
+                val index = streams.indexOfFirst { it.id == notification.params.id }
                 if (index != -1) {
-                    _streams[index] =
-                        _streams[index].copy(properties = notification.params.properties)
+                    streams[index] =
+                        streams[index].copy(properties = notification.params.properties)
                 }
-                updateStreamInfo()
             }
 
             is ClientOnVolumeChanged -> {
@@ -295,18 +324,11 @@ class NowPlayingViewModel @AssistedInject constructor(
         }
     }
 
-    private fun updateStreamInfo() {
-        // For now, we use the first stream's info
-        _streams.firstOrNull()?.let { stream ->
-            playbackStatusState.value = stream.properties.playbackStatus
-            metadataState.value = stream.properties.metadata
-        }
-    }
-
-    fun onStreamControl(command: String) {
+    fun onStreamControl(command: StreamCommand) {
         viewModelScope.launch {
-            _streams.firstOrNull()?.let { stream ->
-                snapcastControlClient.sendStreamControl(stream.id, command)
+            // TODO: single-stream assumption — multi-stream needs group→stream mapping.
+            streams.firstOrNull()?.let { stream ->
+                snapcastControlClient.sendStreamControl(stream.id, command.wire)
             }
         }
     }

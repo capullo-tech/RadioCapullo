@@ -234,6 +234,10 @@ class SnapcastControlClient(
     }
 
     suspend fun sendStreamControl(streamId: String, command: String) {
+        val activeSession = session ?: run {
+            Log.w(TAG, "sendStreamControl($streamId, $command) called with no active session")
+            return
+        }
         val requestId = nextRequestId("Stream.Control")
         val streamControl = StreamControlRequest(
             id = requestId,
@@ -241,7 +245,7 @@ class SnapcastControlClient(
         )
 
         Log.d(TAG, "sendStreamControl: $streamControl")
-        session?.sendSerialized(streamControl)
+        activeSession.sendSerialized(streamControl)
     }
 
     private fun nextRequestId(method: String): Int {

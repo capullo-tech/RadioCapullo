@@ -194,20 +194,6 @@ data class StreamControlRequest(
 @Serializable
 data class StreamControlParams(val id: String, val command: String, val params: JsonObject? = null)
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-data class StreamSetPropertyRequest(
-    val id: Int,
-    @EncodeDefault
-    val jsonrpc: String = "2.0",
-    @EncodeDefault
-    val method: String = "Stream.SetProperty",
-    val params: StreamSetPropertyParams,
-)
-
-@Serializable
-data class StreamSetPropertyParams(val id: String, val property: String, val value: JsonElement)
-
 // Notifications
 // https://github.com/badaix/snapcast/blob/develop/doc/json_rpc_api/control.md#notifications
 @Serializable

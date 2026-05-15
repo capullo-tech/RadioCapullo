@@ -3,7 +3,6 @@ package tech.capullo.radio.ui
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +19,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,19 +73,24 @@ fun SnapserverGroups(
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         groups.forEach { group ->
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                Surface(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                    shape = RoundedCornerShape(percent = 50),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                 ) {
-                    Text(group.name.ifEmpty { group.streamId.ifEmpty { group.id } })
+                    Text(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        text = group.name.ifEmpty { group.streamId.ifEmpty { group.id } },
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                        ),
+                    )
                 }
             }
 
@@ -143,8 +148,14 @@ private fun SnapcastClientCard(
     LaunchedEffect(volume) { volumeState = volume }
     LaunchedEffect(latency) { latencyState = latency }
 
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+        shape = RoundedCornerShape(
+            topStart = 32.dp,
+            topEnd = 32.dp,
+            bottomEnd = 32.dp,
+            bottomStart = 8.dp,
+        ),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val knobBaseSize = maxWidth * 0.75f
@@ -155,10 +166,10 @@ private fun SnapcastClientCard(
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 12.dp, top = 10.dp, end = 12.dp),
+                        .padding(start = 16.dp, top = 14.dp, end = 16.dp),
                     text = name,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

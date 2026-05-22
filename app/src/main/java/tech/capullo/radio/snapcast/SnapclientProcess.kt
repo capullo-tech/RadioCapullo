@@ -145,15 +145,15 @@ class SnapclientProcess @Inject constructor(
 
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
-                Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
+                // Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (_: CancellationException) {
-            Log.d(TAG, "Snapclient process cancelled")
+            // Log.d(TAG, "Snapclient process cancelled")
             process.destroy()
             process.waitFor()
-            Log.d(TAG, "Snapclient process destroyed")
+            // Log.d(TAG, "Snapclient process destroyed")
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting snapcast process", e)
+            // Log.e(TAG, "Error starting snapcast process", e)
         }
     }
 

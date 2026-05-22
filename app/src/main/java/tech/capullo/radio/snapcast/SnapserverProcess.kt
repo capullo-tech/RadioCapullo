@@ -41,7 +41,7 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 confFile,
                 "--server.datadir=$cacheDir",
                 "--stream.source",
-                "pipe://$pipeFilepath?$pipeArgs",
+                "pipe://$pipeFilepath?$pipeArgs&controlscript=$nativeLibDir/libsnapcontrol.so",
             )
             .redirectErrorStream(true)
 
@@ -55,15 +55,15 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 ensureActive()
                 val processId = Process.myPid()
                 val threadName = Thread.currentThread().name
-                Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
+                // Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
         } catch (_: CancellationException) {
-            Log.d(TAG, "Snapserver process cancelled")
+            // Log.d(TAG, "Snapserver process cancelled")
             process.destroy()
             process.waitFor()
-            Log.d(TAG, "Snapserver process destroyed")
+            // Log.d(TAG, "Snapserver process destroyed")
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting snapcast process", e)
+            // Log.e(TAG, "Error starting snapcast process", e)
         }
     }
 }

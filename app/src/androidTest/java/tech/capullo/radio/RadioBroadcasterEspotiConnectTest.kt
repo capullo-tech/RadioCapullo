@@ -90,6 +90,7 @@ class RadioBroadcasterEspotiConnectTest {
                 groups = listOf(),
                 onClientVolumeChange = { _, _, _ -> },
                 onClientLatencyChange = { _, _ -> },
+                onStreamControl = { },
             )
         }
 

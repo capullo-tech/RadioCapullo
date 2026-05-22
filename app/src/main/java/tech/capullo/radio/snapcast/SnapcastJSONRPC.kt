@@ -111,6 +111,9 @@ data class StreamProperties(
 )
 
 @Serializable
+data class ArtData(val data: String, val extension: String)
+
+@Serializable
 data class StreamMetadata(
     val album: String? = null,
     val artist: JsonElement? = null,
@@ -119,7 +122,7 @@ data class StreamMetadata(
     val title: String? = null,
     val duration: Float? = null,
     val artUrl: String? = null,
-    val artData: String? = null, // Base64 encoded art
+    val artData: ArtData? = null,
 )
 
 @Serializable

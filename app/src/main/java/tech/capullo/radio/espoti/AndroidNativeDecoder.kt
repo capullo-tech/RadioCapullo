@@ -125,6 +125,10 @@ class AndroidNativeDecoder(
                     Log.d(TAG, "Timeout")
                 } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     Log.d(TAG, "Output format changed: " + codec.outputFormat)
+                } else if (outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                    // Deprecated since L but the software Vorbis decoder
+                    // (OMX.google.vorbis.decoder) on older Android versions still emits
+                    // it. getOutputBuffer() already returns the current set, so just loop.
                 } else {
                     Log.e(
                         TAG,

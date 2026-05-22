@@ -102,11 +102,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)
-    implementation("com.github.capullo-tech.librespot-java:librespot-player:52a8c24:thin") {
-        exclude(group = "xyz.gianlu.librespot", module = "librespot-sink")
-        exclude(group = "com.lmax", module = "disruptor")
-        exclude(group = "org.apache.logging.log4j")
-    }
+    implementation("com.github.capullo-tech.lib-librespot-android:librespot-android:0.2.0")
     implementation(libs.slf4j.handroid)
 
     testImplementation(libs.junit)

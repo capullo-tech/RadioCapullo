@@ -1,5 +1,7 @@
 package tech.capullo.radio.ui
 
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -14,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -72,7 +75,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +91,7 @@ import tech.capullo.radio.snapcast.Client
 import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.SnapclientProcess
+import tech.capullo.radio.snapcast.StreamMetadata
 import tech.capullo.radio.ui.model.AudioChannel
 import tech.capullo.radio.ui.theme.RadioTheme
 import tech.capullo.radio.ui.theme.SchemeChoice
@@ -202,144 +208,17 @@ fun NowPlayingScreenContent(
                 if (uiState.snapclientProcessConnectionState ==
                     SnapclientProcess.ConnectionState.CONNECTED
                 ) {
-                    Surface(
-                        onClick = {
-                            android.util.Log.d(
-                                "RadioCapullo",
-                                "Toolbar clicked! Setting isExpanded to true",
-                            )
-                            isExpanded = true
-                        },
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        tonalElevation = 8.dp,
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    android.util.Log.d(
-                                        "RadioCapullo",
-                                        "Row clicked! Setting isExpanded to true",
-                                    )
-                                    isExpanded = true
-                                }
-                                .navigationBarsPadding()
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // Album Art Placeholder
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .clickable {
-                                        android.util.Log.d(
-                                            "RadioCapullo",
-                                            "Album art clicked! Setting isExpanded to true",
-                                        )
-                                        isExpanded = true
-                                    },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Album,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(32.dp),
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            // Metadata
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable {
-                                        android.util.Log.d(
-                                            "RadioCapullo",
-                                            "Metadata clicked! Setting isExpanded to true",
-                                        )
-                                        isExpanded = true
-                                    },
-                            ) {
-                                Text(
-                                    text = uiState.metadata?.title ?: "Radio Capullo",
-                                    modifier = Modifier.basicMarquee(
-                                        iterations = Int.MAX_VALUE,
-                                        initialDelayMillis = 2000,
-                                        repeatDelayMillis = 2000,
-                                    ),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                )
-                                Text(
-                                    text = uiState.artistDisplay ?: "Unknown Artist",
-                                    modifier = Modifier.basicMarquee(
-                                        iterations = Int.MAX_VALUE,
-                                        initialDelayMillis = 2000,
-                                        repeatDelayMillis = 2000,
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    maxLines = 1,
-                                )
-                            }
-
-                            // Controls
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                IconButton(
-                                    onClick = { onStreamControl(StreamCommand.Previous) },
-                                    enabled = uiState.canGoPrevious,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.SkipPrevious,
-                                        contentDescription = "Previous",
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { onStreamControl(StreamCommand.PlayPause) },
-                                    enabled = if (uiState.playbackStatus ==
-                                        "playing"
-                                    ) {
-                                        uiState.canPause
-                                    } else {
-                                        uiState.canPlay
-                                    },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = if (uiState.playbackStatus == "playing") {
-                                            Icons.Filled.Pause
-                                        } else {
-                                            Icons.Filled.PlayArrow
-                                        },
-                                        contentDescription = if (uiState.playbackStatus ==
-                                            "playing"
-                                        ) {
-                                            "Pause"
-                                        } else {
-                                            "Play"
-                                        },
-                                        modifier = Modifier.size(32.dp),
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { onStreamControl(StreamCommand.Next) },
-                                    enabled = uiState.canGoNext,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.SkipNext,
-                                        contentDescription = "Next",
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    PlaybackMiniBar(
+                        metadata = uiState.metadata,
+                        artistDisplay = uiState.artistDisplay,
+                        playbackStatus = uiState.playbackStatus,
+                        canPlay = uiState.canPlay,
+                        canPause = uiState.canPause,
+                        canGoNext = uiState.canGoNext,
+                        canGoPrevious = uiState.canGoPrevious,
+                        onStreamControl = onStreamControl,
+                        onExpand = { isExpanded = true },
+                    )
                 }
             },
         ) { innerPadding ->
@@ -429,9 +308,13 @@ fun NowPlayingScreenContent(
             ) + fadeOut(animationSpec = tween(durationMillis = 300)),
         ) {
             ExpandedPlayerScreen(
-                uiState = uiState,
-                groups = groups,
-                onClientVolumeChange = onClientVolumeChange,
+                metadata = uiState.metadata,
+                artistDisplay = uiState.artistDisplay,
+                playbackStatus = uiState.playbackStatus,
+                canPlay = uiState.canPlay,
+                canPause = uiState.canPause,
+                canGoNext = uiState.canGoNext,
+                canGoPrevious = uiState.canGoPrevious,
                 onStreamControl = onStreamControl,
                 onCollapse = { isExpanded = false },
                 onShowChannelDialog = { showChannelDialog = true },
@@ -443,15 +326,19 @@ fun NowPlayingScreenContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpandedPlayerScreen(
-    uiState: NowPlayingUiState,
-    groups: List<Group>,
-    onClientVolumeChange: (String, Boolean, Int) -> Unit,
+    metadata: StreamMetadata?,
+    artistDisplay: String?,
+    playbackStatus: String?,
+    canPlay: Boolean,
+    canPause: Boolean,
+    canGoNext: Boolean,
+    canGoPrevious: Boolean,
     onStreamControl: (StreamCommand) -> Unit,
     onCollapse: () -> Unit,
     onShowChannelDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isPlaying = uiState.playbackStatus == "playing"
+    val isPlaying = playbackStatus == "playing"
 
     // Dynamic gradient background
     Box(
@@ -551,22 +438,20 @@ fun ExpandedPlayerScreen(
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                        val containerColor =
-                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.08f)
-                        Box(
-                            modifier = Modifier
-                                .size(140.dp)
-                                .clip(CircleShape)
-                                .background(containerColor),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Album,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(100.dp),
-                            )
-                        }
+                        val albumArtShape = RoundedCornerShape(
+                            topStart = 64.dp,
+                            topEnd = 24.dp,
+                            bottomEnd = 64.dp,
+                            bottomStart = 24.dp,
+                        )
+                        AlbumArt(
+                            artUrl = metadata?.artUrl,
+                            artData = metadata?.artData?.data,
+                            modifier = Modifier.fillMaxSize(),
+                            shape = albumArtShape,
+                            backgroundColor = androidx.compose.ui.graphics.Color.Transparent,
+                            iconSize = 100.dp,
+                        )
                     }
                 }
             }
@@ -581,7 +466,7 @@ fun ExpandedPlayerScreen(
                 horizontalAlignment = Alignment.Start,
             ) {
                 Text(
-                    text = uiState.metadata?.title ?: "Radio Capullo",
+                    text = metadata?.title ?: "Radio Capullo",
                     modifier = Modifier.basicMarquee(
                         iterations = Int.MAX_VALUE,
                         initialDelayMillis = 2000,
@@ -596,7 +481,7 @@ fun ExpandedPlayerScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = uiState.artistDisplay ?: "Unknown Artist",
+                    text = artistDisplay ?: "Unknown Artist",
                     modifier = Modifier.basicMarquee(
                         iterations = Int.MAX_VALUE,
                         initialDelayMillis = 2000,
@@ -631,14 +516,14 @@ fun ExpandedPlayerScreen(
             ) {
                 IconButton(
                     onClick = { onStreamControl(StreamCommand.Previous) },
-                    enabled = uiState.canGoPrevious,
+                    enabled = canGoPrevious,
                     modifier = Modifier.size(56.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.SkipPrevious,
                         contentDescription = "Previous",
                         modifier = Modifier.size(36.dp),
-                        tint = if (uiState.canGoPrevious) {
+                        tint = if (canGoPrevious) {
                             MaterialTheme.colorScheme.onSurface
                         } else {
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -648,7 +533,7 @@ fun ExpandedPlayerScreen(
 
                 FilledIconButton(
                     onClick = { onStreamControl(StreamCommand.PlayPause) },
-                    enabled = if (isPlaying) uiState.canPause else uiState.canPlay,
+                    enabled = if (isPlaying) canPause else canPlay,
                     modifier = Modifier.size(76.dp),
                     shape = CircleShape,
                 ) {
@@ -665,14 +550,14 @@ fun ExpandedPlayerScreen(
 
                 IconButton(
                     onClick = { onStreamControl(StreamCommand.Next) },
-                    enabled = uiState.canGoNext,
+                    enabled = canGoNext,
                     modifier = Modifier.size(56.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.SkipNext,
                         contentDescription = "Next",
                         modifier = Modifier.size(36.dp),
-                        tint = if (uiState.canGoNext) {
+                        tint = if (canGoNext) {
                             MaterialTheme.colorScheme.onSurface
                         } else {
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -682,6 +567,108 @@ fun ExpandedPlayerScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun PlaybackMiniBar(
+    metadata: StreamMetadata?,
+    artistDisplay: String?,
+    playbackStatus: String?,
+    canPlay: Boolean,
+    canPause: Boolean,
+    canGoNext: Boolean,
+    canGoPrevious: Boolean,
+    onStreamControl: (StreamCommand) -> Unit,
+    onExpand: () -> Unit,
+) {
+    Surface(
+        onClick = onExpand,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 8.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onExpand)
+                .navigationBarsPadding()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AlbumArt(
+                artUrl = metadata?.artUrl,
+                artData = metadata?.artData?.data,
+                modifier = Modifier.size(48.dp),
+                onClick = onExpand,
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onExpand),
+            ) {
+                Text(
+                    text = metadata?.title ?: "Radio Capullo",
+                    modifier = Modifier.basicMarquee(
+                        iterations = Int.MAX_VALUE,
+                        initialDelayMillis = 2000,
+                        repeatDelayMillis = 2000,
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = artistDisplay ?: "Unknown Artist",
+                    modifier = Modifier.basicMarquee(
+                        iterations = Int.MAX_VALUE,
+                        initialDelayMillis = 2000,
+                        repeatDelayMillis = 2000,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1,
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { onStreamControl(StreamCommand.Previous) },
+                    enabled = canGoPrevious,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipPrevious,
+                        contentDescription = "Previous",
+                    )
+                }
+                IconButton(
+                    onClick = { onStreamControl(StreamCommand.PlayPause) },
+                    enabled = if (playbackStatus == "playing") canPause else canPlay,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        imageVector = if (playbackStatus == "playing") {
+                            Icons.Filled.Pause
+                        } else {
+                            Icons.Filled.PlayArrow
+                        },
+                        contentDescription = if (playbackStatus == "playing") "Pause" else "Play",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+                IconButton(
+                    onClick = { onStreamControl(StreamCommand.Next) },
+                    enabled = canGoNext,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next",
+                    )
+                }
+            }
         }
     }
 }
@@ -833,31 +820,86 @@ fun NowPlayingScreenContentErrorPreview() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ExpandedPlayerScreenPreview() {
-    val uiState = NowPlayingUiState(
-        audioChannelState = AudioChannel.STEREO,
-        serverIp = "192.168.1.100",
-        snapclientProcessConnectionState = SnapclientProcess.ConnectionState.CONNECTED,
-        snapcastControlClientConnectionState = SnapcastControlClient.ConnectionState.CONNECTED,
-        playbackStatus = "playing",
-        metadata = tech.capullo.radio.snapcast.StreamMetadata(
-            title = "Bohemian Rhapsody",
-            artist = JsonPrimitive("Queen"),
-            album = "A Night at the Opera",
-        ),
-        canPlay = true,
-        canPause = true,
-        canGoNext = true,
-        canGoPrevious = true,
-        artistDisplay = "Queen",
+    val metadata = tech.capullo.radio.snapcast.StreamMetadata(
+        title = "Bohemian Rhapsody",
+        artist = JsonPrimitive("Queen"),
+        album = "A Night at the Opera",
     )
     RadioTheme(schemeChoice = SchemeChoice.ORANGE) {
         ExpandedPlayerScreen(
-            uiState = uiState,
-            groups = mockSnapcastGroups,
-            onClientVolumeChange = { _, _, _ -> },
+            metadata = metadata,
+            artistDisplay = "Queen",
+            playbackStatus = "playing",
+            canPlay = true,
+            canPause = true,
+            canGoNext = true,
+            canGoPrevious = true,
             onStreamControl = {},
             onCollapse = {},
             onShowChannelDialog = {},
         )
+    }
+}
+
+@Composable
+fun AlbumArt(
+    artUrl: String?,
+    artData: String?,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(8.dp),
+    backgroundColor: androidx.compose.ui.graphics.Color =
+        MaterialTheme.colorScheme.primaryContainer,
+    iconSize: androidx.compose.ui.unit.Dp = 32.dp,
+    onClick: (() -> Unit)? = null,
+) {
+    val bitmap = remember(artData) {
+        if (!artData.isNullOrBlank()) {
+            try {
+                val decodedBytes = Base64.decode(artData, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    var boxModifier = modifier
+        .clip(shape)
+        .background(backgroundColor)
+    if (onClick != null) {
+        boxModifier = boxModifier.clickable(onClick = onClick)
+    }
+
+    Box(
+        modifier = boxModifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Album Art",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            val containerColor =
+                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.08f)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(shape)
+                    .background(containerColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Album,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(iconSize),
+                )
+            }
+        }
     }
 }

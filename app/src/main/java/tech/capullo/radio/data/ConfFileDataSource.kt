@@ -28,6 +28,46 @@ class ConfFileDataSource @Inject constructor(@ApplicationContext private val app
         }
     }
 
+    // Idempotent, unlike getPipeFilepath(): both snapserver (reader) and
+    // shairport-sync (writer) resolve this path independently, so recreating
+    // the FIFO here could leave them attached to different inodes.
+    fun getAirplayPipeFilepath(): String? {
+        val pipeFile = File(getCacheDir(), AIRPLAY_PIPE_NAME)
+
+        if (pipeFile.exists()) {
+            return pipeFile.absolutePath
+        }
+
+        Log.d(TAG, "Creating AirPlay PIPE: ${pipeFile.absolutePath}")
+        try {
+            mkfifo(pipeFile.absolutePath, S_IRUSR or S_IWUSR)
+            return pipeFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating AirPlay PIPE file: ${e.message}")
+            return null
+        }
+    }
+
+    // shairport-sync settings are given via its libconfig-style conf file,
+    // rewritten on each start since the device name can change
+    fun getShairportConfPath(deviceName: String, pipeFilepath: String): String {
+        val confFile = File(getCacheDir(), "shairport-sync.conf")
+        val escapedName = deviceName.replace("\\", "\\\\").replace("\"", "\\\"")
+        confFile.writeText(
+            """
+            general = {
+              name = "$escapedName";
+              output_backend = "pipe";
+            };
+            pipe = {
+              name = "$pipeFilepath";
+            };
+            """.trimIndent(),
+        )
+        Log.d(TAG, "Wrote shairport-sync.conf: ${confFile.absolutePath}")
+        return confFile.absolutePath
+    }
+
     fun getNativeLibDirPath(): String = appContext.applicationInfo.nativeLibraryDir
 
     fun getCacheDir(): File = appContext.cacheDir
@@ -54,5 +94,6 @@ class ConfFileDataSource @Inject constructor(@ApplicationContext private val app
     companion object {
         private val TAG = ConfFileDataSource::class.java.simpleName
         private const val PIPE_NAME = "filifo"
+        private const val AIRPLAY_PIPE_NAME = "airplay-fifo"
     }
 }

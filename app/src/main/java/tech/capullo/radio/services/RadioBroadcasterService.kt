@@ -30,6 +30,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.annotations.Range
+import tech.capullo.radio.airplay.AirplayProcess
 import tech.capullo.radio.espoti.AudioFocusManager
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
@@ -64,6 +65,8 @@ class RadioBroadcasterService : Service() {
 
     @Inject lateinit var snapserverNsdManager: SnapserverNsdManager
 
+    @Inject lateinit var airplayProcess: AirplayProcess
+
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
     private var session: Session? = null
@@ -74,7 +77,12 @@ class RadioBroadcasterService : Service() {
 
     private var snapserverJob: Job? = null
     private var snapclientJob: Job? = null
+    private var airplayJob: Job? = null
     private var controlBridge: SnapcastControlBridge? = null
+
+    // shairport-sync's in-process mDNS responder (tinysvcmdns) only receives
+    // queries while multicast is allowed through the Wi-Fi filter
+    private var multicastLock: android.net.wifi.WifiManager.MulticastLock? = null
 
     private var isPlaying: Boolean = false
     private var isMuted: Boolean = false
@@ -158,6 +166,7 @@ class RadioBroadcasterService : Service() {
         super.onTaskRemoved(rootIntent)
         controlBridge?.stop()
         snapserverNsdManager.stop()
+        releaseMulticastLock()
         scope.cancel()
         player?.close()
         session?.close()
@@ -170,6 +179,7 @@ class RadioBroadcasterService : Service() {
         super.onDestroy()
         controlBridge?.stop()
         snapserverNsdManager.stop()
+        releaseMulticastLock()
         scope.cancel()
         player?.close()
         session?.close()
@@ -408,9 +418,27 @@ class RadioBroadcasterService : Service() {
                 start()
             }
         }
+        acquireMulticastLock()
         snapserverJob = scope.launch { snapserverProcess.start() }
         snapclientJob = scope.launch { snapclientProcess.start() }
+        airplayJob = scope.launch { airplayProcess.start() }
         scope.launch { snapserverNsdManager.start() }
+    }
+
+    private fun acquireMulticastLock() {
+        if (multicastLock == null) {
+            val wifiManager =
+                applicationContext.getSystemService(WIFI_SERVICE) as android.net.wifi.WifiManager
+            multicastLock = wifiManager.createMulticastLock("RadioCapulloAirplayMdns").apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        }
+    }
+
+    private fun releaseMulticastLock() {
+        multicastLock?.takeIf { it.isHeld }?.release()
+        multicastLock = null
     }
 
     private fun buildStreamProperties(): StreamProperties {

@@ -11,6 +11,13 @@ class RadioRepository @Inject constructor(
 ) {
     fun getPipeFilepath(): String? = confFileDataSource.getPipeFilepath()
 
+    fun getAirplayPipeFilepath(): String? = confFileDataSource.getAirplayPipeFilepath()
+
+    fun getShairportConfPath(pipeFilepath: String): String =
+        confFileDataSource.getShairportConfPath(getDeviceName(), pipeFilepath)
+
+    fun getAirplayDeviceId(): String = radioAdvertisingDataSource.getAirplayDeviceId()
+
     fun getNativeLibDirPath(): String = confFileDataSource.getNativeLibDirPath()
 
     fun getCacheDir(): File = confFileDataSource.getCacheDir()

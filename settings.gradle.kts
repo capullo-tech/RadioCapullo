@@ -17,6 +17,10 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://www.jitpack.io") }
+        // lib-shairport-android is consumed from the local maven repo until it
+        // is published; build it with:
+        //   lib-shairport-android$ ./gradlew publishToMavenLocal
+        mavenLocal()
     }
 }
 

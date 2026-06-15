@@ -18,6 +18,7 @@ coreKtx = "1.18.0"
 hilt = "2.59.2"
 ksp = "2.3.7"
 ktor = "3.4.3"
+libShairportAndroid = "0.1.0"
 libSnapcastAndroid = "lr_snapcast-SNAPSHOT"
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleViewmodelNav3 = "2.10.0"
@@ -68,6 +69,8 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# from mavenLocal until published; switch group to com.github.capullo-tech.lib-shairport-android for JitPack
+lib-shairport-android = { group = "tech.capullo", name = "lib-shairport-android", version.ref = "libShairportAndroid" }
 lib-snapcast-android = { group = "com.github.capullo-tech.lib-snapcast-android", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
 mockk = { group= "io.mockk", name = "mockk", version.ref = "mockk" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

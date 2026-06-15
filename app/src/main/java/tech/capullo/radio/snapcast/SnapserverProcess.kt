@@ -16,32 +16,54 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
     private val cacheDir = radioRepository.getCacheDir()
     private val confFile = radioRepository.getSnapserverConfPath()
     private val pipeFilepath = radioRepository.getPipeFilepath()!!
+    private val airplayPipeFilepath = radioRepository.getAirplayPipeFilepath()
 
     companion object {
-        private const val STREAM_NAME: String = "name=RadioCapullo"
         private const val PIPE_MODE: String = "mode=read"
         private const val DRYOUT_MS: String = "dryout_ms=2000"
         private const val SAMPLE_FORMAT: String = "sampleformat=44100:16:2"
 
+        // codec=null hides the raw inputs from clients, so the meta stream
+        // below is the default stream that new client groups attach to
+        // (StreamManager::getDefaultStream skips null-codec streams).
         private val pipeArgs = listOf(
-            STREAM_NAME,
             PIPE_MODE,
             DRYOUT_MS,
             SAMPLE_FORMAT,
+            "codec=null",
         ).joinToString("&")
 
         private val TAG = SnapserverProcess::class.java.simpleName
     }
 
     suspend fun start() = coroutineScope {
+        val streamSources = mutableListOf(
+            "--stream.source",
+            "pipe://$pipeFilepath?name=Spotify&$pipeArgs" +
+                "&controlscript=$nativeLibDir/libsnapcontrol.so",
+        )
+        if (airplayPipeFilepath != null) {
+            streamSources += listOf(
+                "--stream.source",
+                "pipe://$airplayPipeFilepath?name=Airplay&$pipeArgs",
+            )
+        }
+        // The meta stream activates whichever input is playing (earlier names
+        // win on conflict) and must be declared after the streams it combines.
+        val metaPath = if (airplayPipeFilepath != null) "Spotify/Airplay" else "Spotify"
+        streamSources += listOf(
+            "--stream.source",
+            "meta:///$metaPath?name=RadioCapullo&$SAMPLE_FORMAT",
+        )
+
         val pb = ProcessBuilder()
             .command(
-                "$nativeLibDir/libsnapserver.so",
-                "--config",
-                confFile,
-                "--server.datadir=$cacheDir",
-                "--stream.source",
-                "pipe://$pipeFilepath?$pipeArgs&controlscript=$nativeLibDir/libsnapcontrol.so",
+                listOf(
+                    "$nativeLibDir/libsnapserver.so",
+                    "--config",
+                    confFile,
+                    "--server.datadir=$cacheDir",
+                ) + streamSources,
             )
             .redirectErrorStream(true)
 

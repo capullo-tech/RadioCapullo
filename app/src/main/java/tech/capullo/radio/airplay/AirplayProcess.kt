@@ -1,7 +1,6 @@
 package tech.capullo.radio.airplay
 
 import android.util.Log
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
@@ -38,6 +37,9 @@ class AirplayProcess @Inject constructor(private val radioRepository: RadioRepos
         pb.environment()["SPS_DEVICE_ID"] = radioRepository.getAirplayDeviceId()
 
         val process = pb.start()
+        // Cleanup lives in finally so cancellation propagates to the
+        // supervisor (which distinguishes a clean stop from a crash); a normal
+        // native exit returns and lets the supervisor restart.
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -47,11 +49,9 @@ class AirplayProcess @Inject constructor(private val radioRepository: RadioRepos
                 ensureActive()
                 Log.d(TAG, "shairport-sync: ${line!!}")
             }
-        } catch (_: CancellationException) {
+        } finally {
             process.destroy()
             process.waitFor()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error running the shairport-sync process", e)
         }
     }
 

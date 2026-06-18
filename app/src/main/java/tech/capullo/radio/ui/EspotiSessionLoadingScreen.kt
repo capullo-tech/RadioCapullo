@@ -15,6 +15,7 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +37,7 @@ import tech.capullo.radio.viewmodels.EspotiSessionLoadingViewModel
 @Composable
 fun EspotiSessionLoadingScreen(
     viewModel: EspotiSessionLoadingViewModel = hiltViewModel(),
-    onPlayerReady: () -> Unit,
+    onProceedToBroadcast: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
@@ -45,20 +46,27 @@ fun EspotiSessionLoadingScreen(
 
     LaunchedEffect(uiState.isPlayerReady) {
         if (uiState.isPlayerReady) {
-            onPlayerReady()
+            onProceedToBroadcast()
         }
     }
 
-    EspotiSessionLoadingScreenContent(uiState)
+    EspotiSessionLoadingScreenContent(
+        uiState = uiState,
+        onBroadcastWithoutSpotify = onProceedToBroadcast,
+    )
 }
 
 @Composable
-fun EspotiSessionLoadingScreenContent(uiState: EspotiSessionLoadingUiState) {
+fun EspotiSessionLoadingScreenContent(
+    uiState: EspotiSessionLoadingUiState,
+    onBroadcastWithoutSpotify: () -> Unit = {},
+) {
     if (uiState.isLoading) {
         LoadingStoredSessionScreen()
     } else {
         EspotiConnectScreen(
             deviceName = uiState.deviceName,
+            onBroadcastWithoutSpotify = onBroadcastWithoutSpotify,
         )
     }
 }
@@ -92,7 +100,7 @@ fun LoadingStoredSessionScreen() {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun EspotiConnectScreen(deviceName: String) {
+fun EspotiConnectScreen(deviceName: String, onBroadcastWithoutSpotify: () -> Unit = {}) {
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -123,6 +131,12 @@ fun EspotiConnectScreen(deviceName: String) {
             }
             Spacer(modifier = Modifier.padding(8.dp))
             LinearWavyProgressIndicator()
+            Spacer(modifier = Modifier.padding(16.dp))
+            // AirPlay / Snapcast don't need Spotify — let the user start
+            // broadcasting now and connect Spotify later if they want.
+            TextButton(onClick = onBroadcastWithoutSpotify) {
+                Text(text = "Broadcast without Spotify")
+            }
         }
     }
 }

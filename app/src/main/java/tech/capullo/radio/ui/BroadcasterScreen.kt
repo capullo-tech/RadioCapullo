@@ -57,6 +57,7 @@ import tech.capullo.radio.snapcast.ClientConfig
 import tech.capullo.radio.snapcast.Group
 import tech.capullo.radio.snapcast.Host
 import tech.capullo.radio.snapcast.LastSeen
+import tech.capullo.radio.snapcast.ProcessStatus
 import tech.capullo.radio.snapcast.SnapClient
 import tech.capullo.radio.snapcast.SnapcastControlClient
 import tech.capullo.radio.snapcast.StreamMetadata
@@ -158,6 +159,11 @@ fun BroadcasterScreenContent(
             ) {
                 IPv4AddressesCard(uiState.ipv4AddressesResult, onRefreshHostAddresses)
 
+                ReceiverStatusBanner(
+                    airplay = uiState.airplayStatus,
+                    snapserver = uiState.snapserverStatus,
+                )
+
                 if (controlConnected) {
                     SnapserverGroups(
                         groups = groups,
@@ -245,6 +251,50 @@ fun BroadcasterScreenContent(
                 onCollapse = { isExpanded = false },
                 onShowChannelDialog = { showChannelDialog = true },
             )
+        }
+    }
+}
+
+/**
+ * Surfaces native receiver health (AirPlay / snapserver). Self-hides while both
+ * are healthy so the broadcaster screen stays clean; shows a warning card when a
+ * source is restarting or has stopped.
+ */
+@Composable
+private fun ReceiverStatusBanner(airplay: ProcessStatus, snapserver: ProcessStatus) {
+    val issues = buildList {
+        when (snapserver) {
+            ProcessStatus.RESTARTING -> add("Broadcast server is restarting…")
+            ProcessStatus.STOPPED -> add("Broadcast server stopped")
+            else -> {}
+        }
+        when (airplay) {
+            ProcessStatus.RESTARTING -> add("AirPlay receiver is restarting…")
+            ProcessStatus.STOPPED -> add("AirPlay receiver stopped")
+            else -> {}
+        }
+    }
+    if (issues.isEmpty()) return
+
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            issues.forEach { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

@@ -2,7 +2,6 @@ package tech.capullo.radio.snapcast
 
 import android.os.Process
 import android.util.Log
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
@@ -68,6 +67,9 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
             .redirectErrorStream(true)
 
         val process = pb.start()
+        // Cleanup lives in finally so cancellation propagates to the
+        // supervisor (which distinguishes a clean stop from a crash); a normal
+        // native exit returns and lets the supervisor restart.
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -79,13 +81,9 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 val threadName = Thread.currentThread().name
                 // Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (_: CancellationException) {
-            // Log.d(TAG, "Snapserver process cancelled")
+        } finally {
             process.destroy()
             process.waitFor()
-            // Log.d(TAG, "Snapserver process destroyed")
-        } catch (e: Exception) {
-            // Log.e(TAG, "Error starting snapcast process", e)
         }
     }
 }

@@ -1,7 +1,6 @@
 package tech.capullo.radio
 
 import android.content.Context
-import android.net.nsd.NsdManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,10 +15,7 @@ import org.junit.runner.RunWith
 import tech.capullo.radio.data.ConfFileDataSource
 import tech.capullo.radio.data.RadioAdvertisingDataSource
 import tech.capullo.radio.data.RadioRepository
-import tech.capullo.radio.espoti.EspotiConnectHandler
-import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
-import tech.capullo.radio.espoti.EspotiZeroconfServer
 import tech.capullo.radio.viewmodels.EspotiSessionLoadingViewModel
 
 @RunWith(AndroidJUnit4::class)
@@ -47,18 +43,9 @@ class SessionRepositoryTest {
             radioRepository,
         )
 
-        val nsdManager = appContext.getSystemService(Context.NSD_SERVICE) as NsdManager
-        val espotiConnectHandler = EspotiConnectHandler(espotiSessionRepository)
-        val espotiZeroconfServer = EspotiZeroconfServer(espotiConnectHandler)
-        val espotiNsdManager = EspotiNsdManager(
-            nsdManager,
-            espotiZeroconfServer,
-        )
         val viewModel = EspotiSessionLoadingViewModel(
             appContext,
             espotiSessionRepository,
-            espotiNsdManager = espotiNsdManager,
-            ioDispatcher = dispatcher,
         )
 
         assert(viewModel.uiState.value.isLoading)

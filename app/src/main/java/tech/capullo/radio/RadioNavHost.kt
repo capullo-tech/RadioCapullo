@@ -57,7 +57,7 @@ fun RadioCapulloNavHost() {
                     schemeChoice = SchemeChoice.GREEN,
                 ) {
                     EspotiSessionLoadingScreen(
-                        onPlayerReady = {
+                        onProceedToBroadcast = {
                             backStack.add(Broadcast)
                         },
                     )

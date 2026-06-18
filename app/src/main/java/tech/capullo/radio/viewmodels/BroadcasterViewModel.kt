@@ -31,6 +31,7 @@ import tech.capullo.radio.snapcast.ClientOnDisconnect
 import tech.capullo.radio.snapcast.ClientOnLatencyChanged
 import tech.capullo.radio.snapcast.ClientOnVolumeChanged
 import tech.capullo.radio.snapcast.Group
+import tech.capullo.radio.snapcast.ProcessStatus
 import tech.capullo.radio.snapcast.ServerGetStatusResponse
 import tech.capullo.radio.snapcast.ServerOnUpdate
 import tech.capullo.radio.snapcast.SnapcastControlClient
@@ -53,6 +54,8 @@ data class BroadcasterUiState(
     val canGoNext: Boolean = false,
     val canGoPrevious: Boolean = false,
     val artistDisplay: String? = null,
+    val airplayStatus: ProcessStatus = ProcessStatus.STARTING,
+    val snapserverStatus: ProcessStatus = ProcessStatus.STARTING,
 )
 
 @HiltViewModel
@@ -76,6 +79,14 @@ class BroadcasterViewModel @Inject constructor(
         MutableStateFlow<IPv4AddressesResult>(IPv4AddressesResult.Loading)
     private val audioChannelFlow = MutableStateFlow(AudioChannel.STEREO)
 
+    // Native receiver health, piped from the bound service on connect.
+    private val airplayStatusFlow = MutableStateFlow(ProcessStatus.STARTING)
+    private val snapserverStatusFlow = MutableStateFlow(ProcessStatus.STARTING)
+    private val receiverStatusFlow: Flow<Pair<ProcessStatus, ProcessStatus>> = combine(
+        airplayStatusFlow,
+        snapserverStatusFlow,
+    ) { airplay, snapserver -> airplay to snapserver }
+
     private val activeStreamFlow: Flow<Stream?> = snapshotFlow {
         // TODO: single-stream assumption — multi-stream needs group→stream mapping.
         streams.firstOrNull()
@@ -86,7 +97,9 @@ class BroadcasterViewModel @Inject constructor(
         audioChannelFlow,
         snapcastControlClient.connectionState,
         activeStreamFlow,
-    ) { ipv4, channel, controlConnState, activeStream ->
+        receiverStatusFlow,
+    ) { ipv4, channel, controlConnState, activeStream, receiverStatus ->
+        val (airplayStatus, snapserverStatus) = receiverStatus
         val artistDisplay = when (val a = activeStream?.properties?.metadata?.artist) {
             is JsonPrimitive -> a.content
             is JsonArray -> a.mapNotNull { (it as? JsonPrimitive)?.content }.joinToString(", ")
@@ -104,6 +117,8 @@ class BroadcasterViewModel @Inject constructor(
             canGoNext = activeStream?.properties?.canGoNext ?: false,
             canGoPrevious = activeStream?.properties?.canGoPrevious ?: false,
             artistDisplay = artistDisplay,
+            airplayStatus = airplayStatus,
+            snapserverStatus = snapserverStatus,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -122,6 +137,13 @@ class BroadcasterViewModel @Inject constructor(
             val binder = service as RadioBroadcasterService.LocalBinder
             mBound = true
             mService = binder
+
+            viewModelScope.launch {
+                binder.getAirplayStatusFlow().collect { airplayStatusFlow.value = it }
+            }
+            viewModelScope.launch {
+                binder.getSnapserverStatusFlow().collect { snapserverStatusFlow.value = it }
+            }
 
             startSnapcastControlClient()
         }

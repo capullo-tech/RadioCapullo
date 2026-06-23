@@ -34,7 +34,9 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.annotations.Range
+import tech.capullo.radio.airplay.AirplayMetadataReader
 import tech.capullo.radio.airplay.AirplayProcess
+import tech.capullo.radio.airplay.DacpController
 import tech.capullo.radio.espoti.AudioFocusManager
 import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiPlayerManager
@@ -73,6 +75,10 @@ class RadioBroadcasterService : Service() {
 
     @Inject lateinit var airplayProcess: AirplayProcess
 
+    @Inject lateinit var airplayMetadataReader: AirplayMetadataReader
+
+    @Inject lateinit var dacpController: DacpController
+
     // Spotify Connect zeroconf discovery + login handler. Lives in the service
     // (not the loading screen's ViewModel) so a user who skips Spotify can still
     // connect later while broadcasting; a successful login emits
@@ -90,7 +96,9 @@ class RadioBroadcasterService : Service() {
     private var snapserverJob: Job? = null
     private var snapclientJob: Job? = null
     private var airplayJob: Job? = null
+    private var airplayMetadataJob: Job? = null
     private var controlBridge: SnapcastControlBridge? = null
+    private var airplayControlBridge: SnapcastControlBridge? = null
 
     // The receiver stack (snapserver/snapclient/AirPlay/NSD) is independent of
     // Spotify and starts with the service; the Spotify stack (player) starts
@@ -195,6 +203,8 @@ class RadioBroadcasterService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         controlBridge?.stop()
+        airplayControlBridge?.stop()
+        dacpController.stop()
         snapserverNsdManager.stop()
         releaseMulticastLock()
         scope.cancel()
@@ -208,6 +218,8 @@ class RadioBroadcasterService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         controlBridge?.stop()
+        airplayControlBridge?.stop()
+        dacpController.stop()
         snapserverNsdManager.stop()
         releaseMulticastLock()
         scope.cancel()
@@ -452,6 +464,16 @@ class RadioBroadcasterService : Service() {
                 start()
             }
         }
+        // Same contract for the Airplay stream, on its own socket so its
+        // libsnapcontrol.so relay doesn't collide with the Spotify one. Phase 1
+        // is read-only: metadata flows up from shairport-sync; transport
+        // callbacks are no-ops (see airplayBridgeCallbacks).
+        if (airplayControlBridge == null) {
+            airplayControlBridge = SnapcastControlBridge(
+                socketName = SnapserverProcess.AIRPLAY_CONTROL_SOCKET,
+                player = airplayBridgeCallbacks,
+            ).apply { start() }
+        }
         acquireMulticastLock()
         snapserverJob = launchSupervised("snapserver", _snapserverStatus) {
             snapserverProcess.start()
@@ -461,6 +483,23 @@ class RadioBroadcasterService : Service() {
         }
         airplayJob = launchSupervised("airplay", _airplayStatus) {
             airplayProcess.start()
+        }
+        // Read shairport-sync's metadata pipe (reopened on each AirPlay session)
+        // and push every change to the Airplay control bridge.
+        airplayMetadataJob = launchSupervised("airplay-metadata") {
+            airplayMetadataReader.run()
+        }
+        scope.launch {
+            airplayMetadataReader.properties.collect { props ->
+                airplayControlBridge?.pushProperties(props)
+            }
+        }
+        // Drive DACP discovery from the sender's credentials (acre/daid) so the
+        // Airplay transport callbacks below can reach the sender.
+        scope.launch {
+            airplayMetadataReader.credentials.collect { creds ->
+                dacpController.updateCredentials(creds)
+            }
         }
         scope.launch { snapserverNsdManager.start() }
         // Advertise Spotify Connect + handle logins for the life of the service,
@@ -683,6 +722,35 @@ class RadioBroadcasterService : Service() {
         }
 
         override fun currentProperties(): StreamProperties = buildStreamProperties()
+    }
+
+    // AirPlay transport is driven back to the sender over DACP (DacpController).
+    // Seek/setPosition stay unsupported (canSeek=false); volume/mute map to the
+    // sender's dmcp.volume.
+    private val airplayBridgeCallbacks = object : SnapcastControlBridge.PlayerCallbacks {
+        override fun onPlay() = dacpController.play()
+        override fun onPause() = dacpController.pause()
+        override fun onPlayPause() = dacpController.playPause()
+        override fun onNext() = dacpController.next()
+        override fun onPrevious() = dacpController.previous()
+
+        override fun onSeek(offsetUs: Long) {
+            Log.d(TAG, "AirPlay seek unsupported")
+        }
+
+        override fun onSetPosition(trackId: String, posUs: Long) {
+            Log.d(TAG, "AirPlay setPosition unsupported")
+        }
+
+        override fun onSetProperty(name: String, value: kotlinx.serialization.json.JsonElement) {
+            when (name) {
+                "volume" -> dacpController.setVolume(value.jsonPrimitive.double.toInt())
+                "mute" -> dacpController.setMute(value.jsonPrimitive.booleanOrNull ?: false)
+                else -> Log.d(TAG, "AirPlay setProperty '$name' unsupported")
+            }
+        }
+
+        override fun currentProperties(): StreamProperties = airplayMetadataReader.properties.value
     }
 
     fun updateAudioChannel(channel: AudioChannel) {

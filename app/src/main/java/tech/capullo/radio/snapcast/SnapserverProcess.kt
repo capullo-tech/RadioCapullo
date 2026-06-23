@@ -18,6 +18,11 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
     private val airplayPipeFilepath = radioRepository.getAirplayPipeFilepath()
 
     companion object {
+        // Abstract-socket name the Airplay stream's libsnapcontrol.so relay
+        // connects to; RadioBroadcasterService binds its Airplay control bridge
+        // here. Spotify uses the SnapcastControlBridge default ("snapcontrol").
+        const val AIRPLAY_CONTROL_SOCKET: String = "snapcontrol-airplay"
+
         private const val PIPE_MODE: String = "mode=read"
         private const val DRYOUT_MS: String = "dryout_ms=2000"
         private const val SAMPLE_FORMAT: String = "sampleformat=44100:16:2"
@@ -42,9 +47,14 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 "&controlscript=$nativeLibDir/libsnapcontrol.so",
         )
         if (airplayPipeFilepath != null) {
+            // Airplay gets its own control socket so its libsnapcontrol.so relay
+            // doesn't clobber the Spotify bridge (default "snapcontrol" socket);
+            // the bridge tracks a single active connection per socket name.
             streamSources += listOf(
                 "--stream.source",
-                "pipe://$airplayPipeFilepath?name=Airplay&$pipeArgs",
+                "pipe://$airplayPipeFilepath?name=Airplay&$pipeArgs" +
+                    "&controlscript=$nativeLibDir/libsnapcontrol.so" +
+                    "&controlscriptparams=--socket-name=$AIRPLAY_CONTROL_SOCKET",
             )
         }
         // The meta stream activates whichever input is playing (earlier names

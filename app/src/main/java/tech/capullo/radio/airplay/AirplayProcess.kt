@@ -23,7 +23,10 @@ class AirplayProcess @Inject constructor(private val radioRepository: RadioRepos
             Log.e(TAG, "Could not create the AirPlay PIPE, not starting shairport-sync")
             return@coroutineScope
         }
-        val confFile = radioRepository.getShairportConfPath(pipeFilepath)
+        // Idempotent like the audio FIFO; AirplayMetadataReader opens the same
+        // path for reading. Null (mkfifo failure) just omits the metadata block.
+        val metadataPipeFilepath = radioRepository.getAirplayMetadataPipeFilepath()
+        val confFile = radioRepository.getShairportConfPath(pipeFilepath, metadataPipeFilepath)
 
         val pb = ProcessBuilder()
             .command(

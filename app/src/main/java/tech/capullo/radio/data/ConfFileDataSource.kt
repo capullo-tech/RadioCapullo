@@ -48,11 +48,51 @@ class ConfFileDataSource @Inject constructor(@ApplicationContext private val app
         }
     }
 
+    // Metadata FIFO shairport-sync writes its <item> stream to (title/artist/
+    // album/cover art + play state). Idempotent for the same inode reason as
+    // getAirplayPipeFilepath(): shairport-sync (writer) and AirplayMetadataReader
+    // (reader) open this path independently.
+    fun getAirplayMetadataPipeFilepath(): String? {
+        val pipeFile = File(getCacheDir(), AIRPLAY_METADATA_PIPE_NAME)
+
+        if (pipeFile.exists()) {
+            return pipeFile.absolutePath
+        }
+
+        Log.d(TAG, "Creating AirPlay metadata PIPE: ${pipeFile.absolutePath}")
+        try {
+            mkfifo(pipeFile.absolutePath, S_IRUSR or S_IWUSR)
+            return pipeFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating AirPlay metadata PIPE file: ${e.message}")
+            return null
+        }
+    }
+
     // shairport-sync settings are given via its libconfig-style conf file,
-    // rewritten on each start since the device name can change
-    fun getShairportConfPath(deviceName: String, pipeFilepath: String): String {
+    // rewritten on each start since the device name can change. When
+    // metadataPipeFilepath is non-null, shairport-sync (built with
+    // CONFIG_METADATA) emits its <item> metadata stream to that FIFO for
+    // AirplayMetadataReader to consume.
+    fun getShairportConfPath(
+        deviceName: String,
+        pipeFilepath: String,
+        metadataPipeFilepath: String? = null,
+    ): String {
         val confFile = File(getCacheDir(), "shairport-sync.conf")
         val escapedName = deviceName.replace("\\", "\\\\").replace("\"", "\\\"")
+        val metadataBlock = if (metadataPipeFilepath != null) {
+            """
+
+            metadata = {
+              enabled = "yes";
+              include_cover_art = "yes";
+              pipe_name = "$metadataPipeFilepath";
+            };
+            """.trimIndent()
+        } else {
+            ""
+        }
         confFile.writeText(
             """
             general = {
@@ -62,7 +102,7 @@ class ConfFileDataSource @Inject constructor(@ApplicationContext private val app
             pipe = {
               name = "$pipeFilepath";
             };
-            """.trimIndent(),
+            """.trimIndent() + metadataBlock,
         )
         Log.d(TAG, "Wrote shairport-sync.conf: ${confFile.absolutePath}")
         return confFile.absolutePath
@@ -95,5 +135,6 @@ class ConfFileDataSource @Inject constructor(@ApplicationContext private val app
         private val TAG = ConfFileDataSource::class.java.simpleName
         private const val PIPE_NAME = "filifo"
         private const val AIRPLAY_PIPE_NAME = "airplay-fifo"
+        private const val AIRPLAY_METADATA_PIPE_NAME = "airplay-metadata-fifo"
     }
 }

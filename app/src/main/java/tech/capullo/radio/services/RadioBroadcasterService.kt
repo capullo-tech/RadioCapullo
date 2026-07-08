@@ -9,17 +9,21 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -30,10 +34,15 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.annotations.Range
+import tech.capullo.radio.airplay.AirplayMetadataReader
+import tech.capullo.radio.airplay.AirplayProcess
+import tech.capullo.radio.airplay.DacpController
 import tech.capullo.radio.espoti.AudioFocusManager
+import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiPlayerManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.snapcast.ArtData
+import tech.capullo.radio.snapcast.ProcessStatus
 import tech.capullo.radio.snapcast.SnapcastControlBridge
 import tech.capullo.radio.snapcast.SnapclientProcess
 import tech.capullo.radio.snapcast.SnapserverNsdManager
@@ -64,6 +73,18 @@ class RadioBroadcasterService : Service() {
 
     @Inject lateinit var snapserverNsdManager: SnapserverNsdManager
 
+    @Inject lateinit var airplayProcess: AirplayProcess
+
+    @Inject lateinit var airplayMetadataReader: AirplayMetadataReader
+
+    @Inject lateinit var dacpController: DacpController
+
+    // Spotify Connect zeroconf discovery + login handler. Lives in the service
+    // (not the loading screen's ViewModel) so a user who skips Spotify can still
+    // connect later while broadcasting; a successful login emits
+    // SessionState.Created and brings up the Spotify stack.
+    @Inject lateinit var espotiNsdManager: EspotiNsdManager
+
     private val playbackExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var player: Player? = null
     private var session: Session? = null
@@ -74,7 +95,27 @@ class RadioBroadcasterService : Service() {
 
     private var snapserverJob: Job? = null
     private var snapclientJob: Job? = null
+    private var airplayJob: Job? = null
+    private var airplayMetadataJob: Job? = null
     private var controlBridge: SnapcastControlBridge? = null
+    private var airplayControlBridge: SnapcastControlBridge? = null
+
+    // The receiver stack (snapserver/snapclient/AirPlay/NSD) is independent of
+    // Spotify and starts with the service; the Spotify stack (player) starts
+    // only once a session exists. Flags keep both idempotent across repeated
+    // onStartCommand calls and SessionState.Created emissions.
+    private var receiverStarted = false
+    private var spotifyStarted = false
+
+    // Health of the supervised native processes, surfaced to the broadcaster UI
+    private val _airplayStatus = MutableStateFlow(ProcessStatus.STARTING)
+    val airplayStatus = _airplayStatus.asStateFlow()
+    private val _snapserverStatus = MutableStateFlow(ProcessStatus.STARTING)
+    val snapserverStatus = _snapserverStatus.asStateFlow()
+
+    // shairport-sync's in-process mDNS responder (tinysvcmdns) only receives
+    // queries while multicast is allowed through the Wi-Fi filter
+    private var multicastLock: android.net.wifi.WifiManager.MulticastLock? = null
 
     private var isPlaying: Boolean = false
     private var isMuted: Boolean = false
@@ -88,6 +129,8 @@ class RadioBroadcasterService : Service() {
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
         fun getIsPlayerLoadingFlow() = this@RadioBroadcasterService.isPlayerLoadingFlow
+        fun getAirplayStatusFlow() = this@RadioBroadcasterService.airplayStatus
+        fun getSnapserverStatusFlow() = this@RadioBroadcasterService.snapserverStatus
         fun updateAudioChannel(channel: AudioChannel) =
             this@RadioBroadcasterService.updateAudioChannel(channel)
     }
@@ -138,6 +181,9 @@ class RadioBroadcasterService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
+        // The receiver stack is independent of Spotify and comes up as soon as
+        // the service does. Guarded so repeated starts don't relaunch it.
+        startReceiverStack()
 
         return START_NOT_STICKY
     }
@@ -157,7 +203,10 @@ class RadioBroadcasterService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         controlBridge?.stop()
+        airplayControlBridge?.stop()
+        dacpController.stop()
         snapserverNsdManager.stop()
+        releaseMulticastLock()
         scope.cancel()
         player?.close()
         session?.close()
@@ -169,7 +218,10 @@ class RadioBroadcasterService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         controlBridge?.stop()
+        airplayControlBridge?.stop()
+        dacpController.stop()
         snapserverNsdManager.stop()
+        releaseMulticastLock()
         scope.cancel()
         player?.close()
         session?.close()
@@ -384,12 +436,9 @@ class RadioBroadcasterService : Service() {
                 when (sessionState) {
                     is EspotiSessionRepository.SessionState.Created -> {
                         session = sessionState.session
-                        // TODO: might need to handle player session thrown errors
-                        espotiPlayerManager.createPlayer()
-                        startLibrespot()
-
-                        // Start snapcast processes after we have a valid session
-                        startSnapcast()
+                        // Only the Spotify-specific pieces wait on a session;
+                        // the receiver stack is already running from onStartCommand.
+                        startSpotifyStack()
                     }
 
                     is EspotiSessionRepository.SessionState.Error -> {
@@ -402,15 +451,118 @@ class RadioBroadcasterService : Service() {
         }
     }
 
-    fun startSnapcast() {
+    fun startReceiverStack() {
+        if (receiverStarted) return
+        receiverStarted = true
+
+        // Bind the control-bridge socket before snapserver starts: snapserver
+        // spawns libsnapcontrol.so for the Spotify stream regardless of login,
+        // and it connects back to this socket. The bridge is null-safe without
+        // a player (see buildStreamProperties / bridgePlayerCallbacks).
         if (controlBridge == null) {
             controlBridge = SnapcastControlBridge(player = bridgePlayerCallbacks).apply {
                 start()
             }
         }
-        snapserverJob = scope.launch { snapserverProcess.start() }
-        snapclientJob = scope.launch { snapclientProcess.start() }
+        // Same contract for the Airplay stream, on its own socket so its
+        // libsnapcontrol.so relay doesn't collide with the Spotify one. Phase 1
+        // is read-only: metadata flows up from shairport-sync; transport
+        // callbacks are no-ops (see airplayBridgeCallbacks).
+        if (airplayControlBridge == null) {
+            airplayControlBridge = SnapcastControlBridge(
+                socketName = SnapserverProcess.AIRPLAY_CONTROL_SOCKET,
+                player = airplayBridgeCallbacks,
+            ).apply { start() }
+        }
+        acquireMulticastLock()
+        snapserverJob = launchSupervised("snapserver", _snapserverStatus) {
+            snapserverProcess.start()
+        }
+        snapclientJob = launchSupervised("snapclient") {
+            snapclientProcess.start(audioChannel = currentAudioChannel.ordinal)
+        }
+        airplayJob = launchSupervised("airplay", _airplayStatus) {
+            airplayProcess.start()
+        }
+        // Read shairport-sync's metadata pipe (reopened on each AirPlay session)
+        // and push every change to the Airplay control bridge.
+        airplayMetadataJob = launchSupervised("airplay-metadata") {
+            airplayMetadataReader.run()
+        }
+        scope.launch {
+            airplayMetadataReader.properties.collect { props ->
+                airplayControlBridge?.pushProperties(props)
+            }
+        }
+        // Drive DACP discovery from the sender's credentials (acre/daid) so the
+        // Airplay transport callbacks below can reach the sender.
+        scope.launch {
+            airplayMetadataReader.credentials.collect { creds ->
+                dacpController.updateCredentials(creds)
+            }
+        }
         scope.launch { snapserverNsdManager.start() }
+        // Advertise Spotify Connect + handle logins for the life of the service,
+        // so the device is connectable whether or not the user logs in up front.
+        scope.launch { espotiNsdManager.start() }
+    }
+
+    fun startSpotifyStack() {
+        if (spotifyStarted) return
+        spotifyStarted = true
+
+        espotiPlayerManager.createPlayer()
+        startLibrespot()
+    }
+
+    /**
+     * Launches [block] (a native-process run loop) and restarts it with
+     * exponential backoff if it exits unexpectedly, so a crash or network blip
+     * recovers instead of silently killing the source. Cancellation (service
+     * teardown, channel change) propagates out and stops the loop cleanly.
+     */
+    private fun launchSupervised(
+        name: String,
+        status: MutableStateFlow<ProcessStatus>? = null,
+        block: suspend () -> Unit,
+    ): Job = scope.launch {
+        var backoffMs = INITIAL_BACKOFF_MS
+        while (isActive) {
+            val startedAt = SystemClock.elapsedRealtime()
+            status?.value = ProcessStatus.RUNNING
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "$name failed", e)
+            }
+            if (!isActive) break
+            if (SystemClock.elapsedRealtime() - startedAt > HEALTHY_RUN_MS) {
+                backoffMs = INITIAL_BACKOFF_MS
+            }
+            status?.value = ProcessStatus.RESTARTING
+            Log.w(TAG, "$name exited; restarting in ${backoffMs}ms")
+            delay(backoffMs)
+            backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
+        }
+        status?.value = ProcessStatus.STOPPED
+    }
+
+    private fun acquireMulticastLock() {
+        if (multicastLock == null) {
+            val wifiManager =
+                applicationContext.getSystemService(WIFI_SERVICE) as android.net.wifi.WifiManager
+            multicastLock = wifiManager.createMulticastLock("RadioCapulloAirplayMdns").apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        }
+    }
+
+    private fun releaseMulticastLock() {
+        multicastLock?.takeIf { it.isHeld }?.release()
+        multicastLock = null
     }
 
     private fun buildStreamProperties(): StreamProperties {
@@ -572,12 +724,42 @@ class RadioBroadcasterService : Service() {
         override fun currentProperties(): StreamProperties = buildStreamProperties()
     }
 
+    // AirPlay transport is driven back to the sender over DACP (DacpController).
+    // Seek/setPosition stay unsupported (canSeek=false); volume/mute map to the
+    // sender's dmcp.volume.
+    private val airplayBridgeCallbacks = object : SnapcastControlBridge.PlayerCallbacks {
+        override fun onPlay() = dacpController.play()
+        override fun onPause() = dacpController.pause()
+        override fun onPlayPause() = dacpController.playPause()
+        override fun onNext() = dacpController.next()
+        override fun onPrevious() = dacpController.previous()
+
+        override fun onSeek(offsetUs: Long) {
+            Log.d(TAG, "AirPlay seek unsupported")
+        }
+
+        override fun onSetPosition(trackId: String, posUs: Long) {
+            Log.d(TAG, "AirPlay setPosition unsupported")
+        }
+
+        override fun onSetProperty(name: String, value: kotlinx.serialization.json.JsonElement) {
+            when (name) {
+                "volume" -> dacpController.setVolume(value.jsonPrimitive.double.toInt())
+                "mute" -> dacpController.setMute(value.jsonPrimitive.booleanOrNull ?: false)
+                else -> Log.d(TAG, "AirPlay setProperty '$name' unsupported")
+            }
+        }
+
+        override fun currentProperties(): StreamProperties = airplayMetadataReader.properties.value
+    }
+
     fun updateAudioChannel(channel: AudioChannel) {
         currentAudioChannel = channel
         // Restart snapclient with new channel
         snapclientJob?.cancel()
-        snapclientJob =
-            scope.launch { snapclientProcess.start(audioChannel = currentAudioChannel.ordinal) }
+        snapclientJob = launchSupervised("snapclient") {
+            snapclientProcess.start(audioChannel = currentAudioChannel.ordinal)
+        }
     }
 
     companion object {
@@ -585,6 +767,12 @@ class RadioBroadcasterService : Service() {
         const val CHANNEL_NAME = "Radio Broadcaster Service Channel"
         const val NOTIFICATION_ID = 100
         const val WAIT_READY_TIMEOUT_MS = 10_000L
+
+        // Restart-supervisor backoff bounds for the native receiver processes
+        const val INITIAL_BACKOFF_MS = 1_000L
+        const val MAX_BACKOFF_MS = 30_000L
+        const val HEALTHY_RUN_MS = 10_000L
+
         val TAG: String = RadioBroadcasterService::class.java.simpleName
     }
 }

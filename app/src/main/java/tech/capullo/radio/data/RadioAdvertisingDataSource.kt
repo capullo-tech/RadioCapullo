@@ -21,6 +21,17 @@ class RadioAdvertisingDataSource @Inject constructor(
         }
     }
 
+    // Stable 12-hex-digit identifier used by shairport-sync as its AirPlay
+    // device ID (SPS_DEVICE_ID): Android hides interface MAC addresses from
+    // apps, so one is derived from ANDROID_ID instead.
+    @Suppress("HardwareIds")
+    fun getAirplayDeviceId(): String = Settings.Secure.getString(
+        appContext.contentResolver,
+        Settings.Secure.ANDROID_ID,
+    ).filter { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
+        .padEnd(12, '0')
+        .take(12)
+
     fun getDeviceName(): String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
         val deviceName = Settings.Global.getString(
             appContext.contentResolver,

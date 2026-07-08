@@ -18,7 +18,8 @@ coreKtx = "1.18.0"
 hilt = "2.59.2"
 ksp = "2.3.7"
 ktor = "3.4.3"
-libSnapcastAndroid = "lr_snapcast-SNAPSHOT"
+libShairportAndroid = "c4e283ca4a"
+libSnapcastAndroid = "16c4b638c3"
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleViewmodelNav3 = "2.10.0"
 material3 = "1.5.0-alpha19"
@@ -68,7 +69,8 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-lib-snapcast-android = { group = "com.github.capullo-tech.lib-snapcast-android", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
+lib-shairport-android = { group = "com.github.capullo-tech", name = "lib-shairport-android", version.ref = "libShairportAndroid" }
+lib-snapcast-android = { group = "com.github.capullo-tech", name = "lib-snapcast-android", version.ref = "libSnapcastAndroid" }
 mockk = { group= "io.mockk", name = "mockk", version.ref = "mockk" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 slf4j-handroid = { module = "com.gitlab.mvysny.slf4j:slf4j-handroid", version.ref = "slf4jHandroid" }

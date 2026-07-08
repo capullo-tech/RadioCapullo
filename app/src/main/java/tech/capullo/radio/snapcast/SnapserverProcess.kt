@@ -2,7 +2,6 @@ package tech.capullo.radio.snapcast
 
 import android.os.Process
 import android.util.Log
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import tech.capullo.radio.data.RadioRepository
@@ -16,36 +15,71 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
     private val cacheDir = radioRepository.getCacheDir()
     private val confFile = radioRepository.getSnapserverConfPath()
     private val pipeFilepath = radioRepository.getPipeFilepath()!!
+    private val airplayPipeFilepath = radioRepository.getAirplayPipeFilepath()
 
     companion object {
-        private const val STREAM_NAME: String = "name=RadioCapullo"
+        // Abstract-socket name the Airplay stream's libsnapcontrol.so relay
+        // connects to; RadioBroadcasterService binds its Airplay control bridge
+        // here. Spotify uses the SnapcastControlBridge default ("snapcontrol").
+        const val AIRPLAY_CONTROL_SOCKET: String = "snapcontrol-airplay"
+
         private const val PIPE_MODE: String = "mode=read"
         private const val DRYOUT_MS: String = "dryout_ms=2000"
         private const val SAMPLE_FORMAT: String = "sampleformat=44100:16:2"
 
+        // codec=null hides the raw inputs from clients, so the meta stream
+        // below is the default stream that new client groups attach to
+        // (StreamManager::getDefaultStream skips null-codec streams).
         private val pipeArgs = listOf(
-            STREAM_NAME,
             PIPE_MODE,
             DRYOUT_MS,
             SAMPLE_FORMAT,
+            "codec=null",
         ).joinToString("&")
 
         private val TAG = SnapserverProcess::class.java.simpleName
     }
 
     suspend fun start() = coroutineScope {
+        val streamSources = mutableListOf(
+            "--stream.source",
+            "pipe://$pipeFilepath?name=Spotify&$pipeArgs" +
+                "&controlscript=$nativeLibDir/libsnapcontrol.so",
+        )
+        if (airplayPipeFilepath != null) {
+            // Airplay gets its own control socket so its libsnapcontrol.so relay
+            // doesn't clobber the Spotify bridge (default "snapcontrol" socket);
+            // the bridge tracks a single active connection per socket name.
+            streamSources += listOf(
+                "--stream.source",
+                "pipe://$airplayPipeFilepath?name=Airplay&$pipeArgs" +
+                    "&controlscript=$nativeLibDir/libsnapcontrol.so" +
+                    "&controlscriptparams=--socket-name=$AIRPLAY_CONTROL_SOCKET",
+            )
+        }
+        // The meta stream activates whichever input is playing (earlier names
+        // win on conflict) and must be declared after the streams it combines.
+        val metaPath = if (airplayPipeFilepath != null) "Spotify/Airplay" else "Spotify"
+        streamSources += listOf(
+            "--stream.source",
+            "meta:///$metaPath?name=RadioCapullo&$SAMPLE_FORMAT",
+        )
+
         val pb = ProcessBuilder()
             .command(
-                "$nativeLibDir/libsnapserver.so",
-                "--config",
-                confFile,
-                "--server.datadir=$cacheDir",
-                "--stream.source",
-                "pipe://$pipeFilepath?$pipeArgs&controlscript=$nativeLibDir/libsnapcontrol.so",
+                listOf(
+                    "$nativeLibDir/libsnapserver.so",
+                    "--config",
+                    confFile,
+                    "--server.datadir=$cacheDir",
+                ) + streamSources,
             )
             .redirectErrorStream(true)
 
         val process = pb.start()
+        // Cleanup lives in finally so cancellation propagates to the
+        // supervisor (which distinguishes a clean stop from a crash); a normal
+        // native exit returns and lets the supervisor restart.
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -57,13 +91,9 @@ class SnapserverProcess @Inject constructor(radioRepository: RadioRepository) {
                 val threadName = Thread.currentThread().name
                 // Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (_: CancellationException) {
-            // Log.d(TAG, "Snapserver process cancelled")
+        } finally {
             process.destroy()
             process.waitFor()
-            // Log.d(TAG, "Snapserver process destroyed")
-        } catch (e: Exception) {
-            // Log.e(TAG, "Error starting snapcast process", e)
         }
     }
 }

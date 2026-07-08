@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lib.snapcast.android)
+    implementation(libs.lib.shairport.android)
     implementation("com.github.capullo-tech.lib-librespot-android:librespot-android:0.2.0")
     implementation(libs.slf4j.handroid)
 

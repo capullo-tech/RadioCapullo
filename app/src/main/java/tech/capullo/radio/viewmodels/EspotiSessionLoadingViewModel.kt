@@ -11,15 +11,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import tech.capullo.radio.di.IODispatcher
-import tech.capullo.radio.espoti.EspotiNsdManager
 import tech.capullo.radio.espoti.EspotiSessionRepository
 import tech.capullo.radio.services.RadioBroadcasterService
 import javax.inject.Inject
@@ -34,8 +30,6 @@ data class EspotiSessionLoadingUiState(
 class EspotiSessionLoadingViewModel @Inject constructor(
     @ApplicationContext val appContext: Context,
     private val espotiSessionRepository: EspotiSessionRepository,
-    private val espotiNsdManager: EspotiNsdManager,
-    @IODispatcher private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     // Starts in the loading state
@@ -65,19 +59,12 @@ class EspotiSessionLoadingViewModel @Inject constructor(
                 // serviceWrapper?.isPlayerLoading?.isLoading -> responds -> UI updates
                 espotiSessionRepository.setSession(storedSession.session)
             } else {
-                // Finished loading and didn't transition to the next screen
-                // therefore start nsd routine
+                // No stored session: show the Spotify Connect screen. Discovery +
+                // login are advertised by RadioBroadcasterService for the life of
+                // the service, so a connection can arrive here or after the user
+                // proceeds to the broadcast screen without Spotify.
                 _uiState.update { it.copy(isLoading = false) }
-                startEspotiNsd()
             }
-        }
-    }
-
-    fun startEspotiNsd() {
-        println("start EspotiNsd on: ${Process.myPid()} -  ${Thread.currentThread().name}}")
-        viewModelScope.launch(ioDispatcher) {
-            println("espotiNsdManager on: ${Process.myPid()} -  ${Thread.currentThread().name}}")
-            espotiNsdManager.start()
         }
     }
 

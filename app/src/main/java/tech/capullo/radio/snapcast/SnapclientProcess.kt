@@ -8,7 +8,6 @@ import android.os.Process
 import android.util.Log
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
@@ -100,6 +99,9 @@ class SnapclientProcess @Inject constructor(
         if (fpb != null) env["FRAMES_PER_BUFFER"] = fpb
 
         val process = pb.start()
+        // Cleanup lives in finally so cancellation propagates to the
+        // supervisor (which distinguishes a clean stop from a crash); a normal
+        // native exit returns and lets the supervisor restart.
         try {
             val bufferedReader = BufferedReader(
                 InputStreamReader(process.inputStream),
@@ -147,13 +149,9 @@ class SnapclientProcess @Inject constructor(
                 val threadName = Thread.currentThread().name
                 // Log.d(TAG, "Running on: $processId -  $threadName - ${line!!}")
             }
-        } catch (_: CancellationException) {
-            // Log.d(TAG, "Snapclient process cancelled")
+        } finally {
             process.destroy()
             process.waitFor()
-            // Log.d(TAG, "Snapclient process destroyed")
-        } catch (e: Exception) {
-            // Log.e(TAG, "Error starting snapcast process", e)
         }
     }
 

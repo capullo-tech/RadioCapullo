@@ -190,6 +190,16 @@ class SnapcastControlClient(
         session?.sendSerialized(setVolume)
     }
 
+    suspend fun sendSetLatency(clientId: String, latency: Int) {
+        val setLatency = ClientSetLatencyRequest(
+            id = requestIdCounter++,
+            params = LatencyParams(clientId, latency),
+        )
+
+        Log.d(TAG, "sendSetLatency: $setLatency")
+        session?.sendSerialized(setLatency)
+    }
+
     companion object {
         private val TAG = SnapcastControlClient::class.simpleName
     }
